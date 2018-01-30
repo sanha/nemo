@@ -322,6 +322,8 @@ public final class RuntimeMaster {
       final MetricCollectionBarrierVertex<Long> metricCollectionBarrierVertex =
           (MetricCollectionBarrierVertex) vertexToSendMetricDataTo;
       metricCollectionBarrierVertex.accumulateMetric(blockId, blockSizeInfo);
+
+      LOG.info("log: accumulateBarrierMetric at Master: {} {}", blockId, metricCollectionBarrierVertex.getId());
     } else {
       throw new RuntimeException("Something wrong happened at DataSkewCompositePass.");
     }

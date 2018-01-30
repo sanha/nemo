@@ -330,6 +330,7 @@ public final class TaskGroupExecutor {
     });
     physicalTaskIdToOutputWriterMap.get(physicalTaskId).forEach(outputWriter -> {
           outputWriter.write(data);
+          LOG.info("log: relay data {}", data);
           outputWriter.close();
         });
   }
