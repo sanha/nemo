@@ -25,14 +25,14 @@ import edu.snu.nemo.common.ir.edge.executionproperty.DataStoreProperty;
 import java.util.Collections;
 
 /**
- * A pass to support Sailfish-like shuffle by tagging edges.
+ * A pass to support batching disk seek optimization during shuffle read by tagging edges.
  * This pass handles the DataStore ExecutionProperty.
  */
-public final class SailfishEdgeDataStorePass extends AnnotatingPass {
+public final class BatchDiskSeekEdgeDataStorePass extends AnnotatingPass {
   /**
    * Default constructor.
    */
-  public SailfishEdgeDataStorePass() {
+  public BatchDiskSeekEdgeDataStorePass() {
     super(ExecutionProperty.Key.DataStore, Collections.singleton(ExecutionProperty.Key.DataCommunicationPattern));
   }
 

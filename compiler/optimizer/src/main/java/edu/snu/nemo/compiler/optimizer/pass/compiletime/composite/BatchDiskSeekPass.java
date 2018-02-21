@@ -15,26 +15,26 @@
  */
 package edu.snu.nemo.compiler.optimizer.pass.compiletime.composite;
 
-import edu.snu.nemo.compiler.optimizer.pass.compiletime.annotating.SailfishEdgeDataFlowModelPass;
-import edu.snu.nemo.compiler.optimizer.pass.compiletime.annotating.SailfishEdgeDataStorePass;
-import edu.snu.nemo.compiler.optimizer.pass.compiletime.annotating.SailfishEdgeUsedDataHandlingPass;
-import edu.snu.nemo.compiler.optimizer.pass.compiletime.reshaping.SailfishRelayReshapingPass;
+import edu.snu.nemo.compiler.optimizer.pass.compiletime.annotating.BatchDiskSeekEdgeDataFlowModelPass;
+import edu.snu.nemo.compiler.optimizer.pass.compiletime.annotating.BatchDiskSeekEdgeDataStorePass;
+import edu.snu.nemo.compiler.optimizer.pass.compiletime.annotating.BatchDiskSeekEdgeUsedDataHandlingPass;
+import edu.snu.nemo.compiler.optimizer.pass.compiletime.reshaping.BatchDiskSeekRelayReshapingPass;
 
 import java.util.Arrays;
 
 /**
- * A series of passes to support Sailfish-like disk seek batching during shuffle.
+ * A series of passes to support disk seek batching during shuffle read.
  */
-public final class SailfishPass extends CompositePass {
+public final class BatchDiskSeekPass extends CompositePass {
   /**
    * Default constructor.
    */
-  public SailfishPass() {
+  public BatchDiskSeekPass() {
     super(Arrays.asList(
-        new SailfishRelayReshapingPass(),
-        new SailfishEdgeDataFlowModelPass(),
-        new SailfishEdgeDataStorePass(),
-        new SailfishEdgeUsedDataHandlingPass()
+        new BatchDiskSeekRelayReshapingPass(),
+        new BatchDiskSeekEdgeDataFlowModelPass(),
+        new BatchDiskSeekEdgeDataStorePass(),
+        new BatchDiskSeekEdgeUsedDataHandlingPass()
     ));
   }
 }

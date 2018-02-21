@@ -67,10 +67,10 @@ public final class MapReduceITCase {
   }
 
   @Test (timeout = TIMEOUT)
-  public void testSailfish() throws Exception {
+  public void testBatchDiskSeek() throws Exception {
     JobLauncher.main(builder
-        .addJobId(MapReduceITCase.class.getSimpleName() + "_sailfish")
-        .addOptimizationPolicy(SailfishPolicyParallelsimFive.class.getCanonicalName())
+        .addJobId(MapReduceITCase.class.getSimpleName() + "_batch")
+        .addOptimizationPolicy(BatchDiskSeekPolicyParallelsimFive.class.getCanonicalName())
         .build());
   }
 

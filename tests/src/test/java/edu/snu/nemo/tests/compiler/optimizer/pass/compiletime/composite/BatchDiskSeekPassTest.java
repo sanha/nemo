@@ -24,7 +24,7 @@ import edu.snu.nemo.common.ir.edge.executionproperty.DataStoreProperty;
 import edu.snu.nemo.common.ir.edge.executionproperty.UsedDataHandlingProperty;
 import edu.snu.nemo.common.ir.executionproperty.ExecutionProperty;
 import edu.snu.nemo.common.ir.vertex.IRVertex;
-import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.SailfishPass;
+import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.BatchDiskSeekPass;
 import edu.snu.nemo.tests.compiler.CompilerTestUtil;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,11 +35,11 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Test {@link SailfishPass}.
+ * Test {@link BatchDiskSeekPass}.
  */
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(JobLauncher.class)
-public class SailfishPassTest {
+public class BatchDiskSeekPassTest {
   private DAG<IRVertex, IREdge> compiledDAG;
 
   @Before
@@ -48,8 +48,8 @@ public class SailfishPassTest {
   }
 
   @Test
-  public void testSailfish() throws Exception {
-    final DAG<IRVertex, IREdge> processedDAG = new SailfishPass().apply(compiledDAG);
+  public void testBatchDiskSeekPass() throws Exception {
+    final DAG<IRVertex, IREdge> processedDAG = new BatchDiskSeekPass().apply(compiledDAG);
 
     processedDAG.getTopologicalSort().forEach(irVertex -> {
       if (processedDAG.getIncomingEdgesOf(irVertex).stream().anyMatch(irEdge ->

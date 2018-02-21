@@ -25,15 +25,15 @@ import edu.snu.nemo.common.ir.vertex.IRVertex;
 import java.util.Collections;
 
 /**
- * A pass to support Sailfish-like shuffle by tagging edges.
+ * A pass to support batching disk seek optimization by tagging edges.
  * This pass handles the UsedDataHandling ExecutionProperty.
  */
-public final class SailfishEdgeUsedDataHandlingPass extends AnnotatingPass {
+public final class BatchDiskSeekEdgeUsedDataHandlingPass extends AnnotatingPass {
 
   /**
    * Default constructor.
    */
-  public SailfishEdgeUsedDataHandlingPass() {
+  public BatchDiskSeekEdgeUsedDataHandlingPass() {
     super(ExecutionProperty.Key.UsedDataHandling, Collections.singleton(ExecutionProperty.Key.DataFlowModel));
   }
 

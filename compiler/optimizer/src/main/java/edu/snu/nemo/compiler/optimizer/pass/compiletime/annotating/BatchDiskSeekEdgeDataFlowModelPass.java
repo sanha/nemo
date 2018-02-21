@@ -26,14 +26,14 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * A pass to support Sailfish-like shuffle by tagging edges.
+ * A pass to support batching disk seek optimization during shuffle read by tagging edges.
  * This pass handles the DataFlowModel ExecutionProperty.
  */
-public final class SailfishEdgeDataFlowModelPass extends AnnotatingPass {
+public final class BatchDiskSeekEdgeDataFlowModelPass extends AnnotatingPass {
   /**
    * Default constructor.
    */
-  public SailfishEdgeDataFlowModelPass() {
+  public BatchDiskSeekEdgeDataFlowModelPass() {
     super(ExecutionProperty.Key.DataFlowModel, Collections.singleton(ExecutionProperty.Key.DataCommunicationPattern));
   }
 

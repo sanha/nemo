@@ -32,12 +32,12 @@ import java.util.Collections;
  * receiving shuffle edges,
  * to merge the shuffled data in memory and write to the disk at once.
  */
-public final class SailfishRelayReshapingPass extends ReshapingPass {
+public final class BatchDiskSeekRelayReshapingPass extends ReshapingPass {
 
   /**
    * Default constructor.
    */
-  public SailfishRelayReshapingPass() {
+  public BatchDiskSeekRelayReshapingPass() {
     super(Collections.singleton(ExecutionProperty.Key.DataCommunicationPattern));
   }
 

@@ -13,23 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.nemo.examples.beam.policy;
+package edu.snu.nemo.compiler.optimizer.policy;
 
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.CompileTimePass;
-import edu.snu.nemo.compiler.optimizer.policy.Policy;
-import edu.snu.nemo.compiler.optimizer.policy.SailfishPolicy;
+import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.PrimitiveCompositePass;
+import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.LoopOptimizationCompositePass;
+import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.BatchDiskSeekPass;
 import edu.snu.nemo.runtime.common.optimizer.pass.runtime.RuntimePass;
 
 import java.util.List;
 
 /**
- * A Sailfish policy with fixed parallelism 5 for tests.
+ * A policy to demonstrate an optimization that batches disk seek during reading shuffled data.
+ * We borrowed the idea of this optimization from Sailfish paper (https://dl.acm.org/citation.cfm?id=2391233).
  */
-public final class SailfishPolicyParallelsimFive implements Policy {
+public final class BatchDiskSeekPolicy implements Policy {
   private final Policy policy;
 
-  public SailfishPolicyParallelsimFive() {
-    this.policy = PolicyTestUtil.overwriteParallelism(5, SailfishPolicy.class.getCanonicalName());
+  /**
+   * Default constructor.
+   */
+  public BatchDiskSeekPolicy() {
+    this.policy = new PolicyBuilder(false)
+        .registerCompileTimePass(new BatchDiskSeekPass())
+        .registerCompileTimePass(new LoopOptimizationCompositePass())
+        .registerCompileTimePass(new PrimitiveCompositePass())
+        .build();
   }
 
   @Override
