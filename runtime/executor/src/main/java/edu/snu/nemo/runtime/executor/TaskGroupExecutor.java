@@ -161,8 +161,8 @@ public final class TaskGroupExecutor {
         if (inputReader.isSideInputReader()) {
           taskToSideInputReadersMap.putIfAbsent(task, new ArrayList<>());
           taskToSideInputReadersMap.get(task).add(inputReader);
-          LOG.info("log: {} {} Added sideInputReader (edge {})",
-              taskGroupId, getPhysicalTaskId(task.getId()), physicalStageEdge.getId());
+          //LOG.info("log: {} {} Added sideInputReader (edge {})",
+          //    taskGroupId, getPhysicalTaskId(task.getId()), physicalStageEdge.getId());
         } else {
           inputReaders.add(inputReader);
           taskToInputReadersMap.putIfAbsent(task, new ArrayList<>());
@@ -216,8 +216,8 @@ public final class TaskGroupExecutor {
       parentTasks.forEach(parent -> {
         final PipeImpl parentOutputPipe = taskToOutputPipeMap.get(parent);
         inputPipes.add(parentOutputPipe);
-        LOG.info("log: Added Outputpipe of {} as InputPipe of {} {}",
-            getPhysicalTaskId(parent.getId()), taskGroupId, physicalTaskId);
+        //LOG.info("log: Added Outputpipe of {} as InputPipe of {} {}",
+        //    getPhysicalTaskId(parent.getId()), taskGroupId, physicalTaskId);
       });
       taskToInputPipesMap.put(task, inputPipes);
     }
@@ -240,13 +240,13 @@ public final class TaskGroupExecutor {
       if (outEdge.isSideInput()) {
         outputPipe.setSideInputRuntimeEdge(outEdge);
         outputPipe.setAsSideInput(physicalTaskId);
-        LOG.info("log: {} {} Marked as accepting sideInput(edge {})",
-            taskGroupId, physicalTaskId, outEdge.getId());
+        //LOG.info("log: {} {} Marked as accepting sideInput(edge {})",
+        //    taskGroupId, physicalTaskId, outEdge.getId());
       }
     });
 
     taskToOutputPipeMap.put(task, outputPipe);
-    LOG.info("log: {} {} Added OutputPipe", taskGroupId, physicalTaskId);
+    //LOG.info("log: {} {} Added OutputPipe", taskGroupId, physicalTaskId);
   }
 
   private boolean hasInputPipe(final Task task) {
@@ -270,7 +270,7 @@ public final class TaskGroupExecutor {
     final long writeStartTime = System.currentTimeMillis();
 
     taskToOutputWritersMap.get(task).forEach(outputWriter -> {
-      LOG.info("Write and close outputWriter of task {}", getPhysicalTaskId(task.getId()));
+      //LOG.info("Write and close outputWriter of task {}", getPhysicalTaskId(task.getId()));
       outputWriter.write();
       outputWriter.close();
       final Optional<Long> writtenBytes = outputWriter.getWrittenBytes();
@@ -361,16 +361,16 @@ public final class TaskGroupExecutor {
           final List<Task> dstTasks = taskGroupDag.getChildren(task.getId());
           PipeImpl pipe = taskToOutputPipeMap.get(task);
           pipeToDstTasksMap.putIfAbsent(pipe, dstTasks);
-          LOG.info("{} pipeToDstTasksMap: [{}'s OutputPipe, {}]",
-              taskGroupId, getPhysicalTaskId(task.getId()), dstTasks);
+          //LOG.info("{} pipeToDstTasksMap: [{}'s OutputPipe, {}]",
+          //    taskGroupId, getPhysicalTaskId(task.getId()), dstTasks);
         }));
     iteratorIdToTasksMap.values().forEach(tasks ->
         tasks.forEach(task -> {
           final List<Task> dstTasks = taskGroupDag.getChildren(task.getId());
           PipeImpl pipe = taskToOutputPipeMap.get(task);
           pipeToDstTasksMap.putIfAbsent(pipe, dstTasks);
-          LOG.info("{} pipeToDstTasksMap: [{}'s OutputPipe, {}]",
-              taskGroupId, getPhysicalTaskId(task.getId()), dstTasks);
+          //LOG.info("{} pipeToDstTasksMap: [{}'s OutputPipe, {}]",
+          //    taskGroupId, getPhysicalTaskId(task.getId()), dstTasks);
         }));
   }
 
@@ -383,8 +383,8 @@ public final class TaskGroupExecutor {
           final List<Task> dstTasks = taskGroupDag.getChildren(task.getId());
           PipeImpl pipe = taskToOutputPipeMap.get(task);
           updatedMap.putIfAbsent(pipe, dstTasks);
-          LOG.info("{} pipeToDstTasksMap: [{}, {}]",
-              taskGroupId, getPhysicalTaskId(task.getId()), dstTasks);
+          //LOG.info("{} pipeToDstTasksMap: [{}, {}]",
+          //    taskGroupId, getPhysicalTaskId(task.getId()), dstTasks);
         })
     );
 
@@ -425,8 +425,8 @@ public final class TaskGroupExecutor {
           encodedBlockSize = -1;
         }
 
-        LOG.info("log: {} {} read sideInput from InputReader {}",
-            taskGroupId, getPhysicalTaskId(task.getId()), sideInput);
+        //LOG.info("log: {} {} read sideInput from InputReader {}",
+        //    taskGroupId, getPhysicalTaskId(task.getId()), sideInput);
       } catch (final InterruptedException | ExecutionException e) {
         throw new BlockFetchException(e);
       }
@@ -448,7 +448,7 @@ public final class TaskGroupExecutor {
           srcTransform = ((OperatorTask) inEdge.getSrc()).getTransform();
         }
         sideInputMap.put(srcTransform, sideInput);
-        LOG.info("log: {} {} read sideInput from InputPipe {}", taskGroupId, physicalTaskId, sideInput);
+        //LOG.info("log: {} {} read sideInput from InputPipe {}", taskGroupId, physicalTaskId, sideInput);
       }
     });
   }
@@ -519,7 +519,7 @@ public final class TaskGroupExecutor {
       // Process data from other stages.
       final int numPartitions = numIterators - numBoundedSources;
       for (int currPartition = 0; currPartition < numPartitions; currPartition++) {
-        LOG.info("{} Partition {} out of {}", taskGroupId, currPartition, numPartitions);
+        //LOG.info("{} Partition {} out of {}", taskGroupId, currPartition, numPartitions);
 
         Pair<String, DataUtil.IteratorWithNumBytes> idToIteratorPair = iteratorQueue.take();
         final String iteratorId = idToIteratorPair.left();
@@ -561,7 +561,7 @@ public final class TaskGroupExecutor {
           Task pipeOwnerTask = taskToOutputPipeMap.entrySet().stream()
               .filter(entry -> entry.getValue().equals(pipe))
               .findAny().get().getKey();
-          LOG.info("{} pipeOwnerTask {}", taskGroupId, getPhysicalTaskId(pipeOwnerTask.getId()));
+          //LOG.info("{} pipeOwnerTask {}", taskGroupId, getPhysicalTaskId(pipeOwnerTask.getId()));
 
           // Before consuming the output of pipeOwnerTask as input,
           // close transform if it is OperatorTransform.
@@ -589,8 +589,8 @@ public final class TaskGroupExecutor {
               final Object element = pipe.remove();
               List<OutputWriter> outputWritersOfTask = taskToOutputWritersMap.get(pipeOwnerTask);
               outputWritersOfTask.forEach(outputWriter -> outputWriter.writeElement(element));
-              LOG.info("{} {} Write to OutputWriter element {}",
-                  taskGroupId, getPhysicalTaskId(pipeOwnerTask.getId()), element);
+              //LOG.info("{} {} Write to OutputWriter element {}",
+              //    taskGroupId, getPhysicalTaskId(pipeOwnerTask.getId()), element);
             }
             writeAndCloseOutputWriters(pipeOwnerTask);
           }
@@ -641,8 +641,8 @@ public final class TaskGroupExecutor {
       } else {
         data.forEach(dataElement -> {
           pipe.emit(dataElement);
-          LOG.info("log: {} {} BoundedSourceTask emitting {} to pipe",
-              taskGroupId, physicalTaskId, dataElement);
+          //LOG.info("log: {} {} BoundedSourceTask emitting {} to pipe",
+              //taskGroupId, physicalTaskId, dataElement);
         });
       }
     } else if (task instanceof OperatorTask) {
@@ -652,11 +652,11 @@ public final class TaskGroupExecutor {
       // Consumes the received element from incoming edges.
       // Calculate the number of inter-TaskGroup data to process.
       int numElements = data.size();
-      LOG.info("log: {} {}: numElements {}", taskGroupId, physicalTaskId, numElements);
+      //LOG.info("log: {} {}: numElements {}", taskGroupId, physicalTaskId, numElements);
 
       IntStream.range(0, numElements).forEach(dataNum -> {
         Object dataElement = data.get(dataNum);
-        LOG.info("log: {} {} OperatorTask applying {} to onData", taskGroupId, physicalTaskId, dataElement);
+        //LOG.info("log: {} {} OperatorTask applying {} to onData", taskGroupId, physicalTaskId, dataElement);
         transform.onData(dataElement);
       });
     } else if (task instanceof MetricCollectionBarrierTask) {
@@ -667,8 +667,8 @@ public final class TaskGroupExecutor {
       } else {
         data.forEach(dataElement -> {
           pipe.emit(dataElement);
-          LOG.info("log: {} {} MetricCollectionTask emitting {} to pipe",
-              taskGroupId, physicalTaskId, dataElement);
+          //LOG.info("log: {} {} MetricCollectionTask emitting {} to pipe",
+              //taskGroupId, physicalTaskId, dataElement);
         });
       }
       setTaskPutOnHold((MetricCollectionBarrierTask) task);
@@ -683,8 +683,8 @@ public final class TaskGroupExecutor {
       if (hasOutputWriter(task)) {
         List<OutputWriter> outputWritersOfTask = taskToOutputWritersMap.get(task);
         outputWritersOfTask.forEach(outputWriter -> outputWriter.writeElement(element));
-        LOG.info("{} {} Write to OutputWriter element {}",
-            taskGroupId, getPhysicalTaskId(task.getId()), element);
+        //LOG.info("{} {} Write to OutputWriter element {}",
+        //    taskGroupId, getPhysicalTaskId(task.getId()), element);
       }
 
       // Pass output to its children tasks recursively.
@@ -692,7 +692,7 @@ public final class TaskGroupExecutor {
       if (!dstTasks.isEmpty()) {
         final List output = Collections.singletonList(element); // intra-TaskGroup data are safe here
         for (final Task dstTask : dstTasks) {
-          LOG.info("{} {} input to runTask {}", taskGroupId, getPhysicalTaskId(dstTask.getId()), output);
+          //LOG.info("{} {} input to runTask {}", taskGroupId, getPhysicalTaskId(dstTask.getId()), output);
           runTask(dstTask, output);
         }
       }
