@@ -414,7 +414,7 @@ public final class TaskGroupExecutor {
         sideInputMap.put(srcTransform, sideInput);
 
         // Collect metrics on block size if possible.
-        try {
+        /*try {
           serBlockSize += sideInputIterator.getNumSerializedBytes();
         } catch (final DataUtil.IteratorWithNumBytes.NumBytesNotSupportedException e) {
           serBlockSize = -1;
@@ -423,7 +423,7 @@ public final class TaskGroupExecutor {
           encodedBlockSize += sideInputIterator.getNumEncodedBytes();
         } catch (final DataUtil.IteratorWithNumBytes.NumBytesNotSupportedException e) {
           encodedBlockSize = -1;
-        }
+        }*/
 
         //LOG.info("log: {} {} read sideInput from InputReader {}",
         //    taskGroupId, getPhysicalTaskId(task.getId()), sideInput);
@@ -525,7 +525,7 @@ public final class TaskGroupExecutor {
         final String iteratorId = idToIteratorPair.left();
         final DataUtil.IteratorWithNumBytes iterator = idToIteratorPair.right();
         List<Task> dstTasks = iteratorIdToTasksMap.get(iteratorId);
-        idToIteratorPair.right().forEachRemaining(element -> {
+        iterator.forEachRemaining(element -> {
           for (final Task task : dstTasks) {
             List data = Collections.singletonList(element);
             runTask(task, data);
@@ -533,7 +533,7 @@ public final class TaskGroupExecutor {
         });
 
         // Collect metrics on block size if possible.
-        try {
+        /*try {
           serBlockSize += iterator.getNumSerializedBytes();
         } catch (final DataUtil.IteratorWithNumBytes.NumBytesNotSupportedException e) {
           serBlockSize = -1;
@@ -546,7 +546,7 @@ public final class TaskGroupExecutor {
           encodedBlockSize = -1;
         } catch (final IllegalStateException e) {
           LOG.error("IllegalState ", e);
-        }
+        }*/
       }
       inputReadEndTime = System.currentTimeMillis();
       metric.put("InputReadTime(ms)", inputReadEndTime - inputReadStartTime);
@@ -611,8 +611,8 @@ public final class TaskGroupExecutor {
     }
 
     // Put TaskGroup-unit metrics.
-    final boolean available = serBlockSize >= 0;
-    putReadBytesMetric(available, serBlockSize, encodedBlockSize, metric);
+    //final boolean available = serBlockSize >= 0;
+    //putReadBytesMetric(available, serBlockSize, encodedBlockSize, metric);
     metricCollector.endMeasurement(taskGroupId, metric);
     if (logicalTaskIdPutOnHold == null) {
       taskGroupStateManager.onTaskGroupStateChanged(TaskGroupState.State.COMPLETE, Optional.empty(), Optional.empty());
