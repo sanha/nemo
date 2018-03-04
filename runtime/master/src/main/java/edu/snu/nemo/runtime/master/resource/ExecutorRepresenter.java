@@ -44,6 +44,7 @@ public final class ExecutorRepresenter {
   private final Set<String> runningTaskGroups;
   private final Set<String> completeTaskGroups;
   private final Set<String> failedTaskGroups;
+  private final Set<String> smallTaskGroups;
   private final MessageSender<ControlMessage.Message> messageSender;
   private final ActiveContext activeContext;
   private final ExecutorService serializationExecutorService;
@@ -61,6 +62,7 @@ public final class ExecutorRepresenter {
     this.runningTaskGroups = new HashSet<>();
     this.completeTaskGroups = new HashSet<>();
     this.failedTaskGroups = new HashSet<>();
+    this.smallTaskGroups = new HashSet<>();
     this.activeContext = activeContext;
     this.serializationExecutorService = serializationExecutorService;
     this.nodeName = nodeName;
@@ -69,11 +71,15 @@ public final class ExecutorRepresenter {
   public void onExecutorFailed() {
     runningTaskGroups.forEach(taskGroupId -> failedTaskGroups.add(taskGroupId));
     runningTaskGroups.clear();
+    smallTaskGroups.clear();
   }
 
   public void onTaskGroupScheduled(final ScheduledTaskGroup scheduledTaskGroup) {
     runningTaskGroups.add(scheduledTaskGroup.getTaskGroupId());
     failedTaskGroups.remove(scheduledTaskGroup.getTaskGroupId());
+    if (scheduledTaskGroup.isSmall()) {
+      smallTaskGroups.add(scheduledTaskGroup.getTaskGroupId());
+    }
 
     serializationExecutorService.submit(new Runnable() {
       @Override
@@ -99,12 +105,18 @@ public final class ExecutorRepresenter {
 
   public void onTaskGroupExecutionComplete(final String taskGroupId) {
     runningTaskGroups.remove(taskGroupId);
+    smallTaskGroups.remove(taskGroupId);
     completeTaskGroups.add(taskGroupId);
   }
 
   public void onTaskGroupExecutionFailed(final String taskGroupId) {
     runningTaskGroups.remove(taskGroupId);
+    smallTaskGroups.remove(taskGroupId);
     failedTaskGroups.add(taskGroupId);
+  }
+
+  public Set<String> getSmallTaskGroups() {
+    return smallTaskGroups;
   }
 
   public int getExecutorCapacity() {

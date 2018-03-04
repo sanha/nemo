@@ -76,12 +76,14 @@ public final class Executor {
                   final DataTransferFactory dataTransferFactory,
                   final MetricManagerWorker metricMessageSender) {
     this.executorId = executorId;
-    this.executorService = Executors.newFixedThreadPool(executorCapacity);
+    //this.executorService = Executors.newFixedThreadPool(executorCapacity);
+    this.executorService = Executors.newCachedThreadPool();
     this.persistentConnectionToMasterMap = persistentConnectionToMasterMap;
     this.serializerManager = serializerManager;
     this.dataTransferFactory = dataTransferFactory;
     this.metricMessageSender = metricMessageSender;
     messageEnvironment.setupListener(MessageEnvironment.EXECUTOR_MESSAGE_LISTENER_ID, new ExecutorMessageReceiver());
+    LOG.info("Executor [{}] capacity is " + executorCapacity, executorId);
   }
 
   public String getExecutorId() {
