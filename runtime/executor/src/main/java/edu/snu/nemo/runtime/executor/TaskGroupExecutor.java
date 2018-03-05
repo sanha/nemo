@@ -483,26 +483,21 @@ public final class TaskGroupExecutor {
     long boundedSrcReadEndTime = 0;
     long inputReadStartTime = 0;
     long inputReadEndTime = 0;
-
     if (isExecutionRequested) {
       throw new RuntimeException("TaskGroup {" + taskGroupId + "} execution called again!");
     } else {
       isExecutionRequested = true;
     }
-
     taskGroupStateManager.onTaskGroupStateChanged(TaskGroupState.State.EXECUTING, Optional.empty(), Optional.empty());
     LOG.info("{} Executing!", taskGroupId);
-
     // Prepare input data from bounded source.
     boundedSrcReadStartTime = System.currentTimeMillis();
     prepareInputFromSource();
     boundedSrcReadEndTime = System.currentTimeMillis();
     metric.put("BoundedSourceReadTime(ms)", boundedSrcReadEndTime - boundedSrcReadStartTime);
-
     // Prepare input data from other stages.
     inputReadStartTime = System.currentTimeMillis();
     prepareInputFromOtherStages();
-
     // Execute the TaskGroup DAG.
     try {
       // Process data from bounded sources.
@@ -515,12 +510,10 @@ public final class TaskGroupExecutor {
           }
         });
       });
-
       // Process data from other stages.
       final int numPartitions = numIterators - numBoundedSources;
       for (int currPartition = 0; currPartition < numPartitions; currPartition++) {
         //LOG.info("{} Partition {} out of {}", taskGroupId, currPartition, numPartitions);
-
         Pair<String, DataUtil.IteratorWithNumBytes> idToIteratorPair = iteratorQueue.take();
         final String iteratorId = idToIteratorPair.left();
         final DataUtil.IteratorWithNumBytes iterator = idToIteratorPair.right();
@@ -531,7 +524,6 @@ public final class TaskGroupExecutor {
             runTask(task, data);
           }
         });
-
         // Collect metrics on block size if possible.
         /*try {
           serBlockSize += iterator.getNumSerializedBytes();
@@ -551,7 +543,6 @@ public final class TaskGroupExecutor {
       inputReadEndTime = System.currentTimeMillis();
       metric.put("InputReadTime(ms)", inputReadEndTime - inputReadStartTime);
       LOG.info("{} Finished processing src data!", taskGroupId);
-
       // Process intra-TaskGroup data.
       // Intra-TaskGroup data comes from pipes of this TaskGroup's Tasks.
       initializePipeToDstTasksMap();
@@ -560,13 +551,11 @@ public final class TaskGroupExecutor {
           PipeImpl pipe = taskToOutputPipeMap.values().stream()
               .filter(p -> p.getId() == pipeId)
               .findFirst().get();
-
           // Get the task that has this pipe as its output pipe
           Task pipeOwnerTask = taskToOutputPipeMap.entrySet().stream()
               .filter(entry -> entry.getValue().getId() == pipeId)
               .findAny().get().getKey();
           //LOG.info("{} pipeOwnerTask {}", taskGroupId, getPhysicalTaskId(pipeOwnerTask.getId()));
-
           // Before consuming the output of pipeOwnerTask as input,
           // close transform if it is OperatorTransform.
           closeTransform(pipeOwnerTask);
@@ -584,7 +573,6 @@ public final class TaskGroupExecutor {
               }
             }
           }
-
           // Write the whole iterable and close the OutputWriters.
           if (hasOutputWriter(pipeOwnerTask)) {
             // If pipe isn't empty(if closeTransform produced some output),
@@ -613,7 +601,6 @@ public final class TaskGroupExecutor {
           taskGroupId, e.toString());
       throw new RuntimeException(e);
     }
-
     // Put TaskGroup-unit metrics.
     //final boolean available = serBlockSize >= 0;
     //putReadBytesMetric(available, serBlockSize, encodedBlockSize, metric);
