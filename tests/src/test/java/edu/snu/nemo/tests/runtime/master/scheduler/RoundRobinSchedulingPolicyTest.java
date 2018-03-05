@@ -205,7 +205,7 @@ public final class RoundRobinSchedulingPolicyTest {
       final String taskGroupId = RuntimeIdGenerator.generateTaskGroupId(taskGroupIdx, stageId);
       scheduledTaskGroups.add(
           new ScheduledTaskGroup("TestPlan", serializedTaskGroupDag, taskGroupId, Collections.emptyList(),
-              Collections.emptyList(), MAGIC_SCHEDULE_ATTEMPT_INDEX, containerType, Collections.emptyMap()));
+              Collections.emptyList(), MAGIC_SCHEDULE_ATTEMPT_INDEX, containerType, Collections.emptyMap(), false));
     }
     return scheduledTaskGroups;
   }
