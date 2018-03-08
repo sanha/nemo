@@ -18,6 +18,7 @@ package edu.snu.nemo.examples.beam;
 import edu.snu.nemo.client.JobLauncher;
 import edu.snu.nemo.common.test.ArgBuilder;
 import edu.snu.nemo.compiler.optimizer.policy.DefaultPolicy;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

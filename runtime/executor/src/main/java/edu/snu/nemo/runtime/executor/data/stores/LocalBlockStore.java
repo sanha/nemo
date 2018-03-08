@@ -62,6 +62,7 @@ public abstract class LocalBlockStore extends AbstractBlockStore {
       }
       block.write(key, element);
     } catch (final IOException e) {
+      e.printStackTrace();
       throw new BlockWriteException(new Throwable("Failed to store partitions to this block."));
     }
   }

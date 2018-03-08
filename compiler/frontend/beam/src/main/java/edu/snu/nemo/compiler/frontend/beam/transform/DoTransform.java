@@ -33,7 +33,8 @@ import org.apache.beam.sdk.values.TupleTag;
 import org.joda.time.Instant;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * DoFn transform implementation.
@@ -46,6 +47,10 @@ public final class DoTransform<I, O> implements Transform<I, O> {
   private final String serializedOptions;
   private Map<PCollectionView, Object> sideInputs;
   private OutputCollector<O> outputCollector;
+  private StartBundleContext startBundleContext;
+  private FinishBundleContext finishBundleContext;
+  private ProcessContext processContext;
+  private DoFnInvoker invoker;
 
   /**
    * DoTransform Constructor.
@@ -63,33 +68,36 @@ public final class DoTransform<I, O> implements Transform<I, O> {
   }
 
   @Override
-  public void prepare(final Context context, final OutputCollector<O> oc) {
-    this.outputCollector = oc;
+  public void prepare(final Context context, final OutputCollector<O> p) {
+    this.outputCollector = p;
     this.sideInputs = new HashMap<>();
     context.getSideInputs().forEach((k, v) -> this.sideInputs.put(((CreateViewTransform) k).getTag(), v));
+    this.startBundleContext = new StartBundleContext(doFn, serializedOptions);
+    this.finishBundleContext = new FinishBundleContext(doFn, outputCollector, serializedOptions);
+    this.processContext = new ProcessContext(doFn, outputCollector, sideInputs, serializedOptions);
+    this.invoker = DoFnInvokers.invokerFor(doFn);
   }
 
   @Override
-  public void onData(final Iterator<I> elements, final String srcVertexId) {
-    final StartBundleContext startBundleContext = new StartBundleContext(doFn, serializedOptions);
-    final FinishBundleContext finishBundleContext = new FinishBundleContext(doFn, outputCollector, serializedOptions);
-    final ProcessContext processContext = new ProcessContext(doFn, outputCollector, sideInputs, serializedOptions);
-    final DoFnInvoker invoker = DoFnInvokers.invokerFor(doFn);
+  public void onData(final Object data) {
     invoker.invokeSetup();
     invoker.invokeStartBundle(startBundleContext);
-    elements.forEachRemaining(element -> { // No need to check for input index, since it is always 0 for DoTransform
-      processContext.setElement(element);
+    if (data instanceof Iterable) {
+      ((Iterable) data).forEach(element -> {
+        processContext.setElement(element);
+        invoker.invokeProcessElement(processContext);
+      });
+    } else {
+      processContext.setElement(data);
       invoker.invokeProcessElement(processContext);
-    });
+    }
     invoker.invokeFinishBundle(finishBundleContext);
     invoker.invokeTeardown();
   }
 
   @Override
   public void close() {
-    // do nothing
   }
-
 
   @Override
   public String toString() {
@@ -142,7 +150,7 @@ public final class DoTransform<I, O> implements Transform<I, O> {
     /**
      * Constructor.
      * @param fn DoFn.
-     * @param outputCollector output collector of the DoTransform.
+     * @param outputCollector outputCollector of the DoTransform.
      * @param serializedOptions serialized options of the DoTransform.
      */
     FinishBundleContext(final DoFn<I, O> fn,

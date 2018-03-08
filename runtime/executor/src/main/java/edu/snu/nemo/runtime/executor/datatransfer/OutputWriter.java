@@ -40,6 +40,7 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
   private Optional<Long> writtenBytes;
   private final BlockManagerWorker blockManagerWorker;
   private final Partitioner partitioner;
+  private final boolean writable;
 
   /**
    * Constructor.
@@ -87,23 +88,18 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
             new Throwable("Partitioner " + partitionerPropertyValue + " is not supported."));
     }
     blockManagerWorker.createBlock(blockId, blockStoreValue);
-  }
 
-  /**
-   * Writes output data depending on the communication pattern of the edge.
-   *
-   * @param dataToWrite An iterable for the elements to be written.
-   */
-  public void write(final Iterable dataToWrite) {
     final DuplicateEdgeGroupPropertyValue duplicateDataProperty =
         runtimeEdge.getProperty(ExecutionProperty.Key.DuplicateEdgeGroup);
-    if (duplicateDataProperty == null
+    writable = duplicateDataProperty == null
         || duplicateDataProperty.getRepresentativeEdgeId().equals(runtimeEdge.getId())
-        || duplicateDataProperty.getGroupSize() <= 1) {
-      dataToWrite.forEach(element -> {
-        blockManagerWorker.write(blockId, partitioner.partition(element), element, blockStoreValue);
-      });
-    } // If else, does not need to write because the data is duplicated.
+        || duplicateDataProperty.getGroupSize() <= 1;
+  }
+
+  public void writeElement(final Object element) {
+    if (writable) {
+      blockManagerWorker.write(blockId, partitioner.partition(element), element, blockStoreValue);
+    }
   }
 
   /**

@@ -232,7 +232,6 @@ public final class AlternatingLeastSquare {
           }
         }
 
-
         NETLIB_BLAS.dspr("U", numFeatures, 1.0, ArrayUtils.toPrimitive(conf), 1,
             ArrayUtils.toPrimitive(upperTriangularLeftMatrix));
         if (rating != 0.0) {
@@ -270,7 +269,8 @@ public final class AlternatingLeastSquare {
      */
     @FinishBundle
     public void finishBundle(final FinishBundleContext c) {
-      results.forEach(r -> c.output(r, null, null));
+      KV<Integer, List<Double>> resultElement = results.remove(0);
+      c.output(resultElement, null, null);
     }
   }
 
