@@ -13,29 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.nemo.compiler.frontend.spark.core.java;
+package edu.snu.nemo.compiler.frontend.spark.core.rdd;
 
-import edu.snu.nemo.common.dag.DAG;
 import edu.snu.nemo.common.dag.DAGBuilder;
 import edu.snu.nemo.common.ir.edge.IREdge;
 import edu.snu.nemo.common.ir.edge.executionproperty.KeyExtractorProperty;
 import edu.snu.nemo.common.ir.vertex.IRVertex;
-import edu.snu.nemo.common.ir.vertex.LoopVertex;
 import edu.snu.nemo.common.ir.vertex.OperatorVertex;
 import edu.snu.nemo.compiler.frontend.spark.SparkKeyExtractor;
 import edu.snu.nemo.compiler.frontend.spark.coder.SparkCoder;
-import edu.snu.nemo.compiler.frontend.spark.core.RDD;
+import edu.snu.nemo.compiler.frontend.spark.core.SparkFrontendUtils;
 import edu.snu.nemo.compiler.frontend.spark.transform.ReduceByKeyTransform;
-import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.serializer.Serializer;
 import scala.Tuple2;
 import scala.reflect.ClassTag$;
 
 import java.util.List;
-import java.util.Stack;
-
-import static edu.snu.nemo.compiler.frontend.spark.core.java.SparkFrontendUtils.getEdgeCommunicationPattern;
 
 /**
  * Java RDD for pairs.
@@ -43,35 +36,17 @@ import static edu.snu.nemo.compiler.frontend.spark.core.java.SparkFrontendUtils.
  * @param <V> value type.
  */
 public final class JavaPairRDD<K, V> extends org.apache.spark.api.java.JavaPairRDD<K, V> {
-  private final SparkContext sparkContext;
-  private final Stack<LoopVertex> loopVertexStack;
-  private final DAG<IRVertex, IREdge> dag;
-  private final IRVertex lastVertex;
-  private final Serializer serializer;
+  private final RDD<Tuple2<K, V>> rdd;
 
   /**
    * Constructor.
-   * @param sparkContext spark context containing configurations.
-   * @param dag the current DAG.
-   * @param lastVertex last vertex added to the builder.
+   *
+   * @param rdd the rdd to wrap.
    */
-  JavaPairRDD(final SparkContext sparkContext, final DAG<IRVertex, IREdge> dag, final IRVertex lastVertex) {
-    // TODO #366: resolve while implementing scala RDD.
-    super(RDD.<Tuple2<K, V>>of(sparkContext),
-        ClassTag$.MODULE$.apply((Class<K>) Object.class), ClassTag$.MODULE$.apply((Class<V>) Object.class));
+  private JavaPairRDD(final RDD<Tuple2<K, V>> rdd) {
+    super(rdd, ClassTag$.MODULE$.apply((Class<K>) Object.class), ClassTag$.MODULE$.apply((Class<V>) Object.class));
 
-    this.loopVertexStack = new Stack<>();
-    this.sparkContext = sparkContext;
-    this.dag = dag;
-    this.lastVertex = lastVertex;
-    this.serializer = SparkFrontendUtils.deriveSerializerFrom(sparkContext);
-  }
-
-  /**
-   * @return the spark context.
-   */
-  public SparkContext getSparkContext() {
-    return sparkContext;
+    this.rdd = rdd;
   }
 
   /////////////// TRANSFORMATIONS ///////////////
@@ -83,7 +58,7 @@ public final class JavaPairRDD<K, V> extends org.apache.spark.api.java.JavaPairR
     final IRVertex reduceByKeyVertex = new OperatorVertex(new ReduceByKeyTransform<K, V>(func));
     builder.addVertex(reduceByKeyVertex, loopVertexStack);
 
-    final IREdge newEdge = new IREdge(getEdgeCommunicationPattern(lastVertex, reduceByKeyVertex),
+    final IREdge newEdge = new IREdge(SparkFrontendUtils.getEdgeCommunicationPattern(lastVertex, reduceByKeyVertex),
         lastVertex, reduceByKeyVertex, new SparkCoder(serializer));
     newEdge.setProperty(KeyExtractorProperty.of(new SparkKeyExtractor()));
     builder.connectVertices(newEdge);
@@ -95,7 +70,7 @@ public final class JavaPairRDD<K, V> extends org.apache.spark.api.java.JavaPairR
 
   @Override
   public List<Tuple2<K, V>> collect() {
-    return SparkFrontendUtils.collect(dag, loopVertexStack, lastVertex, serializer);
+    return rdd.collectToList();
   }
 
   //TODO#776: support unimplemented RDD transformation/actions.

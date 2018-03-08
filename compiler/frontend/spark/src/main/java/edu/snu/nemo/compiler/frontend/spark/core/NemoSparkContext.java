@@ -13,34 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.nemo.compiler.frontend.spark.core.java;
+package edu.snu.nemo.compiler.frontend.spark.core;
 
+import edu.snu.nemo.compiler.frontend.spark.core.rdd.RDD;
 import org.apache.spark.SparkContext;
 
 import java.util.List;
 
 /**
- * Spark context wrapper for Java.
+ * Spark context wrapper for in Nemo.
  */
-public final class JavaSparkContext {
-  private final SparkContext sparkContext;
+public final class NemoSparkContext extends org.apache.spark.SparkContext {
+  private final org.apache.spark.SparkContext sparkContext;
 
   /**
    * Constructor.
+   *
    * @param sparkContext spark context to wrap.
    */
-  public JavaSparkContext(final SparkContext sparkContext) {
+  public NemoSparkContext(final SparkContext sparkContext) {
     this.sparkContext = sparkContext;
   }
 
   /**
    * Initiate a JavaRDD with the number of parallelism.
-   * @param l input data as list.
+   *
+   * @param l      input data as list.
    * @param slices number of slices (parallelism).
-   * @param <T> type of the initial element.
+   * @param <T>    type of the initial element.
    * @return the newly initiated JavaRDD.
    */
-  public <T> JavaRDD<T> parallelize(final List<T> l, final int slices) {
-    return JavaRDD.of(this.sparkContext, l, slices);
+  public <T> RDD<T> parallelize(final List<T> l, final int slices) {
+    return RDD.of(this.sparkContext, l, slices);
   }
 }
