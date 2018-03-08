@@ -21,7 +21,7 @@ import edu.snu.nemo.runtime.common.comm.ControlMessage;
 import edu.snu.nemo.runtime.common.message.MessageSender;
 import edu.snu.nemo.runtime.common.plan.physical.ScheduledTaskGroup;
 import edu.snu.nemo.runtime.master.JobStateManager;
-import edu.snu.nemo.runtime.master.resource.ExecutorRegistry;
+import edu.snu.nemo.runtime.master.scheduler.ExecutorRegistry;
 import edu.snu.nemo.runtime.master.resource.ExecutorRepresenter;
 import edu.snu.nemo.runtime.master.resource.ResourceSpecification;
 import edu.snu.nemo.runtime.master.scheduler.RoundRobinSchedulingPolicy;
@@ -53,7 +53,7 @@ import static org.mockito.Mockito.*;
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(JobStateManager.class)
 public final class RoundRobinSchedulingPolicyTest {
-  private static final int TIMEOUT_MS = 1000;
+  private static final int TIMEOUT_MS = 500;
 
   private SchedulingPolicy schedulingPolicy;
   private ExecutorRegistry executorRegistry;
@@ -86,20 +86,14 @@ public final class RoundRobinSchedulingPolicyTest {
     final ExecutorRepresenter b2 = storageSpecExecutorRepresenterGenerator.apply("b2");
     final ExecutorRepresenter b1 = storageSpecExecutorRepresenterGenerator.apply("b1");
 
-    executorRegistry.registerRepresenter(a1);
-    executorRegistry.registerRepresenter(a2);
-    executorRegistry.registerRepresenter(a3);
-    executorRegistry.registerRepresenter(b1);
-    executorRegistry.registerRepresenter(b2);
-
     // Add compute nodes
-    schedulingPolicy.onExecutorAdded(a3.getExecutorId());
-    schedulingPolicy.onExecutorAdded(a2.getExecutorId());
-    schedulingPolicy.onExecutorAdded(a1.getExecutorId());
+    schedulingPolicy.onExecutorAdded(a3);
+    schedulingPolicy.onExecutorAdded(a2);
+    schedulingPolicy.onExecutorAdded(a1);
 
     // Add storage nodes
-    schedulingPolicy.onExecutorAdded(b2.getExecutorId());
-    schedulingPolicy.onExecutorAdded(b1.getExecutorId());
+    schedulingPolicy.onExecutorAdded(b2);
+    schedulingPolicy.onExecutorAdded(b1);
   }
 
   @Test
@@ -174,12 +168,10 @@ public final class RoundRobinSchedulingPolicyTest {
     b2 = schedulingPolicy.scheduleTaskGroup(scheduledTaskGroupsB.get(2), jobStateManager);
     assertTrue(b2);
 
-    executorRegistry.setRepresenterAsFailed("b1");
     Set<String> executingTaskGroups = schedulingPolicy.onExecutorRemoved("b1");
     assertEquals(1, executingTaskGroups.size());
     assertEquals(scheduledTaskGroupsB.get(2).getTaskGroupId(), executingTaskGroups.iterator().next());
 
-    executorRegistry.setRepresenterAsFailed("a1");
     executingTaskGroups = schedulingPolicy.onExecutorRemoved("a1");
     assertEquals(1, executingTaskGroups.size());
     assertEquals(scheduledTaskGroupsA.get(3).getTaskGroupId(), executingTaskGroups.iterator().next());

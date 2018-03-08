@@ -29,7 +29,7 @@ import edu.snu.nemo.common.ir.vertex.transform.Transform;
 import edu.snu.nemo.compiler.optimizer.CompiletimeOptimizer;
 import edu.snu.nemo.compiler.optimizer.examples.EmptyComponents;
 import edu.snu.nemo.conf.JobConf;
-import edu.snu.nemo.runtime.master.resource.ExecutorRegistry;
+import edu.snu.nemo.runtime.master.scheduler.ExecutorRegistry;
 import edu.snu.nemo.tests.runtime.RuntimeTestUtil;
 import edu.snu.nemo.runtime.common.comm.ControlMessage;
 import edu.snu.nemo.runtime.common.message.MessageSender;
@@ -96,7 +96,6 @@ public final class FaultToleranceTest {
 
   @Before
   public void setUp() throws Exception {
-    RuntimeTestUtil.initialize();
     irDAGBuilder = new DAGBuilder<>();
 
     metricMessageHandler = mock(MetricMessageHandler.class);
@@ -126,8 +125,7 @@ public final class FaultToleranceTest {
 
     // Add nodes
     for (final ExecutorRepresenter executor : executors) {
-      executorRegistry.registerRepresenter(executor);
-      scheduler.onExecutorAdded(executor.getExecutorId());
+      scheduler.onExecutorAdded(executor);
     }
   }
 
@@ -220,7 +218,6 @@ public final class FaultToleranceTest {
         RuntimeTestUtil.mockSchedulerRunner(pendingTaskGroupQueue, schedulingPolicy, jobStateManager, false);
 
         // Due to round robin scheduling, "a2" is assured to have a running TaskGroup.
-        executorRegistry.setRepresenterAsFailed("a2");
         scheduler.onExecutorRemoved("a2");
 
         while (jobStateManager.getStageState(stage.getId()).getStateMachine().getCurrentState() != EXECUTING) {
@@ -243,7 +240,6 @@ public final class FaultToleranceTest {
           // When a TaskGroup fails while the siblings are still in the queue,
           if (first) {
             // Due to round robin scheduling, "a3" is assured to have a running TaskGroup.
-            executorRegistry.setRepresenterAsFailed("a3");
             scheduler.onExecutorRemoved("a3");
             first = false;
           } else {
@@ -255,8 +251,6 @@ public final class FaultToleranceTest {
         }
       }
     }
-
-    RuntimeTestUtil.cleanup();
   }
 
   /**
@@ -317,8 +311,6 @@ public final class FaultToleranceTest {
         });
       }
     }
-
-    RuntimeTestUtil.cleanup();
   }
 
   /**
@@ -378,8 +370,6 @@ public final class FaultToleranceTest {
         });
       }
     }
-
-    RuntimeTestUtil.cleanup();
   }
 
   /**
@@ -409,7 +399,6 @@ public final class FaultToleranceTest {
         new JobStateManager(plan, blockManagerMaster, metricMessageHandler, MAX_SCHEDULE_ATTEMPT);
 
     scheduler.scheduleJob(plan, jobStateManager);
-    executorRegistry.setRepresenterAsFailed("a2");
     scheduler.onExecutorRemoved("a2");
 
     final List<PhysicalStage> dagOf4Stages = plan.getStageDAG().getTopologicalSort();
@@ -429,7 +418,5 @@ public final class FaultToleranceTest {
       }
     }
     assertTrue(jobStateManager.checkJobTermination());
-
-    RuntimeTestUtil.cleanup();
   }
 }
