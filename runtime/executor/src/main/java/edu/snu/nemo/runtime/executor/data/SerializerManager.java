@@ -15,6 +15,7 @@
  */
 package edu.snu.nemo.runtime.executor.data;
 
+import edu.snu.nemo.common.coder.BytesCoder;
 import edu.snu.nemo.runtime.executor.data.streamchainer.CompressionStreamChainer;
 import edu.snu.nemo.runtime.executor.data.streamchainer.StreamChainer;
 import edu.snu.nemo.common.coder.Coder;
@@ -37,6 +38,8 @@ import java.util.concurrent.ConcurrentMap;
  */
 public final class SerializerManager {
   private static final Logger LOG = LoggerFactory.getLogger(SerializerManager.class.getName());
+  private static final Serializer<byte[]> AS_BYTES_SERIALIZER =
+      new Serializer<>(new BytesCoder(), Collections.emptyList());
   private final ConcurrentMap<String, Serializer> runtimeEdgeIdToSerializer = new ConcurrentHashMap<>();
 
   /**
@@ -85,5 +88,12 @@ public final class SerializerManager {
       throw new RuntimeException("No serializer is registered for " + runtimeEdgeId);
     }
     return serializer;
+  }
+
+  /**
+   * @return a serializer which just converts between ByteStream and array of bytes.
+   */
+  public static Serializer<byte[]> getAsBytesSerializer() {
+    return AS_BYTES_SERIALIZER;
   }
 }

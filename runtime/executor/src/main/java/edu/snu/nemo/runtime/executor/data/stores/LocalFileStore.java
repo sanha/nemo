@@ -52,16 +52,21 @@ public final class LocalFileStore extends LocalBlockStore implements FileStore {
 
   /**
    * Creates a new block.
+   * If write (or read) as bytes is enabled, data written to (read from) the block does not (de)serialized.
    *
-   * @param blockId the ID of the block to create.
+   * @param blockId      the ID of the block to create.
+   * @param readAsBytes  whether read data as arrays of bytes or not.
+   * @param writeAsBytes whether write data as arrays of bytes or not.
    * @see BlockStore#createBlock(String)
    */
   @Override
-  public void createBlock(final String blockId) {
+  public void createBlock(final String blockId,
+                          final boolean readAsBytes,
+                          final boolean writeAsBytes) {
     removeBlock(blockId);
 
     final Serializer serializer = getSerializerFromWorker(blockId);
-    final LocalFileMetadata metadata = new LocalFileMetadata();
+    final LocalFileMetadata metadata = new LocalFileMetadata(readAsBytes, writeAsBytes);
 
     final FileBlock block =
         new FileBlock(serializer, DataUtil.blockIdToFilePath(blockId, fileDirectory), metadata);

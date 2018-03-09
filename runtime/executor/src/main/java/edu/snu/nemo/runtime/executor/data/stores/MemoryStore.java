@@ -39,12 +39,14 @@ public final class MemoryStore extends LocalBlockStore {
   }
 
   /**
-   * @see BlockStore#createBlock(String)
+   * @see BlockStore#createBlock(String, boolean, boolean).
    */
   @Override
-  public void createBlock(final String blockId) {
+  public void createBlock(final String blockId,
+                          final boolean readAsBytes,
+                          final boolean writeAsBytes) {
     final Serializer serializer = getSerializerFromWorker(blockId);
-    getBlockMap().put(blockId, new NonSerializedMemoryBlock(serializer));
+    getBlockMap().put(blockId, new NonSerializedMemoryBlock(serializer, readAsBytes, writeAsBytes));
   }
 
   /**

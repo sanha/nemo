@@ -37,17 +37,26 @@ public final class NonSerializedMemoryBlock<K extends Serializable> implements B
 
   private final List<NonSerializedPartition<K>> nonSerializedPartitions;
   private final Serializer serializer;
+  private final boolean readAsBytes;
+  private final boolean writeAsBytes;
   private volatile boolean committed;
 
   /**
    * Constructor.
+   * If write (or read) as bytes is enabled, data written to (read from) this block does not (de)serialized.
    *
-   * @param serializer the {@link Serializer}.
+   * @param serializer   the {@link Serializer}.
+   * @param readAsBytes  whether read data from this block as arrays of bytes or not.
+   * @param writeAsBytes whether write data to this block as arrays of bytes or not.
    */
-  public NonSerializedMemoryBlock(final Serializer serializer) {
+  public NonSerializedMemoryBlock(final Serializer serializer,
+                                  final boolean readAsBytes,
+                                  final boolean writeAsBytes) {
     this.nonSerializedPartitions = new ArrayList<>();
     this.serializer = serializer;
     this.committed = false;
+    this.readAsBytes = readAsBytes;
+    this.writeAsBytes = writeAsBytes;
   }
 
   /**

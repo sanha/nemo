@@ -35,12 +35,23 @@ public abstract class AbstractBlockStore implements BlockStore {
   }
 
   /**
+   * Creates a new block.
+   *
+   * @param blockId the ID of the block to create.
+   * @see BlockStore#createBlock(String)
+   */
+  @Override
+  public void createBlock(final String blockId) {
+    createBlock(blockId, false, false);
+  }
+
+  /**
    * Gets data coder for a block from the {@link SerializerManager}.
    *
    * @param blockId the ID of the block to get the coder.
    * @return the coder.
    */
-  public final Serializer getSerializerFromWorker(final String blockId) {
+  protected final Serializer getSerializerFromWorker(final String blockId) {
     final String runtimeEdgeId = RuntimeIdGenerator.getRuntimeEdgeIdFromBlockId(blockId);
     return serializerManager.getSerializer(runtimeEdgeId);
   }

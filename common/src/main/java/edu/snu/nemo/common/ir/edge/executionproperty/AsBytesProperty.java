@@ -42,8 +42,8 @@ public final class AsBytesProperty extends ExecutionProperty<AsBytesProperty.Val
 
   /**
    * Possible values of AsBytes ExecutionProperty.
-   * When an edge is annotated as Write(or Reda)AsBytes,
-   * the writing (or reading) Task writes (or reads) data as arrays of bytes, instead of (de)serialized form.
+   * When an edge is annotated as Write(or Read)AsBytes,
+   * the writing (reading) Task writes (reads) data as arrays of bytes, instead of (de)serialized form.
    */
   public enum Value {
     ReadAsBytes,

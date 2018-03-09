@@ -37,17 +37,26 @@ public final class SerializedMemoryBlock<K extends Serializable> implements Bloc
 
   private final List<SerializedPartition<K>> serializedPartitions;
   private final Serializer serializer;
+  private final boolean readAsBytes;
+  private final boolean writeAsBytes;
   private volatile boolean committed;
 
   /**
    * Constructor.
+   * If write (or read) as bytes is enabled, data written to (read from) this block does not (de)serialized.
    *
-   * @param serializer the {@link Serializer}.
+   * @param serializer   the {@link Serializer}.
+   * @param readAsBytes  whether read data from this block as arrays of bytes or not.
+   * @param writeAsBytes whether write data to this block as arrays of bytes or not.
    */
-  public SerializedMemoryBlock(final Serializer serializer) {
+  public SerializedMemoryBlock(final Serializer serializer,
+                               final boolean readAsBytes,
+                               final boolean writeAsBytes) {
+    this.serializedPartitions = new ArrayList<>();
     this.serializer = serializer;
-    serializedPartitions = new ArrayList<>();
-    committed = false;
+    this.committed = false;
+    this.readAsBytes = readAsBytes;
+    this.writeAsBytes = writeAsBytes;
   }
 
   /**

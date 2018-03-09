@@ -42,6 +42,23 @@ public interface BlockStore {
   void createBlock(String blockId) throws BlockWriteException;
 
   /**
+   * Creates a new block.
+   * A stale data created by previous failed task should be handled during the creation of new block.
+   * If write (or read) as bytes is enabled, data written to (read from) the block does not (de)serialized.
+   *
+   * @param blockId      the ID of the block to create.
+   * @param readAsBytes  whether read data as arrays of bytes or not.
+   * @param writeAsBytes whether write data as arrays of bytes or not.
+   * @throws BlockWriteException for any error occurred while trying to create a block.
+   *         (This exception will be thrown to the scheduler
+   *          through {@link edu.snu.nemo.runtime.executor.Executor} and
+   *          have to be handled by the scheduler with fault tolerance mechanism.)
+   */
+  void createBlock(String blockId,
+                   boolean readAsBytes,
+                   boolean writeAsBytes) throws BlockWriteException;
+
+  /**
    * Saves an iterable of {@link NonSerializedPartition}s to a block.
    * If the block exists already, appends the data to it.
    * Invariant: This method may not support concurrent write for a single block.

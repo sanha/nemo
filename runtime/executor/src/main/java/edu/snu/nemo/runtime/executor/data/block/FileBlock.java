@@ -38,10 +38,11 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
 
   /**
    * Constructor.
+   * If write (or read) as bytes is enabled, data written to (read from) the block does not (de)serialized.
    *
-   * @param serializer    the {@link Serializer}.
-   * @param filePath the path of the file that this block will be stored.
-   * @param metadata the metadata for this block.
+   * @param serializer the {@link Serializer}.
+   * @param filePath   the path of the file that this block will be stored.
+   * @param metadata   the metadata for this block.\
    */
   public FileBlock(final Serializer serializer,
                    final String filePath,
@@ -55,7 +56,7 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
    * Writes the serialized data of this block having a specific key value as a partition to the file
    * where this block resides.
    * Invariant: This method does not support concurrent write for a single block.
-   *            Only one thread have to write at once.
+   * Only one thread have to write at once.
    *
    * @param serializedPartitions the iterable of the serialized partitions to write.
    * @throws IOException if fail to write.
@@ -80,7 +81,8 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
    */
   @Override
   public Optional<List<Long>> putPartitions(final Iterable<NonSerializedPartition<K>> partitions) throws IOException {
-    final Iterable<SerializedPartition<K>> convertedPartitions =
+    final Iterable<SerializedPartition<K>> convertedPartitions = metadata.isWriteAsBytes() ?
+        DataUtil.convertToSerPartitions(SerializerManager.getAsBytesSerializer(), partitions) :
         DataUtil.convertToSerPartitions(serializer, partitions);
 
     return Optional.of(putSerializedPartitions(convertedPartitions));
@@ -114,6 +116,8 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
   @Override
   public Iterable<NonSerializedPartition<K>> getPartitions(final KeyRange keyRange) throws IOException {
     // Deserialize the data
+    final Serializer serializerToUse = metadata.isReadAsBytes() ?
+        SerializerManager.getAsBytesSerializer() : serializer;
     final List<NonSerializedPartition<K>> deserializedPartitions = new ArrayList<>();
     try (final FileInputStream fileStream = new FileInputStream(filePath)) {
       for (final PartitionMetadata<K> partitionMetadata : metadata.getPartitionMetadataIterable()) {
@@ -129,7 +133,7 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
               new LimitedInputStream(fileStream, partitionMetadata.getPartitionSize());
           final NonSerializedPartition<K> deserializePartition =
               DataUtil.deserializePartition(
-                  partitionMetadata.getElementsTotal(), serializer, key, limitedInputStream);
+                  partitionMetadata.getElementsTotal(), serializerToUse, key, limitedInputStream);
           deserializedPartitions.add(deserializePartition);
           // rearrange file pointer
           final long toSkip = partitionMetadata.getPartitionSize() - availableBefore + fileStream.available();

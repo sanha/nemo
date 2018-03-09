@@ -30,6 +30,7 @@ public final class SerializedMemoryStore extends LocalBlockStore {
 
   /**
    * Constructor.
+   *
    * @param serializerManager the serializer manager.
    */
   @Inject
@@ -38,12 +39,14 @@ public final class SerializedMemoryStore extends LocalBlockStore {
   }
 
   /**
-   * @see BlockStore#createBlock(String)
+   * @see BlockStore#createBlock(String, boolean, boolean).
    */
   @Override
-  public void createBlock(final String blockId) {
+  public void createBlock(final String blockId,
+                          final boolean readAsBytes,
+                          final boolean writeAsBytes) {
     final Serializer serializer = getSerializerFromWorker(blockId);
-    getBlockMap().put(blockId, new SerializedMemoryBlock(serializer));
+    getBlockMap().put(blockId, new SerializedMemoryBlock(serializer, readAsBytes, writeAsBytes));
   }
 
   /**
