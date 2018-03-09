@@ -15,6 +15,7 @@
  */
 package edu.snu.nemo.compiler.optimizer.pass.compiletime.composite;
 
+import edu.snu.nemo.compiler.optimizer.pass.compiletime.annotating.SailfishEdgeAsBytesPass;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.annotating.SailfishEdgeDataFlowModelPass;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.annotating.SailfishEdgeDataStorePass;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.annotating.SailfishEdgeUsedDataHandlingPass;
@@ -34,6 +35,7 @@ public final class SailfishPass extends CompositePass {
         new SailfishRelayReshapingPass(),
         new SailfishEdgeDataFlowModelPass(),
         new SailfishEdgeDataStorePass(),
+        new SailfishEdgeAsBytesPass(),
         new SailfishEdgeUsedDataHandlingPass()
     ));
   }

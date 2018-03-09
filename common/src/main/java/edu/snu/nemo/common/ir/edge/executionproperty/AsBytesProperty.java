@@ -18,31 +18,36 @@ package edu.snu.nemo.common.ir.edge.executionproperty;
 import edu.snu.nemo.common.ir.executionproperty.ExecutionProperty;
 
 /**
- * Compression ExecutionProperty.
+ * AsBytes ExecutionProperty.
  */
-public final class CompressionProperty extends ExecutionProperty<CompressionProperty.Value> {
+public final class AsBytesProperty extends ExecutionProperty<AsBytesProperty.Value> {
   /**
    * Constructor.
+   *
    * @param value value of the execution property.
    */
-  private CompressionProperty(final Value value) {
-    super(Key.Compression, value);
+  private AsBytesProperty(final Value value) {
+    super(Key.AsBytes, value);
   }
 
   /**
    * Static method exposing the constructor.
+   *
    * @param value value of the new execution property.
    * @return the newly created execution property.
    */
-  public static CompressionProperty of(final Value value) {
-    return new CompressionProperty(value);
+  public static AsBytesProperty of(final Value value) {
+    return new AsBytesProperty(value);
   }
 
   /**
-   * Possible values of Compression ExecutionProperty.
+   * Possible values of AsBytes ExecutionProperty.
+   * When an edge is annotated as Write(or Reda)AsBytes,
+   * the writing (or reading) Task writes (or reads) data as arrays of bytes, instead of (de)serialized form.
    */
   public enum Value {
-    Gzip,
-    LZ4,
+    ReadAsBytes,
+    WriteAsBytes,
+    ReadWriteAsBytes
   }
 }

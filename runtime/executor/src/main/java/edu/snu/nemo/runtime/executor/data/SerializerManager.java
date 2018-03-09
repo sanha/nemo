@@ -63,7 +63,7 @@ public final class SerializerManager {
     final List<StreamChainer> streamChainerList = new ArrayList<>();
 
     // Compression chain
-    CompressionProperty.Compression compressionProperty = propertyMap.get(ExecutionProperty.Key.Compression);
+    CompressionProperty.Value compressionProperty = propertyMap.get(ExecutionProperty.Key.Compression);
     if (compressionProperty != null) {
       LOG.debug("Adding {} compression chain for {}",
           compressionProperty, runtimeEdgeId);
