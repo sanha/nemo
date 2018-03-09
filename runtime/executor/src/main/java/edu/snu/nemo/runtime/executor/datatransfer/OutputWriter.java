@@ -25,7 +25,6 @@ import edu.snu.nemo.runtime.common.plan.RuntimeEdge;
 import edu.snu.nemo.runtime.executor.data.BlockManagerWorker;
 import edu.snu.nemo.runtime.executor.data.partitioner.*;
 
-import javax.annotation.Nullable;
 import java.util.*;
 
 /**
@@ -35,7 +34,7 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
   private final String blockId;
   private final RuntimeEdge<?> runtimeEdge;
   private final String srcVertexId;
-  @Nullable private final IRVertex dstIrVertex;
+  private final IRVertex dstIrVertex;
   private final DataStoreProperty.Value blockStoreValue;
   private Optional<Long> writtenBytes;
   private final BlockManagerWorker blockManagerWorker;
@@ -55,8 +54,7 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
   public OutputWriter(final int hashRangeMultiplier,
                       final int srcTaskIdx,
                       final String srcRuntimeVertexId,
-                      // TODO #717: Remove nullable. (If the destination is not an IR vertex, do not make OutputWriter.)
-                      @Nullable final IRVertex dstIrVertex, // Null if it is not an IR vertex.
+                      final IRVertex dstIrVertex,
                       final RuntimeEdge<?> runtimeEdge,
                       final BlockManagerWorker blockManagerWorker) {
     super(runtimeEdge.getId());
@@ -134,7 +132,7 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
    * @return the parallelism of the destination task.
    */
   private int getDstParallelism() {
-    return dstIrVertex == null || DataCommunicationPatternProperty.Value.OneToOne.equals(
+    return DataCommunicationPatternProperty.Value.OneToOne.equals(
         runtimeEdge.getProperty(ExecutionProperty.Key.DataCommunicationPattern))
         ? 1 : dstIrVertex.getProperty(ExecutionProperty.Key.Parallelism);
   }
