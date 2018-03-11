@@ -43,7 +43,7 @@ public abstract class AbstractBlockStore implements BlockStore {
    * @see BlockStore#createBlock(String).
    */
   @Override
-  public Block createBlock(final String blockId) {
+  public final Block createBlock(final String blockId) {
     return createBlock(blockId, false, false);
   }
 

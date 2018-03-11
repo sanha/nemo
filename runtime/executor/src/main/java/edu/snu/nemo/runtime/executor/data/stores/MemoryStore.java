@@ -49,7 +49,7 @@ public final class MemoryStore extends LocalBlockStore {
                            final boolean readAsBytes,
                            final boolean writeAsBytes) {
     final Serializer serializer = getSerializerFromWorker(blockId);
-    return new NonSerializedMemoryBlock(serializer, readAsBytes, writeAsBytes);
+    return new NonSerializedMemoryBlock(blockId, serializer, readAsBytes, writeAsBytes);
   }
 
   /**

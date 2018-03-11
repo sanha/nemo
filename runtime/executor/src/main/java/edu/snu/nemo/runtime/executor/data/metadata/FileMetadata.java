@@ -127,14 +127,14 @@ public abstract class FileMetadata<K extends Serializable> {
   /**
    * @return whether read data from this file as arrays of bytes or not.
    */
-  public boolean isReadAsBytes() {
+  public final boolean isReadAsBytes() {
     return readAsBytes;
   }
 
   /**
    * @return whether write to this file as arrays of bytes or not.
    */
-  public boolean isWriteAsBytes() {
+  public final boolean isWriteAsBytes() {
     return writeAsBytes;
   }
   /**

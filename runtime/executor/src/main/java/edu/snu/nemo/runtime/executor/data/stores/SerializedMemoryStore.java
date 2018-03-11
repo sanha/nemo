@@ -48,7 +48,7 @@ public final class SerializedMemoryStore extends LocalBlockStore {
                            final boolean readAsBytes,
                            final boolean writeAsBytes) {
     final Serializer serializer = getSerializerFromWorker(blockId);
-    return new SerializedMemoryBlock(serializer, readAsBytes, writeAsBytes);
+    return new SerializedMemoryBlock(blockId, serializer, readAsBytes, writeAsBytes);
   }
 
   /**

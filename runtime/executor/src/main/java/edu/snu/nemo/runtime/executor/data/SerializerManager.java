@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public final class SerializerManager {
   private static final Logger LOG = LoggerFactory.getLogger(SerializerManager.class.getName());
-  private static final Serializer<byte[]> AS_BYTES_SERIALIZER =
+  private static final Serializer<BytesCoder.BytesWrapper> AS_BYTES_SERIALIZER =
       new Serializer<>(new BytesCoder(), Collections.emptyList());
   private final ConcurrentMap<String, Serializer> runtimeEdgeIdToSerializer = new ConcurrentHashMap<>();
 
@@ -93,7 +93,7 @@ public final class SerializerManager {
   /**
    * @return a serializer which just converts between ByteStream and array of bytes.
    */
-  public static Serializer<byte[]> getAsBytesSerializer() {
+  public static Serializer<BytesCoder.BytesWrapper> getAsBytesSerializer() {
     return AS_BYTES_SERIALIZER;
   }
 }

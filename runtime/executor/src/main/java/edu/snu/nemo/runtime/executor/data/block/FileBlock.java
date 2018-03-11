@@ -101,10 +101,12 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
     if (metadata.isCommitted()) {
       throw new BlockWriteException(new Throwable("The partition is already committed!"));
     } else {
+      final Serializer serializerToUse = metadata.isWriteAsBytes()
+          ? SerializerManager.getAsBytesSerializer() : serializer;
       try {
         SerializedPartition<K> partition = nonCommittedPartitionsMap.get(key);
         if (partition == null) {
-          partition = new SerializedPartition<>(key, serializer);
+          partition = new SerializedPartition<>(key, serializerToUse);
           nonCommittedPartitionsMap.put(key, partition);
         }
         partition.write(element);
@@ -127,8 +129,8 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
       throw new BlockWriteException(new Throwable("The partition is already committed!"));
     } else {
       try {
-        final Serializer serializerToUse = metadata.isWriteAsBytes() ?
-            SerializerManager.getAsBytesSerializer() : serializer; // TODO: just use byte[]
+        final Serializer serializerToUse = metadata.isWriteAsBytes()
+            ? SerializerManager.getAsBytesSerializer() : serializer;
         final Iterable<SerializedPartition<K>> convertedPartitions =
             DataUtil.convertToSerPartitions(serializerToUse, partitions);
         writeSerializedPartitions(convertedPartitions);
@@ -173,8 +175,8 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
     } else {
       // Deserialize the data
       final List<NonSerializedPartition<K>> deserializedPartitions = new ArrayList<>();
-      final Serializer serializerToUse = metadata.isReadAsBytes() ?
-          SerializerManager.getAsBytesSerializer() : serializer;
+      final Serializer serializerToUse = metadata.isReadAsBytes()
+          ? SerializerManager.getAsBytesSerializer() : serializer;
       try {
         try (final FileInputStream fileStream = new FileInputStream(filePath)) {
           for (final PartitionMetadata<K> partitionMetadata : metadata.getPartitionMetadataList()) {
@@ -186,11 +188,11 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
               // compression stream. We recommend to wrap with LimitedInputStream once more when
               // reading input from chained compression InputStream.
               // Plus, this stream must be not closed to prevent to close the filtered file partition.
+              final int length = partitionMetadata.getPartitionSize();
               final LimitedInputStream limitedInputStream =
-                  new LimitedInputStream(fileStream, partitionMetadata.getPartitionSize());
+                  new LimitedInputStream(fileStream, length);
               final NonSerializedPartition<K> deserializePartition =
-                  DataUtil.deserializePartition(
-                      partitionMetadata.getElementsTotal(), serializerToUse, key, limitedInputStream); // TODO: byte[]
+                  DataUtil.deserializePartition(length, serializerToUse, key, limitedInputStream);
               deserializedPartitions.add(deserializePartition);
               // rearrange file pointer
               final long toSkip = partitionMetadata.getPartitionSize() - availableBefore + fileStream.available();
