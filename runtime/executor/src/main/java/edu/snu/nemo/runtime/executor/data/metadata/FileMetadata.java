@@ -92,13 +92,13 @@ public abstract class FileMetadata<K extends Serializable> {
   }
 
   /**
-   * Gets a iterable containing the partition metadata of corresponding block.
+   * Gets a list containing the partition metadata of corresponding block.
    *
-   * @return the iterable containing the partition metadata.
+   * @return the list containing the partition metadata.
    * @throws IOException if fail to get the iterable.
    */
-  public final Iterable<PartitionMetadata<K>> getPartitionMetadataIterable() throws IOException {
-    return Collections.unmodifiableCollection(partitionMetadataList);
+  public final List<PartitionMetadata<K>> getPartitionMetadataList() throws IOException {
+    return Collections.unmodifiableList(partitionMetadataList);
   }
 
   /**
@@ -136,5 +136,11 @@ public abstract class FileMetadata<K extends Serializable> {
    */
   public boolean isWriteAsBytes() {
     return writeAsBytes;
+  }
+  /**
+   * @return whether this file is committed or not.
+   */
+  public final boolean isCommitted() {
+    return committed.get();
   }
 }

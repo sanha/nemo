@@ -82,7 +82,7 @@ public final class RemoteFileMetadata<K extends Serializable> extends FileMetada
    */
   @Override
   public synchronized void commitBlock() throws IOException {
-    final Iterable<PartitionMetadata<K>> partitionMetadataItr = getPartitionMetadataIterable();
+    final Iterable<PartitionMetadata<K>> partitionMetadataItr = getPartitionMetadataList();
     try (
         final FileOutputStream metafileOutputStream = new FileOutputStream(metaFilePath, false);
         final DataOutputStream dataOutputStream = new DataOutputStream(metafileOutputStream)
