@@ -23,6 +23,7 @@ import edu.snu.nemo.common.ir.executionproperty.ExecutionProperty;
 import edu.snu.nemo.runtime.common.RuntimeIdGenerator;
 import edu.snu.nemo.runtime.common.plan.RuntimeEdge;
 import edu.snu.nemo.runtime.executor.data.BlockManagerWorker;
+import edu.snu.nemo.runtime.executor.data.block.Block;
 import edu.snu.nemo.runtime.executor.data.partitioner.*;
 
 import java.util.*;
@@ -36,10 +37,11 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
   private final String srcVertexId;
   private final IRVertex dstIrVertex;
   private final DataStoreProperty.Value blockStoreValue;
-  private Optional<Long> writtenBytes;
+  private long writtenBytes;
   private final BlockManagerWorker blockManagerWorker;
   private final Partitioner partitioner;
   private final boolean writable;
+  private final Block blockToWrite;
 
   /**
    * Constructor.
@@ -64,7 +66,6 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
     this.dstIrVertex = dstIrVertex;
     this.blockManagerWorker = blockManagerWorker;
     this.blockStoreValue = runtimeEdge.getProperty(ExecutionProperty.Key.DataStore);
-    this.writtenBytes = Optional.empty();
 
     // Setup partitioner
     final int dstParallelism = getDstParallelism();
@@ -81,11 +82,33 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
       case DataSkewHashPartitioner:
         this.partitioner = new DataSkewHashPartitioner(hashRangeMultiplier, dstParallelism, keyExtractor);
         break;
+      case IncrementPartitioner:
+        this.partitioner = new IncrementPartitioner();
+        break;
       default:
         throw new UnsupportedPartitionerException(
             new Throwable("Partitioner " + partitionerPropertyValue + " is not supported."));
     }
-    blockManagerWorker.createBlock(blockId, blockStoreValue);
+
+    final AsBytesProperty.Value asBytesPropertyValue = runtimeEdge.getProperty(ExecutionProperty.Key.AsBytes);
+    if (asBytesPropertyValue == null) {
+      blockToWrite = blockManagerWorker.createBlock(blockId, blockStoreValue);
+    } else {
+      switch (asBytesPropertyValue) {
+        case ReadAsBytes:
+          blockToWrite = blockManagerWorker.createBlock(blockId, blockStoreValue, true, false);
+          break;
+        case WriteAsBytes:
+          blockToWrite = blockManagerWorker.createBlock(blockId, blockStoreValue, false, true);
+          break;
+        case ReadWriteAsBytes:
+          blockToWrite = blockManagerWorker.createBlock(blockId, blockStoreValue, true, true);
+          break;
+        default:
+          throw new UnsupportedPartitionerException(
+              new Throwable("AsBytes " + asBytesPropertyValue + " is not supported."));
+      }
+    }
 
     final DuplicateEdgeGroupPropertyValue duplicateDataProperty =
         runtimeEdge.getProperty(ExecutionProperty.Key.DuplicateEdgeGroup);
@@ -96,8 +119,8 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
 
   public void writeElement(final Object element) {
     if (writable) {
-      blockManagerWorker.write(blockId, partitioner.partition(element), element, blockStoreValue);
-    }
+      blockToWrite.write(partitioner.partition(element), element);
+    } // If else, does not need to write because the data is duplicated.
   }
 
   /**
@@ -114,16 +137,32 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
 
     final boolean isDataSizeMetricCollectionEdge = MetricCollectionProperty.Value.DataSkewRuntimePass
         .equals(runtimeEdge.getProperty(ExecutionProperty.Key.MetricCollection));
-    this.writtenBytes = blockManagerWorker.commitBlock(
-        blockId, blockStoreValue, isDataSizeMetricCollectionEdge, srcVertexId,
-        getDstParallelism() * multiplier, usedDataHandling);
+    final Optional<Map<Integer, Long>> partitionSizeMap = blockToWrite.commit();
+    // Return the total size of the committed block.
+    if (partitionSizeMap.isPresent()) {
+      long blockSizeTotal = 0;
+      for (final long partitionSize : partitionSizeMap.get().values()) {
+        blockSizeTotal += partitionSize;
+      }
+      this.writtenBytes = blockSizeTotal;
+      blockManagerWorker.writeBlock(blockToWrite, blockStoreValue, isDataSizeMetricCollectionEdge,
+          partitionSizeMap.get(), srcVertexId, getDstParallelism() * multiplier, usedDataHandling);
+    } else {
+      this.writtenBytes = -1; // no written bytes info.
+      blockManagerWorker.writeBlock(blockToWrite, blockStoreValue, isDataSizeMetricCollectionEdge,
+          Collections.emptyMap(), srcVertexId, getDstParallelism() * multiplier, usedDataHandling);
+    }
   }
 
   /**
    * @return the total written bytes.
    */
   public Optional<Long> getWrittenBytes() {
-    return writtenBytes;
+    if (writtenBytes == -1) {
+      return Optional.empty();
+    } else {
+      return Optional.of(writtenBytes);
+    }
   }
 
   /**

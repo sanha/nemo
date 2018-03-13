@@ -86,6 +86,8 @@ final class FrameDecoder extends ByteToMessageDecoder {
    */
   private boolean isLastFrame;
 
+  private long dataFrameLengthTotal = 0;
+
   FrameDecoder(final ContextManager contextManager) {
     this.contextManager = contextManager;
   }
@@ -148,7 +150,7 @@ final class FrameDecoder extends ByteToMessageDecoder {
             ctx.channel().localAddress(), ctx.channel().remoteAddress()));
       }
       if (newSubStreamFlag) {
-        inputContext.onNewStream();
+        inputContext.onNewStream((int) length); // TODO #?: refactor? InputStream#available() return int.
       }
       if (dataBodyBytesToRead == 0) {
         onDataFrameEnd();
