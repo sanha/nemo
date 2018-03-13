@@ -41,8 +41,6 @@ public final class NonSerializedMemoryBlock<K extends Serializable> implements B
   private final List<NonSerializedPartition<K>> nonSerializedPartitions;
   private final Map<K, NonSerializedPartition<K>> nonCommittedPartitionsMap;
   private final Serializer serializer;
-  private final boolean readAsBytes;
-  private final boolean writeAsBytes;
   private volatile boolean committed;
 
   /**
@@ -51,19 +49,13 @@ public final class NonSerializedMemoryBlock<K extends Serializable> implements B
    *
    * @param blockId      the ID of this block.
    * @param serializer   the {@link Serializer}.
-   * @param readAsBytes  whether read data from this block as arrays of bytes or not.
-   * @param writeAsBytes whether write data to this block as arrays of bytes or not.
    */
   public NonSerializedMemoryBlock(final String blockId,
-                                  final Serializer serializer,
-                                  final boolean readAsBytes,
-                                  final boolean writeAsBytes) {
+                                  final Serializer serializer) {
     this.id = blockId;
     this.nonSerializedPartitions = new ArrayList<>();
     this.nonCommittedPartitionsMap = new HashMap<>();
     this.serializer = serializer;
-    this.readAsBytes = readAsBytes;
-    this.writeAsBytes = writeAsBytes;
     this.committed = false;
   }
 

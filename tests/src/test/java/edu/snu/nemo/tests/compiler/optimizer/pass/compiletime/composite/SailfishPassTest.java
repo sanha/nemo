@@ -78,6 +78,8 @@ public class SailfishPassTest {
               edgeFromMerger.getProperty(ExecutionProperty.Key.DataStore));
           assertEquals(AsBytesProperty.Value.WriteAsBytes,
               edgeFromMerger.getProperty(ExecutionProperty.Key.AsBytes));
+          assertEquals(PartitionerProperty.Value.IncrementPartitioner,
+              edgeFromMerger.getProperty(ExecutionProperty.Key.Partitioner));
         });
       } else {
         // Non merger vertex.

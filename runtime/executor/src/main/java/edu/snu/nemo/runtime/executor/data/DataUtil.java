@@ -133,10 +133,11 @@ public final class DataUtil {
     final List<NonSerializedPartition<K>> nonSerializedPartitions = new ArrayList<>();
     for (final SerializedPartition<K> partitionToConvert : partitionsToConvert) {
       final K key = partitionToConvert.getKey();
-      try (final ByteArrayInputStream byteArrayInputStream =
-               new ByteArrayInputStream(partitionToConvert.getData())) {
+      final int lengthToRead = partitionToConvert.getLength();
+      try (final LimitedInputStream limitedInputStream =
+               new LimitedInputStream(new ByteArrayInputStream(partitionToConvert.getData()), lengthToRead)) {
         final NonSerializedPartition<K> deserializePartition = deserializePartition(
-            partitionToConvert.getLength(), serializer, key, byteArrayInputStream);
+            partitionToConvert.getLength(), serializer, key, limitedInputStream);
         nonSerializedPartitions.add(deserializePartition);
       }
     }
@@ -196,6 +197,7 @@ public final class DataUtil {
     private final Iterator<InputStream> inputStreams;
     private final Serializer<T> serializer;
     private final int limit;
+    //private final boolean asBytes;
 
     private volatile CountingInputStream serializedCountingStream = null;
     private volatile CountingInputStream encodedCountingStream = null;
@@ -207,6 +209,7 @@ public final class DataUtil {
 
     /**
      * Construct {@link Iterator} from {@link InputStream} and {@link Coder}.
+     * This constructor will be used when this streams came from external executor.
      *
      * @param inputStreams the streams to read data from.
      * @param serializer   the serializer.
@@ -217,14 +220,16 @@ public final class DataUtil {
       this.serializer = serializer;
       // -1 means no limit.
       this.limit = -1;
+      //this.asBytes = serializer.getCoder() instanceof BytesCoder;
     }
 
     /**
      * Construct {@link Iterator} from {@link InputStream} and {@link Coder}.
+     * This constructor will be used when this streams came from local store.
      *
      * @param inputStreams the streams to read data from.
      * @param serializer   the serializer.
-     * @param limit        the maximum bytes from the {@link InputStream}.
+     * @param limit        the maximum (serialized) bytes from the {@link InputStream}.
      */
     public InputStreamIterator(
         final Iterator<InputStream> inputStreams,
@@ -236,6 +241,7 @@ public final class DataUtil {
       this.inputStreams = inputStreams;
       this.serializer = serializer;
       this.limit = limit;
+      //this.asBytes = false; // It is okay to use
     }
 
     @Override
@@ -246,7 +252,8 @@ public final class DataUtil {
       if (cannotContinueDecoding) {
         return false;
       }
-      if (limit != -1 && limit == numSerializedBytes) {
+      final int currentStreamCount = serializedCountingStream == null ? 0 : (int) serializedCountingStream.getCount();
+      if (limit != -1 && limit == numSerializedBytes + currentStreamCount) {
         cannotContinueDecoding = true;
         return false;
       }

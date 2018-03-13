@@ -43,13 +43,18 @@ public final class MemoryStore extends LocalBlockStore {
 
   /**
    * @see BlockStore#createBlock(String, boolean, boolean).
+   * @throws BlockWriteException if fail to create.
    */
   @Override
   public Block createBlock(final String blockId,
                            final boolean readAsBytes,
-                           final boolean writeAsBytes) {
+                           final boolean writeAsBytes) throws BlockWriteException {
+    if (readAsBytes || writeAsBytes) {
+      throw new BlockWriteException(new Throwable(
+          "Read/WriteAsBytes is not supported in " + MemoryStore.class.getName()));
+    }
     final Serializer serializer = getSerializerFromWorker(blockId);
-    return new NonSerializedMemoryBlock(blockId, serializer, readAsBytes, writeAsBytes);
+    return new NonSerializedMemoryBlock(blockId, serializer);
   }
 
   /**

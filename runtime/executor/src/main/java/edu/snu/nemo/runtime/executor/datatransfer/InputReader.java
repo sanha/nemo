@@ -16,6 +16,8 @@
 package edu.snu.nemo.runtime.executor.datatransfer;
 
 import com.google.common.annotations.VisibleForTesting;
+import edu.snu.nemo.common.exception.UnsupportedPartitionerException;
+import edu.snu.nemo.common.ir.edge.executionproperty.AsBytesProperty;
 import edu.snu.nemo.common.ir.edge.executionproperty.DataCommunicationPatternProperty;
 import edu.snu.nemo.common.ir.edge.executionproperty.DataStoreProperty;
 import edu.snu.nemo.common.ir.edge.executionproperty.DuplicateEdgeGroupPropertyValue;
@@ -46,6 +48,7 @@ import java.util.stream.StreamSupport;
  */
 public final class InputReader extends DataTransfer {
   private final int dstTaskIndex;
+  private final boolean readAsBytes;
   private final BlockManagerWorker blockManagerWorker;
 
   /**
@@ -59,13 +62,33 @@ public final class InputReader extends DataTransfer {
                      // TODO #717: Remove nullable.
                      // (If the source is not an IR vertex, do not make InputReader.)
                      @Nullable final IRVertex srcVertex, // null if the source vertex is not an IR vertex.
-                     final RuntimeEdge runtimeEdge,
+                     final RuntimeEdge<?> runtimeEdge,
                      final BlockManagerWorker blockManagerWorker) {
     super(runtimeEdge.getId());
     this.dstTaskIndex = dstTaskIndex;
     this.srcVertex = srcVertex;
     this.runtimeEdge = runtimeEdge;
     this.blockManagerWorker = blockManagerWorker;
+
+    final AsBytesProperty.Value asBytesPropertyValue = runtimeEdge.getProperty(ExecutionProperty.Key.AsBytes);
+    if (asBytesPropertyValue == null) {
+      this.readAsBytes = false;
+    } else {
+      switch (asBytesPropertyValue) {
+        case ReadAsBytes:
+          this.readAsBytes = true;
+          break;
+        case WriteAsBytes:
+          this.readAsBytes = false;
+          break;
+        case ReadWriteAsBytes:
+          this.readAsBytes = true;
+          break;
+        default:
+          throw new UnsupportedPartitionerException(
+              new Throwable("AsBytes " + asBytesPropertyValue + " is not supported."));
+      }
+    }
   }
 
   /**
@@ -93,7 +116,7 @@ public final class InputReader extends DataTransfer {
 
   private CompletableFuture<DataUtil.IteratorWithNumBytes> readOneToOne() {
     final String blockId = getBlockId(dstTaskIndex);
-    return blockManagerWorker.queryBlock(blockId, getId(),
+    return blockManagerWorker.queryBlock(blockId, getId(), readAsBytes,
         (DataStoreProperty.Value) runtimeEdge.getProperty(ExecutionProperty.Key.DataStore),
         HashRange.all());
   }
@@ -104,7 +127,7 @@ public final class InputReader extends DataTransfer {
     final List<CompletableFuture<DataUtil.IteratorWithNumBytes>> futures = new ArrayList<>();
     for (int srcTaskIdx = 0; srcTaskIdx < numSrcTasks; srcTaskIdx++) {
       final String blockId = getBlockId(srcTaskIdx);
-      futures.add(blockManagerWorker.queryBlock(blockId, getId(),
+      futures.add(blockManagerWorker.queryBlock(blockId, getId(), readAsBytes,
           (DataStoreProperty.Value) runtimeEdge.getProperty(ExecutionProperty.Key.DataStore),
           HashRange.all()));
     }
@@ -131,7 +154,7 @@ public final class InputReader extends DataTransfer {
     for (int srcTaskIdx = 0; srcTaskIdx < numSrcTasks; srcTaskIdx++) {
       final String blockId = getBlockId(srcTaskIdx);
       futures.add(
-          blockManagerWorker.queryBlock(blockId, getId(),
+          blockManagerWorker.queryBlock(blockId, getId(), readAsBytes,
               (DataStoreProperty.Value) runtimeEdge.getProperty(ExecutionProperty.Key.DataStore),
               hashRangeToRead));
     }

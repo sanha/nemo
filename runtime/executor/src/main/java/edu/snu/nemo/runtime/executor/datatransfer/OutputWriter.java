@@ -83,11 +83,33 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
       case DataSkewHashPartitioner:
         this.partitioner = new DataSkewHashPartitioner(hashRangeMultiplier, dstParallelism, keyExtractor);
         break;
+      case IncrementPartitioner:
+        this.partitioner = new IncrementPartitioner();
+        break;
       default:
         throw new UnsupportedPartitionerException(
             new Throwable("Partitioner " + partitionerPropertyValue + " is not supported."));
     }
-    blockToWrite = blockManagerWorker.createBlock(blockId, blockStoreValue);
+
+    final AsBytesProperty.Value asBytesPropertyValue = runtimeEdge.getProperty(ExecutionProperty.Key.AsBytes);
+    if (asBytesPropertyValue == null) {
+      blockToWrite = blockManagerWorker.createBlock(blockId, blockStoreValue);
+    } else {
+      switch (asBytesPropertyValue) {
+        case ReadAsBytes:
+          blockToWrite = blockManagerWorker.createBlock(blockId, blockStoreValue, true, false);
+          break;
+        case WriteAsBytes:
+          blockToWrite = blockManagerWorker.createBlock(blockId, blockStoreValue, false, true);
+          break;
+        case ReadWriteAsBytes:
+          blockToWrite = blockManagerWorker.createBlock(blockId, blockStoreValue, true, true);
+          break;
+        default:
+          throw new UnsupportedPartitionerException(
+              new Throwable("AsBytes " + asBytesPropertyValue + " is not supported."));
+      }
+    }
   }
 
   /**

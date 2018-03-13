@@ -44,6 +44,10 @@ public final class AsBytesProperty extends ExecutionProperty<AsBytesProperty.Val
    * Possible values of AsBytes ExecutionProperty.
    * When an edge is annotated as Write(or Read)AsBytes,
    * the writing (reading) Task writes (reads) data as arrays of bytes, instead of (de)serialized form.
+   * If a data read as bytes, each element will be a serialized bytes of a partition.
+   * Because of this, each element should be written to a partition respectively,
+   * through partitioner like increment partitioner. (During this, the key of each partition can be changed.)
+   * This bytes should be written as bytes also to restore it's contents.
    */
   public enum Value {
     ReadAsBytes,

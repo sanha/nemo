@@ -13,22 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.nemo.compiler.frontend.beam;
+package edu.snu.nemo.runtime.executor.data.partitioner;
 
-import edu.snu.nemo.common.KeyExtractor;
-import org.apache.beam.sdk.values.KV;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Extracts the key from a KV element.
- * For non-KV elements, the elements themselves become the key.
+ * An implementation of {@link Partitioner} which assigns a key per an output data from a source task.
+ * WARNING: This partitioner should be used for very specific case such as AsBytes write.
  */
-public final class BeamKeyExtractor implements KeyExtractor {
+public final class IncrementPartitioner implements Partitioner<Integer> {
+  private final AtomicInteger key;
+
+  /**
+   * Constructor.
+   */
+  public IncrementPartitioner() {
+    this.key = new AtomicInteger();
+  }
+
   @Override
-  public Object extractKey(final Object element) {
-    if (element instanceof KV) {
-      return ((KV) element).getKey();
-    } else {
-      return element;
-    }
+  public Integer partition(final Object element) {
+    return key.getAndIncrement();
   }
 }

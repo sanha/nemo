@@ -25,18 +25,6 @@ import java.util.Optional;
  * Interface for {@link edu.snu.nemo.runtime.executor.data.block.Block} placement.
  */
 public interface BlockStore {
-  /**
-   * Creates a new block.
-   * A stale data created by previous failed task should be handled during the creation of new block.
-   *
-   * @param blockId the ID of the block to create.
-   * @return the created block.
-   * @throws BlockWriteException for any error occurred while trying to create a block.
-   *                             (This exception will be thrown to the scheduler
-   *                             through {@link edu.snu.nemo.runtime.executor.Executor} and
-   *                             have to be handled by the scheduler with fault tolerance mechanism.)
-   */
-  Block createBlock(String blockId) throws BlockWriteException;
 
   /**
    * Creates a new block.

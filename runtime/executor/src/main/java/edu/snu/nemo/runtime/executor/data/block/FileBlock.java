@@ -189,8 +189,7 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
               // reading input from chained compression InputStream.
               // Plus, this stream must be not closed to prevent to close the filtered file partition.
               final int length = partitionMetadata.getPartitionSize();
-              final LimitedInputStream limitedInputStream =
-                  new LimitedInputStream(fileStream, length);
+              final LimitedInputStream limitedInputStream = new LimitedInputStream(fileStream, length);
               final NonSerializedPartition<K> deserializePartition =
                   DataUtil.deserializePartition(length, serializerToUse, key, limitedInputStream);
               deserializedPartitions.add(deserializePartition);

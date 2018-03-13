@@ -15,12 +15,16 @@
  */
 package edu.snu.nemo.common.coder;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 
 /**
  * A {@link Coder} which is used for an array of bytes.
  */
-public final class BytesCoder implements Coder<BytesCoder.BytesWrapper> {
+public final class BytesCoder implements Coder<byte[]> {
+  private static final Logger LOG = LoggerFactory.getLogger(BytesCoder.class.getName());
 
   /**
    * Constructor.
@@ -28,69 +32,46 @@ public final class BytesCoder implements Coder<BytesCoder.BytesWrapper> {
   public BytesCoder() {
   }
 
+  /**
+   * The array of bytes to write has to have the exact length to write.
+   * @see Coder#encode(Object, OutputStream).
+   */
   @Override
-  public void encode(final BytesWrapper value, final OutputStream outStream) throws IOException {
-    try (final DataOutputStream dataOutputStream = new DataOutputStream(outStream)) {
-      dataOutputStream.writeInt(value.getLength()); // Write the size of this byte array.
-      dataOutputStream.writeLong(value.getElementsTotal()); // Write the number of elements in this byte array.
-      dataOutputStream.write(value.getBytes());
-    }
+  public void encode(final byte[] value, final OutputStream outStream) throws IOException {
+    outStream.write(value);
   }
 
   @Override
-  public BytesWrapper decode(final InputStream inStream) throws IOException {
-    // If the inStream is closed well in upper level, it is okay to not close this stream
-    // because the DataInputStream itself will not contain any extra information.
-    // (when we close this stream, the inStream will be closed together.)
-    final DataInputStream dataInputStream = new DataInputStream(inStream);
-    final int bytesToRead = dataInputStream.readInt();
-    final long elementsTotal = dataInputStream.readLong();
-    final byte[] bytes = new byte[bytesToRead]; // Read the size of this byte array.
-    final int readBytes = dataInputStream.read(bytes);
-    if (bytesToRead != readBytes) {
-      throw new IOException("Have to read " + bytesToRead + " but read only " + readBytes + " bytes.");
+  public byte[] decode(final InputStream inStream) throws IOException {
+    //LOG.warn("InputStream#available() might not exactly represent the number of bytes to read. "
+    //    + "Please use decode(int, InputStream) method with explicit length.");
+    //return this.decode(inStream.available(), inStream);
+    final int lengthToRead = inStream.available();
+    final byte[] bytes = new byte[lengthToRead]; // Read the size of this byte array.
+    final int readBytes = inStream.read(bytes);
+    if (lengthToRead != readBytes) {
+      throw new IOException("Have to read " + lengthToRead + " but read only " + readBytes + " bytes.");
     }
-    return new BytesWrapper(elementsTotal, bytes);
+    return bytes;
   }
 
   /**
-   * A wrapper class for an array of bytes.
+   * Decodes the a value from the given input stream.
+   * It have to be able to decode the given stream consequently by calling this method repeatedly.
+   * Because there are many elements in the input stream, the stream should not be closed.
+   *
+   * @param lengthToRead the length to read.
+   * @param inStream     the stream from which bytes are read.
+   * @return the decoded bytes.
+   * @throws IOException if fail to decode
    */
-  public final class BytesWrapper {
-    private long elementsTotal;
-    private byte[] bytes;
-
-    /**
-     * Constructor.
-     *
-     * @param elementsTotal the total number of elements in this array of bytes.
-     * @param bytes         the array of bytes.
-     */
-    public BytesWrapper(final long elementsTotal,
-                        final byte[] bytes) {
-      this.elementsTotal = elementsTotal;
-      this.bytes = bytes;
+  /*public byte[] decode(final int lengthToRead,
+                       final InputStream inStream) throws IOException {
+    final byte[] bytes = new byte[lengthToRead]; // Read the size of this byte array.
+    final int readBytes = inStream.read(bytes);
+    if (lengthToRead != readBytes) {
+      throw new IOException("Have to read " + lengthToRead + " but read only " + readBytes + " bytes.");
     }
-
-    /**
-     * @return the length of the byte array.
-     */
-    public int getLength() {
-      return bytes.length;
-    }
-
-    /**
-     * @return the total number of elements in the byte array.
-     */
-    public long getElementsTotal() {
-      return elementsTotal;
-    }
-
-    /**
-     * @return the wrapped byte array.
-     */
-    public byte[] getBytes() {
-      return bytes;
-    }
-  }
+    return bytes;
+  }*/
 }

@@ -39,6 +39,7 @@ import edu.snu.nemo.runtime.executor.data.partition.NonSerializedPartition;
 import edu.snu.nemo.runtime.executor.data.partition.SerializedPartition;
 import edu.snu.nemo.runtime.executor.data.stores.BlockStore;
 import edu.snu.nemo.runtime.executor.data.stores.*;
+import edu.snu.nemo.runtime.executor.data.streamchainer.Serializer;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.reef.tang.annotations.Parameter;
 
@@ -119,8 +120,27 @@ public final class BlockManagerWorker {
    */
   public Block createBlock(final String blockId,
                            final DataStoreProperty.Value blockStore) throws BlockWriteException {
+    return this.createBlock(blockId, blockStore, false, false);
+  }
+
+  /**
+   * Creates a new block.
+   * If write (or read) as bytes is enabled, data written to (read from) the block does not (de)serialized.
+   *
+   * @param blockId      the ID of the block to create.
+   * @param blockStore   the store to place the block.
+   * @param readAsBytes  whether read data as arrays of bytes or not.
+   * @param writeAsBytes whether write data as arrays of bytes or not.
+   * @return the created block.
+   * @throws BlockWriteException for any error occurred while trying to create a block.
+   *
+   */
+  public Block createBlock(final String blockId,
+                           final DataStoreProperty.Value blockStore,
+                           final boolean readAsBytes,
+                           final boolean writeAsBytes) throws BlockWriteException {
     final BlockStore store = getBlockStore(blockStore);
-    return store.createBlock(blockId);
+    return store.createBlock(blockId, readAsBytes, writeAsBytes);
   }
 
   /**
@@ -176,6 +196,7 @@ public final class BlockManagerWorker {
    *
    * @param blockId       of the block.
    * @param runtimeEdgeId id of the runtime edge that corresponds to the block.
+   * @param readAsBytes   whether read data as arrays of bytes or not.
    * @param blockStore    for the data storage.
    * @param keyRange      the key range descriptor
    * @return the {@link CompletableFuture} of the block.
@@ -183,6 +204,7 @@ public final class BlockManagerWorker {
   public CompletableFuture<DataUtil.IteratorWithNumBytes> queryBlock(
       final String blockId,
       final String runtimeEdgeId,
+      final boolean readAsBytes,
       final DataStoreProperty.Value blockStore,
       final KeyRange keyRange) {
     // Let's see if a remote worker has it
@@ -223,6 +245,8 @@ public final class BlockManagerWorker {
         // Block resides in the evaluator
         return retrieveDataFromBlock(blockId, blockStore, keyRange);
       } else {
+        final Serializer serializerToUse = readAsBytes
+            ? SerializerManager.getAsBytesSerializer() : serializerManager.getSerializer(runtimeEdgeId);
         final ByteTransferContextDescriptor descriptor = ByteTransferContextDescriptor.newBuilder()
             .setBlockId(blockId)
             .setBlockStore(convertBlockStore(blockStore))
@@ -231,8 +255,7 @@ public final class BlockManagerWorker {
             .build();
         return byteTransfer.newInputContext(targetExecutorId, descriptor.toByteArray())
             .thenCompose(context -> context.getCompletedFuture())
-            .thenApply(streams -> new DataUtil.InputStreamIterator(streams,
-                serializerManager.getSerializer(runtimeEdgeId)));
+            .thenApply(streams -> new DataUtil.InputStreamIterator(streams, serializerToUse));
       }
     });
   }

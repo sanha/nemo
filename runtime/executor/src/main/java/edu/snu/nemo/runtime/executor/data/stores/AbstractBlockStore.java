@@ -17,7 +17,6 @@ package edu.snu.nemo.runtime.executor.data.stores;
 
 import edu.snu.nemo.runtime.common.RuntimeIdGenerator;
 import edu.snu.nemo.runtime.executor.data.SerializerManager;
-import edu.snu.nemo.runtime.executor.data.block.Block;
 import edu.snu.nemo.runtime.executor.data.streamchainer.Serializer;
 
 /**
@@ -33,18 +32,6 @@ public abstract class AbstractBlockStore implements BlockStore {
    */
   protected AbstractBlockStore(final SerializerManager serializerManager) {
     this.serializerManager = serializerManager;
-  }
-
-  /**
-   * Creates a new block.
-   *
-   * @param blockId the ID of the block to create.
-   * @return the created block.
-   * @see BlockStore#createBlock(String).
-   */
-  @Override
-  public final Block createBlock(final String blockId) {
-    return createBlock(blockId, false, false);
   }
 
   /**

@@ -19,6 +19,7 @@ import edu.snu.nemo.common.exception.BlockFetchException;
 import edu.snu.nemo.common.exception.BlockWriteException;
 import edu.snu.nemo.runtime.common.data.KeyRange;
 import edu.snu.nemo.runtime.executor.data.DataUtil;
+import edu.snu.nemo.runtime.executor.data.SerializerManager;
 import edu.snu.nemo.runtime.executor.data.partition.NonSerializedPartition;
 import edu.snu.nemo.runtime.executor.data.partition.SerializedPartition;
 import edu.snu.nemo.runtime.executor.data.streamchainer.Serializer;
@@ -83,9 +84,11 @@ public final class SerializedMemoryBlock<K extends Serializable> implements Bloc
       throw new BlockWriteException(new Throwable("The partition is already committed!"));
     } else {
       try {
+        final Serializer serializerToUse = writeAsBytes
+            ? SerializerManager.getAsBytesSerializer() : serializer;
         SerializedPartition<K> partition = nonCommittedPartitionsMap.get(key);
         if (partition == null) {
-          partition = new SerializedPartition<>(key, serializer);
+          partition = new SerializedPartition<>(key, serializerToUse);
           nonCommittedPartitionsMap.put(key, partition);
         }
         partition.write(element);
@@ -107,8 +110,10 @@ public final class SerializedMemoryBlock<K extends Serializable> implements Bloc
   public void writePartitions(final Iterable<NonSerializedPartition<K>> partitions) throws BlockWriteException {
     if (!committed) {
       try {
+        final Serializer serializerToUse = writeAsBytes
+            ? SerializerManager.getAsBytesSerializer() : serializer;
         final Iterable<SerializedPartition<K>> convertedPartitions = DataUtil.convertToSerPartitions(
-            serializer, partitions);
+            serializerToUse, partitions);
         writeSerializedPartitions(convertedPartitions);
       } catch (final IOException e) {
         throw new BlockWriteException(e);
@@ -147,7 +152,9 @@ public final class SerializedMemoryBlock<K extends Serializable> implements Bloc
   @Override
   public Iterable<NonSerializedPartition<K>> readPartitions(final KeyRange keyRange) throws BlockFetchException {
     try {
-      return DataUtil.convertToNonSerPartitions(serializer, readSerializedPartitions(keyRange));
+      final Serializer serializerToUse = readAsBytes
+          ? SerializerManager.getAsBytesSerializer() : serializer;
+      return DataUtil.convertToNonSerPartitions(serializerToUse, readSerializedPartitions(keyRange));
     } catch (final IOException e) {
       throw new BlockFetchException(e);
     }
