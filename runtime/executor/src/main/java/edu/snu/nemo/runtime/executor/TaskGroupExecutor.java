@@ -273,7 +273,6 @@ public final class TaskGroupExecutor {
     final long writeStartTime = System.currentTimeMillis();
 
     getTaskDataHandler(task).getOutputWriters().forEach(outputWriter -> {
-      outputWriter.write();
       outputWriter.close();
       final Optional<Long> writtenBytes = outputWriter.getWrittenBytes();
       writtenBytes.ifPresent(writtenBytesList::add);

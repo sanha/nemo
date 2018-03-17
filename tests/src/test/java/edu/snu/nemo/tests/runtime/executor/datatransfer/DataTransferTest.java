@@ -343,7 +343,6 @@ public final class DataTransferTest {
       final OutputWriter writer = new OutputWriter(HASH_RANGE_MULTIPLIER, srcTaskIndex, srcVertex.getId(), dstVertex,
           dummyEdge, sender);
       dataWritten.iterator().forEachRemaining(writer::writeElement);
-      writer.write();
       writer.close();
       dataWrittenList.add(dataWritten);
     });
@@ -438,14 +437,12 @@ public final class DataTransferTest {
       final OutputWriter writer = new OutputWriter(HASH_RANGE_MULTIPLIER, srcTaskIndex, srcVertex.getId(), dstVertex,
           dummyEdge, sender);
       dataWritten.iterator().forEachRemaining(writer::writeElement);
-      writer.write();
       writer.close();
       dataWrittenList.add(dataWritten);
 
       final OutputWriter writer2 = new OutputWriter(HASH_RANGE_MULTIPLIER, srcTaskIndex, srcVertex.getId(), dstVertex,
           dummyEdge2, sender);
       dataWritten.iterator().forEachRemaining(writer::writeElement);
-      writer2.write();
       writer2.close();
     });
 
