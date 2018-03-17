@@ -139,7 +139,6 @@ public final class RemoteFileMetadata<K extends Serializable> extends FileMetada
   RemoteFileMetadata<T> open(final String blockId,
                              final String executorId,
                              final PersistentConnectionToMasterMap connectionToMaster) throws IOException {
-    LOG.info("@@@@ OPEN!!!");
     final List<PartitionMetadata<T>> partitionMetadataList = new ArrayList<>();
 
     final long requestId = RuntimeIdGenerator.generateMessageId();
