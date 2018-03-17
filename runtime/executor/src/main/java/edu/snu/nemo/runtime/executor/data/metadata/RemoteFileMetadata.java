@@ -21,6 +21,8 @@ import edu.snu.nemo.runtime.common.comm.ControlMessage;
 import edu.snu.nemo.runtime.common.message.MessageEnvironment;
 import edu.snu.nemo.runtime.common.message.PersistentConnectionToMasterMap;
 import org.apache.commons.lang3.SerializationUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.io.*;
@@ -39,6 +41,7 @@ import java.util.concurrent.ExecutionException;
 @ThreadSafe
 public final class RemoteFileMetadata<K extends Serializable> extends FileMetadata<K> {
 
+  private static final Logger LOG = LoggerFactory.getLogger(RemoteFileMetadata.class.getName());
   private final String blockId;
   private final PersistentConnectionToMasterMap connectionToMaster;
 
@@ -136,6 +139,7 @@ public final class RemoteFileMetadata<K extends Serializable> extends FileMetada
   RemoteFileMetadata<T> open(final String blockId,
                              final String executorId,
                              final PersistentConnectionToMasterMap connectionToMaster) throws IOException {
+    LOG.info("@@@@ OPEN!!!");
     final List<PartitionMetadata<T>> partitionMetadataList = new ArrayList<>();
 
     final long requestId = RuntimeIdGenerator.generateMessageId();
