@@ -71,6 +71,7 @@ public final class JobConf extends ConfigurationModuleBuilder {
    */
   @NamedParameter(doc = "Directory points the GlusterFS volume",
       short_name = "gfs_dir", default_value = "/home/ubuntu/gluster/remote_files")
+      //short_name = "gfs_dir", default_value = "../tmp_gfs")
   public final class GlusterVolumeDirectory implements Name<String> {
   }
 

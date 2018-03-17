@@ -487,29 +487,27 @@ public final class BlockManagerMaster {
       // Check whether the block is committed. The actual location is not important.
       final BlockMetadata metadata = blockIdToMetadata.get(blockId);
       if (metadata != null) {
-        //final CompletableFuture<String> locationFuture =
-        //    (CompletableFuture<String>) metadata.getLocationHandler().getLocationFuture();
+        final CompletableFuture<String> locationFuture =
+            (CompletableFuture<String>) metadata.getLocationHandler().getLocationFuture();
 
-        //if (!locationFuture.isDone()) {
-        //  LOG.error("unresolved location!");
-        //} else {
-        final ControlMessage.MetadataResponseMsg.Builder responseBuilder =
-            ControlMessage.MetadataResponseMsg.newBuilder()
-                .setRequestId(requestId)
-                .addAllPartitionMetadata(metadata.getPartitionMetadataList());
-        //if (locationFuture.isCompletedExceptionally()) {
-        //  LOG.error("location resolved exceptionally!");
-        //responseBuilder.setState(
-        //    convertBlockState(((AbsentBlockException) locationFuture.).getState()));
-        //}
-        messageContext.reply(
-            ControlMessage.Message.newBuilder()
-                .setId(RuntimeIdGenerator.generateMessageId())
-                .setListenerId(MessageEnvironment.EXECUTOR_MESSAGE_LISTENER_ID)
-                .setType(ControlMessage.MessageType.MetadataResponse)
-                .setMetadataResponseMsg(responseBuilder.build())
-                .build());
-        //}
+        locationFuture.whenComplete((location, throwable) -> {
+          final ControlMessage.MetadataResponseMsg.Builder responseBuilder =
+              ControlMessage.MetadataResponseMsg.newBuilder()
+                  .setRequestId(requestId)
+                  .addAllPartitionMetadata(metadata.getPartitionMetadataList());
+          if (locationFuture.isCompletedExceptionally()) {
+            LOG.error("location resolved exceptionally!");
+            responseBuilder.setState(
+                convertBlockState(((AbsentBlockException) throwable).getState()));
+          }
+          messageContext.reply(
+              ControlMessage.Message.newBuilder()
+                  .setId(RuntimeIdGenerator.generateMessageId())
+                  .setListenerId(MessageEnvironment.EXECUTOR_MESSAGE_LISTENER_ID)
+                  .setType(ControlMessage.MessageType.MetadataResponse)
+                  .setMetadataResponseMsg(responseBuilder.build())
+                  .build());
+        });
       } else {
         LOG.error("Metadata for {} dose not exist. Failed to get it.", blockId);
       }
