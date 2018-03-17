@@ -202,11 +202,15 @@ public final class NcsMessageEnvironment implements MessageEnvironment {
       case BlockStateChanged:
       case ExecutorFailed:
       case DataSizeMetric:
+      case CommitPartition:
+      case RemovePartitionMetadata:
       case MetricMessageReceived:
         return MessageType.Send;
       case RequestBlockLocation:
+      case RequestPartitionMetadata:
         return MessageType.Request;
       case BlockLocationInfo:
+      case MetadataResponse:
         return MessageType.Reply;
       default:
         throw new IllegalArgumentException(controlMessage.toString());
@@ -217,6 +221,8 @@ public final class NcsMessageEnvironment implements MessageEnvironment {
     switch (controlMessage.getType()) {
       case RequestBlockLocation:
         return controlMessage.getRequestBlockLocationMsg().getExecutorId();
+      case RequestPartitionMetadata:
+        return controlMessage.getRequestPartitionMetadataMsg().getExecutorId();
       default:
         throw new IllegalArgumentException(controlMessage.toString());
     }
@@ -226,6 +232,8 @@ public final class NcsMessageEnvironment implements MessageEnvironment {
     switch (controlMessage.getType()) {
       case BlockLocationInfo:
         return controlMessage.getBlockLocationInfoMsg().getRequestId();
+      case MetadataResponse:
+        return controlMessage.getMetadataResponseMsg().getRequestId();
       default:
         throw new IllegalArgumentException(controlMessage.toString());
     }

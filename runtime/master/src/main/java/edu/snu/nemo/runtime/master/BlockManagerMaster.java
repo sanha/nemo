@@ -334,6 +334,12 @@ public final class BlockManagerMaster {
             onBlockStateChanged(blockId, convertBlockState(blockStateChangedMsg.getState()),
                 blockStateChangedMsg.getLocation());
             break;
+          case CommitPartition:
+            onCommitPartitions(message);
+            break;
+          case RemovePartitionMetadata:
+            onRemovePartitionMetadata(message);
+            break;
           default:
             throw new IllegalMessageException(
                 new Exception("This message should not be received by "
@@ -349,6 +355,9 @@ public final class BlockManagerMaster {
       switch (message.getType()) {
         case RequestBlockLocation:
           onRequestBlockLocation(message, messageContext);
+          break;
+        case RequestPartitionMetadata:
+          onRequestPartitionMetadata(message, messageContext);
           break;
         default:
           throw new IllegalMessageException(
@@ -433,6 +442,101 @@ public final class BlockManagerMaster {
     @VisibleForTesting
     public Future<String> getLocationFuture() {
       return locationFuture;
+    }
+  }
+
+  /**
+   * Commits the partitions for a remote block.
+   *
+   * @param message the message having metadata to commit.
+   */
+  private void onCommitPartitions(final ControlMessage.Message message) {
+    final ControlMessage.CommitPartitionMsg commitMsg = message.getCommitPartitionMsg();
+    final String blockId = commitMsg.getBlockId();
+    final List<ControlMessage.PartitionMetadataMsg> partitionMetadataMsgs = commitMsg.getPartitionMetadataMsgList();
+
+    final Lock readLock = lock.readLock();
+    readLock.lock();
+    try {
+      final BlockMetadata metadata = blockIdToMetadata.get(blockId);
+      if (metadata != null) {
+        metadata.commitBlock(partitionMetadataMsgs);
+      } else {
+        LOG.error("Metadata for {} already exists. It will be replaced.", blockId);
+      }
+    } finally {
+      readLock.unlock();
+    }
+  }
+
+  /**
+   * Accepts a request for the partition metadata and replies with the metadata for a remote block.
+   *
+   * @param message        the message having metadata to store.
+   * @param messageContext the context to reply.
+   */
+  private void onRequestPartitionMetadata(final ControlMessage.Message message,
+                                          final MessageContext messageContext) {
+    final ControlMessage.RequestPartitionMetadataMsg requestMsg = message.getRequestPartitionMetadataMsg();
+    final long requestId = message.getId();
+    final String blockId = requestMsg.getBlockId();
+
+    final Lock readLock = lock.readLock();
+    readLock.lock();
+    try {
+      // Check whether the block is committed. The actual location is not important.
+      final BlockMetadata metadata = blockIdToMetadata.get(blockId);
+      if (metadata != null) {
+        //final CompletableFuture<String> locationFuture =
+        //    (CompletableFuture<String>) metadata.getLocationHandler().getLocationFuture();
+
+        //if (!locationFuture.isDone()) {
+        //  LOG.error("unresolved location!");
+        //} else {
+        final ControlMessage.MetadataResponseMsg.Builder responseBuilder =
+            ControlMessage.MetadataResponseMsg.newBuilder()
+                .setRequestId(requestId)
+                .addAllPartitionMetadata(metadata.getPartitionMetadataList());
+        //if (locationFuture.isCompletedExceptionally()) {
+        //  LOG.error("location resolved exceptionally!");
+        //responseBuilder.setState(
+        //    convertBlockState(((AbsentBlockException) locationFuture.).getState()));
+        //}
+        messageContext.reply(
+            ControlMessage.Message.newBuilder()
+                .setId(RuntimeIdGenerator.generateMessageId())
+                .setListenerId(MessageEnvironment.EXECUTOR_MESSAGE_LISTENER_ID)
+                .setType(ControlMessage.MessageType.MetadataResponse)
+                .setMetadataResponseMsg(responseBuilder.build())
+                .build());
+        //}
+      } else {
+        LOG.error("Metadata for {} dose not exist. Failed to get it.", blockId);
+      }
+    } finally {
+      readLock.unlock();
+    }
+  }
+
+  /**
+   * Removes the partition metadata for a remote block.
+   * If the target block was not previously created, ignores this message.
+   *
+   * @param message the message pointing the metadata to remove.
+   */
+  private void onRemovePartitionMetadata(final ControlMessage.Message message) {
+    final ControlMessage.RemovePartitionMetadataMsg removeMsg = message.getRemovePartitionMetadataMsg();
+    final String blockId = removeMsg.getBlockId();
+
+    final Lock readLock = lock.readLock();
+    readLock.lock();
+    try {
+      final BlockMetadata metadata = blockIdToMetadata.get(blockId);
+      if (metadata != null) {
+        metadata.remoteMetadata();
+      } // if else, the block was not previously created. Ignore it.
+    } finally {
+      readLock.unlock();
     }
   }
 

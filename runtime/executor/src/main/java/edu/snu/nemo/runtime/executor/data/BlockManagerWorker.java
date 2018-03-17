@@ -167,56 +167,61 @@ public final class BlockManagerWorker {
       final String runtimeEdgeId,
       final DataStoreProperty.Value blockStore,
       final KeyRange keyRange) {
-    // Let's see if a remote worker has it
-    final CompletableFuture<ControlMessage.Message> blockLocationFuture =
-        pendingBlockLocationRequest.computeIfAbsent(blockId, blockIdToRequest -> {
-          // Ask Master for the location
-          final CompletableFuture<ControlMessage.Message> responseFromMasterFuture = persistentConnectionToMasterMap
-              .getMessageSender(MessageEnvironment.BLOCK_MANAGER_MASTER_MESSAGE_LISTENER_ID).request(
-                  ControlMessage.Message.newBuilder()
-                      .setId(RuntimeIdGenerator.generateMessageId())
-                      .setListenerId(MessageEnvironment.BLOCK_MANAGER_MASTER_MESSAGE_LISTENER_ID)
-                      .setType(ControlMessage.MessageType.RequestBlockLocation)
-                      .setRequestBlockLocationMsg(
-                          ControlMessage.RequestBlockLocationMsg.newBuilder()
-                              .setExecutorId(executorId)
-                              .setBlockId(blockId)
-                              .build())
-                      .build());
-          return responseFromMasterFuture;
-        });
-    blockLocationFuture.whenComplete((message, throwable) -> pendingBlockLocationRequest.remove(blockId));
+    if (blockStore == DataStoreProperty.Value.GlusterFileStore) {
+      // skip location (Hack!)
+      return retrieveDataFromBlock(blockId, blockStore, keyRange);
+    } else {
+      // Let's see if a remote worker has it
+      final CompletableFuture<ControlMessage.Message> blockLocationFuture =
+          pendingBlockLocationRequest.computeIfAbsent(blockId, blockIdToRequest -> {
+            // Ask Master for the location
+            final CompletableFuture<ControlMessage.Message> responseFromMasterFuture = persistentConnectionToMasterMap
+                .getMessageSender(MessageEnvironment.BLOCK_MANAGER_MASTER_MESSAGE_LISTENER_ID).request(
+                    ControlMessage.Message.newBuilder()
+                        .setId(RuntimeIdGenerator.generateMessageId())
+                        .setListenerId(MessageEnvironment.BLOCK_MANAGER_MASTER_MESSAGE_LISTENER_ID)
+                        .setType(ControlMessage.MessageType.RequestBlockLocation)
+                        .setRequestBlockLocationMsg(
+                            ControlMessage.RequestBlockLocationMsg.newBuilder()
+                                .setExecutorId(executorId)
+                                .setBlockId(blockId)
+                                .build())
+                        .build());
+            return responseFromMasterFuture;
+          });
+      blockLocationFuture.whenComplete((message, throwable) -> pendingBlockLocationRequest.remove(blockId));
 
-    // Using thenCompose so that fetching block data starts after getting response from master.
-    return blockLocationFuture.thenCompose(responseFromMaster -> {
-      if (responseFromMaster.getType() != ControlMessage.MessageType.BlockLocationInfo) {
-        throw new RuntimeException("Response message type mismatch!");
-      }
-      final ControlMessage.BlockLocationInfoMsg blockLocationInfoMsg =
-          responseFromMaster.getBlockLocationInfoMsg();
-      if (!blockLocationInfoMsg.hasOwnerExecutorId()) {
-        throw new BlockFetchException(new Throwable(
-            "Block " + blockId + " not found both in any storage: "
-                + "The block state is " + blockLocationInfoMsg.getState()));
-      }
-      // This is the executor id that we wanted to know
-      final String targetExecutorId = blockLocationInfoMsg.getOwnerExecutorId();
-      if (targetExecutorId.equals(executorId) || targetExecutorId.equals(REMOTE_FILE_STORE)) {
-        // Block resides in the evaluator
-        return retrieveDataFromBlock(blockId, blockStore, keyRange);
-      } else {
-        final ByteTransferContextDescriptor descriptor = ByteTransferContextDescriptor.newBuilder()
-            .setBlockId(blockId)
-            .setBlockStore(convertBlockStore(blockStore))
-            .setRuntimeEdgeId(runtimeEdgeId)
-            .setKeyRange(ByteString.copyFrom(SerializationUtils.serialize(keyRange)))
-            .build();
-        return byteTransfer.newInputContext(targetExecutorId, descriptor.toByteArray())
-            .thenCompose(context -> context.getCompletedFuture())
-            .thenApply(streams -> new DataUtil.InputStreamIterator(streams,
-                serializerManager.getSerializer(runtimeEdgeId)));
-      }
-    });
+      // Using thenCompose so that fetching block data starts after getting response from master.
+      return blockLocationFuture.thenCompose(responseFromMaster -> {
+        if (responseFromMaster.getType() != ControlMessage.MessageType.BlockLocationInfo) {
+          throw new RuntimeException("Response message type mismatch!");
+        }
+        final ControlMessage.BlockLocationInfoMsg blockLocationInfoMsg =
+            responseFromMaster.getBlockLocationInfoMsg();
+        if (!blockLocationInfoMsg.hasOwnerExecutorId()) {
+          throw new BlockFetchException(new Throwable(
+              "Block " + blockId + " not found both in any storage: "
+                  + "The block state is " + blockLocationInfoMsg.getState()));
+        }
+        // This is the executor id that we wanted to know
+        final String targetExecutorId = blockLocationInfoMsg.getOwnerExecutorId();
+        if (targetExecutorId.equals(executorId) || targetExecutorId.equals(REMOTE_FILE_STORE)) {
+          // Block resides in the evaluator
+          return retrieveDataFromBlock(blockId, blockStore, keyRange);
+        } else {
+          final ByteTransferContextDescriptor descriptor = ByteTransferContextDescriptor.newBuilder()
+              .setBlockId(blockId)
+              .setBlockStore(convertBlockStore(blockStore))
+              .setRuntimeEdgeId(runtimeEdgeId)
+              .setKeyRange(ByteString.copyFrom(SerializationUtils.serialize(keyRange)))
+              .build();
+          return byteTransfer.newInputContext(targetExecutorId, descriptor.toByteArray())
+              .thenCompose(context -> context.getCompletedFuture())
+              .thenApply(streams -> new DataUtil.InputStreamIterator(streams,
+                  serializerManager.getSerializer(runtimeEdgeId)));
+        }
+      });
+    }
   }
 
   /**

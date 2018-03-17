@@ -28,6 +28,11 @@ enum MessageType {
     BlockLocationInfo = 5;
     ExecutorFailed = 6;
     MetricMessageReceived = 7;
+    // Messages for metadata passing
+    CommitPartition = 8;
+    RemovePartitionMetadata = 9;
+    RequestPartitionMetadata = 10;
+    MetadataResponse = 11;
 }
 
 message Message {
@@ -43,6 +48,10 @@ message Message {
     optional ExecutorFailedMsg executorFailedMsg = 10;
     optional ContainerFailedMsg containerFailedMsg = 11;
     optional MetricMsg metricMsg = 12;
+    optional CommitPartitionMsg commitPartitionMsg = 13;
+    optional RemovePartitionMetadataMsg removePartitionMetadataMsg = 14;
+    optional RequestPartitionMetadataMsg requestPartitionMetadataMsg = 15;
+    optional MetadataResponseMsg metadataResponseMsg = 16;
 }
 
 // Messages from Master to Executors
@@ -149,6 +158,37 @@ enum BlockStore {
     SER_MEMORY = 1;
     LOCAL_FILE = 2;
     REMOTE_FILE = 3;
+}
+
+// Messages for metadata passing
+// Messages from Master to Executors
+message MetadataResponseMsg {
+    required int64 requestId = 1; // To find the matching request msg
+    repeated PartitionMetadataMsg partitionMetadata = 2;
+    optional BlockStateFromExecutor state = 3;
+}
+
+// Messages from Executors to Master
+message CommitPartitionMsg {
+    required string blockId = 1;
+    repeated PartitionMetadataMsg partitionMetadataMsg = 2;
+}
+
+message RemovePartitionMetadataMsg {
+     required string blockId = 1;
+}
+
+message RequestPartitionMetadataMsg {
+     required string executorId = 1;
+     required string blockId = 2;
+}
+
+// Common messages
+message PartitionMetadataMsg {
+     required bytes key = 1;
+     required int32 partitionSize = 2;
+     required int64 offset = 3;
+     required int64 numElements = 4;
 }
 
 // Common messages

@@ -16,6 +16,7 @@
 package edu.snu.nemo.runtime.master;
 
 import edu.snu.nemo.common.StateMachine;
+import edu.snu.nemo.runtime.common.comm.ControlMessage;
 import edu.snu.nemo.runtime.common.state.BlockState;
 import edu.snu.nemo.runtime.common.exception.AbsentBlockException;
 import org.slf4j.Logger;
@@ -23,6 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * This class represents a block metadata stored in the metadata server.
@@ -33,6 +36,8 @@ final class BlockMetadata {
   private final String blockId;
   private final BlockState blockState;
   private volatile BlockManagerMaster.BlockLocationRequestHandler locationHandler;
+  // Partition level metadata. These information will be managed only for remote blocks.
+  private volatile List<ControlMessage.PartitionMetadataMsg> partitionMetadataList;
 
   /**
    * Constructs the metadata for a block.
@@ -44,6 +49,10 @@ final class BlockMetadata {
     this.blockId = blockId;
     this.blockState = new BlockState();
     this.locationHandler = new BlockManagerMaster.BlockLocationRequestHandler(blockId);
+  }
+
+  synchronized void commitBlock(final List<ControlMessage.PartitionMetadataMsg> partitionMetadataListToSet) {
+    this.partitionMetadataList = partitionMetadataListToSet;
   }
 
   /**
@@ -94,6 +103,14 @@ final class BlockMetadata {
    */
   BlockState getBlockState() {
     return blockState;
+  }
+
+  public List<ControlMessage.PartitionMetadataMsg> getPartitionMetadataList() {
+    return partitionMetadataList;
+  }
+
+  public void remoteMetadata() {
+    this.partitionMetadataList = Collections.emptyList();
   }
 
   /**

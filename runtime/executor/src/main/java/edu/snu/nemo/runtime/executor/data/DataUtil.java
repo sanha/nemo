@@ -151,18 +151,6 @@ public final class DataUtil {
   }
 
   /**
-   * Converts a block id to the corresponding metadata file path.
-   *
-   * @param blockId       the ID of the block.
-   * @param fileDirectory the directory of the target block file.
-   * @return the metadata file path of the partition.
-   */
-  public static String blockIdToMetaFilePath(final String blockId,
-                                             final String fileDirectory) {
-    return fileDirectory + "/" + blockId + "_meta";
-  }
-
-  /**
    * Concatenates an iterable of non-serialized {@link Partition}s into a single iterable of elements.
    *
    * @param partitionsToConcat the partitions to concatenate.

@@ -19,6 +19,7 @@ import edu.snu.nemo.common.exception.BlockFetchException;
 import edu.snu.nemo.conf.JobConf;
 import edu.snu.nemo.common.exception.BlockWriteException;
 import edu.snu.nemo.runtime.common.data.KeyRange;
+import edu.snu.nemo.runtime.common.message.PersistentConnectionToMasterMap;
 import edu.snu.nemo.runtime.executor.data.*;
 import edu.snu.nemo.runtime.executor.data.block.Block;
 import edu.snu.nemo.runtime.executor.data.streamchainer.Serializer;
@@ -47,6 +48,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class GlusterFileStore extends AbstractBlockStore implements RemoteFileStore {
   private final Map<String, FileBlock> blockMap;
   private final String fileDirectory;
+  private final String executorId;
+  private final PersistentConnectionToMasterMap persistentConnectionToMasterMap;
 
   /**
    * Constructor.
@@ -58,10 +61,14 @@ public final class GlusterFileStore extends AbstractBlockStore implements Remote
   @Inject
   private GlusterFileStore(@Parameter(JobConf.GlusterVolumeDirectory.class) final String volumeDirectory,
                            @Parameter(JobConf.JobId.class) final String jobId,
+                           @Parameter(JobConf.ExecutorId.class) final String executorId,
+                           final PersistentConnectionToMasterMap persistentConnectionToMasterMap,
                            final SerializerManager serializerManager) {
     super(serializerManager);
     this.blockMap = new ConcurrentHashMap<>();
     this.fileDirectory = volumeDirectory + "/" + jobId;
+    this.executorId = executorId;
+    this.persistentConnectionToMasterMap = persistentConnectionToMasterMap;
     new File(fileDirectory).mkdirs();
   }
 
@@ -77,7 +84,7 @@ public final class GlusterFileStore extends AbstractBlockStore implements Remote
     final Serializer serializer = getSerializerFromWorker(blockId);
     final String filePath = DataUtil.blockIdToFilePath(blockId, fileDirectory);
     final RemoteFileMetadata metadata =
-        RemoteFileMetadata.create(DataUtil.blockIdToMetaFilePath(blockId, fileDirectory));
+        RemoteFileMetadata.create(blockId, persistentConnectionToMasterMap);
     final FileBlock block = new FileBlock<>(serializer, filePath, metadata);
     blockMap.put(blockId, block);
   }
@@ -243,7 +250,7 @@ public final class GlusterFileStore extends AbstractBlockStore implements Remote
     final Serializer serializer = getSerializerFromWorker(blockId);
     final String filePath = DataUtil.blockIdToFilePath(blockId, fileDirectory);
     final RemoteFileMetadata<K> metadata =
-        RemoteFileMetadata.open(DataUtil.blockIdToMetaFilePath(blockId, fileDirectory));
+        RemoteFileMetadata.open(blockId, executorId, persistentConnectionToMasterMap);
     return new FileBlock<>(serializer, filePath, metadata);
   }
 }
