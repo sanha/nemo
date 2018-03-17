@@ -477,7 +477,6 @@ public final class BlockManagerMaster {
    */
   private void onRequestPartitionMetadata(final ControlMessage.Message message,
                                           final MessageContext messageContext) {
-    LOG.info("@@@@ onRequestPartitionMetadata with msg " + message.getType());
     final ControlMessage.RequestPartitionMetadataMsg requestMsg = message.getRequestPartitionMetadataMsg();
     final long requestId = message.getId();
     final String blockId = requestMsg.getBlockId();

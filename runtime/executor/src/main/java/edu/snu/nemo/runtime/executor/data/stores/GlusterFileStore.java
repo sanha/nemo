@@ -26,6 +26,8 @@ import edu.snu.nemo.runtime.executor.data.streamchainer.Serializer;
 import edu.snu.nemo.runtime.executor.data.metadata.RemoteFileMetadata;
 import edu.snu.nemo.runtime.executor.data.block.FileBlock;
 import org.apache.reef.tang.annotations.Parameter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
@@ -46,6 +48,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @ThreadSafe
 public final class GlusterFileStore extends AbstractBlockStore implements RemoteFileStore {
+
+  private static final Logger LOG = LoggerFactory.getLogger(GlusterFileStore.class.getName());
   private final Map<String, FileBlock> blockMap;
   private final String fileDirectory;
   private final String executorId;
@@ -141,6 +145,7 @@ public final class GlusterFileStore extends AbstractBlockStore implements Remote
     } else {
       // Deserialize the target data in the corresponding file.
       try {
+        LOG.info("@@@@ open for getPartitions");
         final FileBlock<K> block = getBlockFromFile(blockId);
         final Iterable<NonSerializedPartition<K>> partitionsInRange = block.getPartitions(keyRange);
         return Optional.of(partitionsInRange);
@@ -161,6 +166,7 @@ public final class GlusterFileStore extends AbstractBlockStore implements Remote
       return Optional.empty();
     } else {
       try {
+        LOG.info("@@@@ open for getSerializedPartitions");
         final FileBlock<K> block = getBlockFromFile(blockId);
         final Iterable<SerializedPartition<K>> partitionsInRange = block.getSerializedPartitions(keyRange);
         return Optional.of(partitionsInRange);
@@ -204,6 +210,7 @@ public final class GlusterFileStore extends AbstractBlockStore implements Remote
 
     try {
       if (new File(filePath).isFile()) {
+        LOG.info("@@@@ open for removeBlock");
         final FileBlock block = getBlockFromFile(blockId);
         block.deleteFile();
         return true;
@@ -225,6 +232,7 @@ public final class GlusterFileStore extends AbstractBlockStore implements Remote
 
     try {
       if (new File(filePath).isFile()) {
+        LOG.info("@@@@ open for getFileAreas");
         final FileBlock block = getBlockFromFile(blockId);
         return block.asFileAreas(keyRange);
       } else {
