@@ -29,7 +29,7 @@ import java.util.Set;
  */
 @DriverSide
 @ThreadSafe
-@DefaultImplementation(SourceLocationAwareSchedulingPolicy.class)
+@DefaultImplementation(RoundRobinSchedulingPolicy.class)
 public interface SchedulingPolicy {
 
   /**

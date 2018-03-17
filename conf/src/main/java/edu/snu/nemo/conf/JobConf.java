@@ -69,7 +69,8 @@ public final class JobConf extends ConfigurationModuleBuilder {
    * If the volume is not mounted to this directory, the remote file store will act like local file store
    * (but maybe inefficiently).
    */
-  @NamedParameter(doc = "Directory points the GlusterFS volume", short_name = "gfs_dir", default_value = "../tmp_gfs")
+  @NamedParameter(doc = "Directory points the GlusterFS volume",
+      short_name = "gfs_dir", default_value = "/home/ubuntu/gluster/remote_files")
   public final class GlusterVolumeDirectory implements Name<String> {
   }
 
