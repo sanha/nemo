@@ -72,7 +72,7 @@ public final class NonSerializedMemoryBlock<K extends Serializable> implements B
   public void write(final K key,
                     final Object element) throws BlockWriteException {
     if (committed) {
-      throw new BlockWriteException(new Throwable("The partition is already committed!"));
+      throw new BlockWriteException(new Throwable("The block is already committed!"));
     } else {
       try {
         final NonSerializedPartition<K> partition =

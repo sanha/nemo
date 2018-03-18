@@ -99,7 +99,7 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
   public void write(final K key,
                     final Object element) throws BlockWriteException {
     if (metadata.isCommitted()) {
-      throw new BlockWriteException(new Throwable("The partition is already committed!"));
+      throw new BlockWriteException(new Throwable("The block is already committed!"));
     } else {
       final Serializer serializerToUse = metadata.isWriteAsBytes()
           ? SerializerManager.getAsBytesSerializer() : serializer;

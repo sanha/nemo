@@ -127,6 +127,7 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
    * Notifies that all writes for a block is end.
    * Further write about a committed block will throw an exception.
    */
+  @Override
   public void close() {
     // Commit block.
     final UsedDataHandlingProperty.Value usedDataHandling =
