@@ -21,6 +21,7 @@ import edu.snu.nemo.runtime.common.data.KeyRange;
 import edu.snu.nemo.runtime.executor.data.DataUtil;
 import edu.snu.nemo.runtime.executor.data.SerializerManager;
 import edu.snu.nemo.runtime.executor.data.partition.NonSerializedPartition;
+import edu.snu.nemo.runtime.executor.data.partition.Partition;
 import edu.snu.nemo.runtime.executor.data.partition.SerializedPartition;
 import edu.snu.nemo.runtime.executor.data.streamchainer.Serializer;
 
@@ -36,12 +37,9 @@ import java.util.*;
  * @param <K> the key type of its partitions.
  */
 @NotThreadSafe
-public final class SerializedMemoryBlock<K extends Serializable> implements Block<K> {
+public final class SerializedMemoryBlock<K extends Serializable> extends AbstractBlock<K> {
 
-  private final String id;
   private final List<SerializedPartition<K>> serializedPartitions;
-  private final Map<K, SerializedPartition<K>> nonCommittedPartitionsMap;
-  private final Serializer serializer;
   private final boolean readAsBytes;
   private final boolean writeAsBytes;
   private volatile boolean committed;
@@ -59,10 +57,8 @@ public final class SerializedMemoryBlock<K extends Serializable> implements Bloc
                                final Serializer serializer,
                                final boolean readAsBytes,
                                final boolean writeAsBytes) {
-    this.id = blockId;
+    super(blockId, serializer);
     this.serializedPartitions = new ArrayList<>();
-    this.nonCommittedPartitionsMap = new HashMap<>();
-    this.serializer = serializer;
     this.readAsBytes = readAsBytes;
     this.writeAsBytes = writeAsBytes;
     this.committed = false;
@@ -85,8 +81,9 @@ public final class SerializedMemoryBlock<K extends Serializable> implements Bloc
     } else {
       try {
         final Serializer serializerToUse = writeAsBytes
-            ? SerializerManager.getAsBytesSerializer() : serializer;
-        SerializedPartition<K> partition = nonCommittedPartitionsMap.get(key);
+            ? SerializerManager.getAsBytesSerializer() : getSerializer();
+        final Map nonCommittedPartitionsMap = getNonCommittedPartitionsMap();
+        SerializedPartition<K> partition = (SerializedPartition<K>) nonCommittedPartitionsMap.get(key);
         if (partition == null) {
           partition = new SerializedPartition<>(key, serializerToUse);
           nonCommittedPartitionsMap.put(key, partition);
@@ -111,7 +108,7 @@ public final class SerializedMemoryBlock<K extends Serializable> implements Bloc
     if (!committed) {
       try {
         final Serializer serializerToUse = writeAsBytes
-            ? SerializerManager.getAsBytesSerializer() : serializer;
+            ? SerializerManager.getAsBytesSerializer() : getSerializer();
         final Iterable<SerializedPartition<K>> convertedPartitions = DataUtil.convertToSerPartitions(
             serializerToUse, partitions);
         writeSerializedPartitions(convertedPartitions);
@@ -153,7 +150,7 @@ public final class SerializedMemoryBlock<K extends Serializable> implements Bloc
   public Iterable<NonSerializedPartition<K>> readPartitions(final KeyRange keyRange) throws BlockFetchException {
     try {
       final Serializer serializerToUse = readAsBytes
-          ? SerializerManager.getAsBytesSerializer() : serializer;
+          ? SerializerManager.getAsBytesSerializer() : getSerializer();
       return DataUtil.convertToNonSerPartitions(serializerToUse, readSerializedPartitions(keyRange));
     } catch (final IOException e) {
       throw new BlockFetchException(e);
@@ -196,11 +193,7 @@ public final class SerializedMemoryBlock<K extends Serializable> implements Bloc
   public synchronized Optional<Map<K, Long>> commit() throws BlockWriteException {
     try {
       if (!committed) {
-        for (final SerializedPartition<K> partition : nonCommittedPartitionsMap.values()) {
-          partition.commit();
-          serializedPartitions.add(partition);
-        }
-        nonCommittedPartitionsMap.clear();
+        commitPartitions();
         committed = true;
       }
       final Map<K, Long> partitionSizes = new HashMap<>(serializedPartitions.size());
@@ -220,12 +213,17 @@ public final class SerializedMemoryBlock<K extends Serializable> implements Bloc
     }
   }
 
-  /**
-   * @return the ID of this block.
-   */
   @Override
-  public String getId() {
-    return id;
+  public void commitPartitions() throws BlockWriteException {
+    try {
+      for (final Partition<?, K> partition : getNonCommittedPartitionsMap().values()) {
+        partition.commit();
+        serializedPartitions.add((SerializedPartition<K>) partition);
+      }
+      getNonCommittedPartitionsMap().clear();
+    } catch (final IOException e) {
+      throw new BlockWriteException(e);
+    }
   }
 
   /**

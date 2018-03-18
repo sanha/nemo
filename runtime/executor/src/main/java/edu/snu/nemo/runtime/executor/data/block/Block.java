@@ -110,6 +110,8 @@ public interface Block<K extends Serializable> {
    */
   Optional<Map<K, Long>> commit() throws BlockWriteException;
 
+  void commitPartitions() throws BlockWriteException;
+
   /**
    * @return the ID of this block.
    */

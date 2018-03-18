@@ -41,6 +41,7 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
   private final BlockManagerWorker blockManagerWorker;
   private final Partitioner partitioner;
   private final boolean writable;
+  private final boolean commitPerWrite;
   private final Block blockToWrite;
 
   /**
@@ -115,11 +116,16 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
     writable = duplicateDataProperty == null
         || duplicateDataProperty.getRepresentativeEdgeId().equals(runtimeEdge.getId())
         || duplicateDataProperty.getGroupSize() <= 1;
+
+    this.commitPerWrite = partitioner instanceof IncrementPartitioner;
   }
 
   public void writeElement(final Object element) {
     if (writable) {
       blockToWrite.write(partitioner.partition(element), element);
+      if (commitPerWrite) {
+        blockToWrite.commitPartitions();
+      }
     } // If else, does not need to write because the data is duplicated.
   }
 

@@ -20,6 +20,7 @@ import edu.snu.nemo.common.exception.BlockWriteException;
 import edu.snu.nemo.runtime.common.data.KeyRange;
 import edu.snu.nemo.runtime.executor.data.DataUtil;
 import edu.snu.nemo.runtime.executor.data.partition.NonSerializedPartition;
+import edu.snu.nemo.runtime.executor.data.partition.Partition;
 import edu.snu.nemo.runtime.executor.data.partition.SerializedPartition;
 import edu.snu.nemo.runtime.executor.data.streamchainer.Serializer;
 
@@ -35,12 +36,9 @@ import java.util.*;
  * @param <K> the key type of its partitions.
  */
 @NotThreadSafe
-public final class NonSerializedMemoryBlock<K extends Serializable> implements Block<K> {
+public final class NonSerializedMemoryBlock<K extends Serializable> extends AbstractBlock<K> {
 
-  private final String id;
   private final List<NonSerializedPartition<K>> nonSerializedPartitions;
-  private final Map<K, NonSerializedPartition<K>> nonCommittedPartitionsMap;
-  private final Serializer serializer;
   private volatile boolean committed;
 
   /**
@@ -52,10 +50,8 @@ public final class NonSerializedMemoryBlock<K extends Serializable> implements B
    */
   public NonSerializedMemoryBlock(final String blockId,
                                   final Serializer serializer) {
-    this.id = blockId;
+    super(blockId, serializer);
     this.nonSerializedPartitions = new ArrayList<>();
-    this.nonCommittedPartitionsMap = new HashMap<>();
-    this.serializer = serializer;
     this.committed = false;
   }
 
@@ -75,8 +71,8 @@ public final class NonSerializedMemoryBlock<K extends Serializable> implements B
       throw new BlockWriteException(new Throwable("The block is already committed!"));
     } else {
       try {
-        final NonSerializedPartition<K> partition =
-            nonCommittedPartitionsMap.computeIfAbsent(key, absentKey -> new NonSerializedPartition<>(key));
+        final NonSerializedPartition<K> partition = (NonSerializedPartition<K>)
+            getNonCommittedPartitionsMap().computeIfAbsent(key, absentKey -> new NonSerializedPartition<>(key));
         partition.write(element);
       } catch (final IOException e) {
         throw new BlockWriteException(e);
@@ -116,7 +112,7 @@ public final class NonSerializedMemoryBlock<K extends Serializable> implements B
     if (!committed) {
       try {
         final Iterable<NonSerializedPartition<K>> convertedPartitions =
-            DataUtil.convertToNonSerPartitions(serializer, partitions);
+            DataUtil.convertToNonSerPartitions(getSerializer(), partitions);
         writePartitions(convertedPartitions);
       } catch (final IOException e) {
         throw new BlockWriteException(e);
@@ -164,7 +160,7 @@ public final class NonSerializedMemoryBlock<K extends Serializable> implements B
   @Override
   public Iterable<SerializedPartition<K>> readSerializedPartitions(final KeyRange keyRange) throws BlockFetchException {
     try {
-      return DataUtil.convertToSerPartitions(serializer, readPartitions(keyRange));
+      return DataUtil.convertToSerPartitions(getSerializer(), readPartitions(keyRange));
     } catch (final IOException e) {
       throw new BlockFetchException(e);
     }
@@ -178,22 +174,23 @@ public final class NonSerializedMemoryBlock<K extends Serializable> implements B
   @Override
   public synchronized Optional<Map<K, Long>> commit() {
     if (!committed) {
-      nonCommittedPartitionsMap.forEach((key, partition) -> {
-        partition.commit();
-        nonSerializedPartitions.add(partition);
-      });
-      nonCommittedPartitionsMap.clear();
+      commitPartitions();
       committed = true;
     }
     return Optional.empty();
   }
 
-  /**
-   * @return the ID of this block.
-   */
   @Override
-  public synchronized String getId() {
-    return id;
+  public void commitPartitions() throws BlockWriteException {
+    try {
+      for (final Partition<?, K> partition : getNonCommittedPartitionsMap().values()) {
+        partition.commit();
+        nonSerializedPartitions.add((NonSerializedPartition<K>) partition);
+      }
+      getNonCommittedPartitionsMap().clear();
+    } catch (final IOException e) {
+      throw new BlockWriteException(e);
+    }
   }
 
   /**

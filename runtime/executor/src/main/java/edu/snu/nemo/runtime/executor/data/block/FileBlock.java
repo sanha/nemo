@@ -20,6 +20,7 @@ import edu.snu.nemo.common.exception.BlockWriteException;
 import edu.snu.nemo.runtime.common.data.KeyRange;
 import edu.snu.nemo.runtime.executor.data.*;
 import edu.snu.nemo.runtime.executor.data.partition.NonSerializedPartition;
+import edu.snu.nemo.runtime.executor.data.partition.Partition;
 import edu.snu.nemo.runtime.executor.data.partition.SerializedPartition;
 import edu.snu.nemo.runtime.executor.data.streamchainer.Serializer;
 import edu.snu.nemo.runtime.executor.data.metadata.PartitionMetadata;
@@ -38,11 +39,8 @@ import java.util.*;
  * @param <K> the key type of its partitions.
  */
 @NotThreadSafe
-public final class FileBlock<K extends Serializable> implements Block<K> {
+public final class FileBlock<K extends Serializable> extends AbstractBlock<K> {
 
-  private final String id;
-  private final Map<K, SerializedPartition<K>> nonCommittedPartitionsMap;
-  private final Serializer serializer;
   private final String filePath;
   private final FileMetadata<K> metadata;
 
@@ -59,9 +57,7 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
                    final Serializer serializer,
                    final String filePath,
                    final FileMetadata<K> metadata) {
-    this.id = blockId;
-    this.nonCommittedPartitionsMap = new HashMap<>();
-    this.serializer = serializer;
+    super(blockId, serializer);
     this.filePath = filePath;
     this.metadata = metadata;
   }
@@ -102,9 +98,10 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
       throw new BlockWriteException(new Throwable("The block is already committed!"));
     } else {
       final Serializer serializerToUse = metadata.isWriteAsBytes()
-          ? SerializerManager.getAsBytesSerializer() : serializer;
+          ? SerializerManager.getAsBytesSerializer() : getSerializer();
       try {
-        SerializedPartition<K> partition = nonCommittedPartitionsMap.get(key);
+        final Map nonCommittedPartitionsMap = getNonCommittedPartitionsMap();
+        SerializedPartition<K> partition = (SerializedPartition<K>) nonCommittedPartitionsMap.get(key);
         if (partition == null) {
           partition = new SerializedPartition<>(key, serializerToUse);
           nonCommittedPartitionsMap.put(key, partition);
@@ -130,7 +127,7 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
     } else {
       try {
         final Serializer serializerToUse = metadata.isWriteAsBytes()
-            ? SerializerManager.getAsBytesSerializer() : serializer;
+            ? SerializerManager.getAsBytesSerializer() : getSerializer();
         final Iterable<SerializedPartition<K>> convertedPartitions =
             DataUtil.convertToSerPartitions(serializerToUse, partitions);
         writeSerializedPartitions(convertedPartitions);
@@ -176,7 +173,7 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
       // Deserialize the data
       final List<NonSerializedPartition<K>> deserializedPartitions = new ArrayList<>();
       final Serializer serializerToUse = metadata.isReadAsBytes()
-          ? SerializerManager.getAsBytesSerializer() : serializer;
+          ? SerializerManager.getAsBytesSerializer() : getSerializer();
       try {
         try (final FileInputStream fileStream = new FileInputStream(filePath)) {
           for (final PartitionMetadata<K> partitionMetadata : metadata.getPartitionMetadataList()) {
@@ -319,13 +316,7 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
   public synchronized Optional<Map<K, Long>> commit() throws BlockWriteException {
     try {
       if (!metadata.isCommitted()) {
-        final List<SerializedPartition<K>> partitions = new ArrayList<>();
-        for (final SerializedPartition<K> partition : nonCommittedPartitionsMap.values()) {
-          partition.commit();
-          partitions.add(partition);
-        }
-        writeToFile(partitions);
-        nonCommittedPartitionsMap.clear();
+        commitPartitions();
         metadata.commitBlock();
       }
       final List<PartitionMetadata<K>> partitionMetadataList = metadata.getPartitionMetadataList();
@@ -346,12 +337,19 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
     }
   }
 
-  /**
-   * @return the ID of this block.
-   */
   @Override
-  public String getId() {
-    return id;
+  public void commitPartitions() throws BlockWriteException {
+    final List<SerializedPartition<K>> partitions = new ArrayList<>();
+    try {
+      for (final Partition<?, K> partition : getNonCommittedPartitionsMap().values()) {
+        partition.commit();
+        partitions.add((SerializedPartition<K>) partition);
+      }
+      writeToFile(partitions);
+      getNonCommittedPartitionsMap().clear();
+    } catch (final IOException e) {
+      throw new BlockWriteException(e);
+    }
   }
 
   /**
