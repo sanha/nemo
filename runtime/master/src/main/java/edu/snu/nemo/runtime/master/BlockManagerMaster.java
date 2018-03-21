@@ -303,8 +303,8 @@ public final class BlockManagerMaster {
    * @param message        the request message.
    * @param messageContext the message context which will be used for response.
    */
-  void onRequestBlockLocation(final ControlMessage.Message message,
-                              final MessageContext messageContext) {
+  private void onRequestBlockLocation(final ControlMessage.Message message,
+                                      final MessageContext messageContext) {
     assert (message.getType() == ControlMessage.MessageType.RequestBlockLocation);
     final String blockId = message.getRequestBlockLocationMsg().getBlockId();
     final long requestId = message.getId();

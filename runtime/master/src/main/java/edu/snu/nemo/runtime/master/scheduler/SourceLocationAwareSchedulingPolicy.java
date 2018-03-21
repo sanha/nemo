@@ -17,9 +17,14 @@ package edu.snu.nemo.runtime.master.scheduler;
 
 import edu.snu.nemo.common.exception.SchedulingException;
 import edu.snu.nemo.common.ir.Readable;
+import edu.snu.nemo.common.ir.edge.executionproperty.DataCommunicationPatternProperty;
+import edu.snu.nemo.common.ir.executionproperty.ExecutionProperty;
 import edu.snu.nemo.common.ir.vertex.executionproperty.ExecutorPlacementProperty;
+import edu.snu.nemo.runtime.common.RuntimeIdGenerator;
+import edu.snu.nemo.runtime.common.plan.physical.PhysicalStageEdge;
 import edu.snu.nemo.runtime.common.plan.physical.ScheduledTaskGroup;
 import edu.snu.nemo.runtime.common.state.TaskGroupState;
+import edu.snu.nemo.runtime.master.BlockManagerMaster;
 import edu.snu.nemo.runtime.master.JobStateManager;
 import edu.snu.nemo.runtime.master.resource.ExecutorRepresenter;
 import org.apache.reef.annotations.audience.DriverSide;
@@ -29,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -51,6 +57,7 @@ public final class SourceLocationAwareSchedulingPolicy implements SchedulingPoli
   private final long scheduleTimeoutMs;
   private final Lock lock = new ReentrantLock();
   private final Condition moreExecutorsAvailableCondition = lock.newCondition();
+  private final BlockManagerMaster blockManagerMaster;
 
   /**
    * Injectable constructor for {@link SourceLocationAwareSchedulingPolicy}.
@@ -59,10 +66,12 @@ public final class SourceLocationAwareSchedulingPolicy implements SchedulingPoli
    */
   @Inject
   private SourceLocationAwareSchedulingPolicy(final ExecutorRegistry executorRegistry,
-                                              final RoundRobinSchedulingPolicy roundRobinSchedulingPolicy) {
+                                              final RoundRobinSchedulingPolicy roundRobinSchedulingPolicy,
+                                              final BlockManagerMaster blockManagerMaster) {
     this.executorRegistry = executorRegistry;
     this.roundRobinSchedulingPolicy = roundRobinSchedulingPolicy;
     this.scheduleTimeoutMs = roundRobinSchedulingPolicy.getScheduleTimeoutMs();
+    this.blockManagerMaster = blockManagerMaster;
   }
 
   @Override
@@ -93,12 +102,41 @@ public final class SourceLocationAwareSchedulingPolicy implements SchedulingPoli
         LOG.warn(String.format("Exception while trying to get source location for %s",
             scheduledTaskGroup.getTaskGroupId()), e);
       }
+
+      long timeoutInNanoseconds = scheduleTimeoutMs * 1000000;
       if (sourceLocations.size() == 0) {
+        if (scheduledTaskGroup.getTaskGroupIncomingEdges().size() == 1) {
+          final PhysicalStageEdge physicalStageEdge = scheduledTaskGroup.getTaskGroupIncomingEdges().get(0);
+          if (DataCommunicationPatternProperty.Value.OneToOne.equals(
+              physicalStageEdge.getProperty(ExecutionProperty.Key.DataCommunicationPattern))) {
+            final String blockIdToRead =
+                RuntimeIdGenerator.generateBlockId(physicalStageEdge.getId(), scheduledTaskGroup.getTaskGroupIdx());
+            final BlockManagerMaster.BlockLocationRequestHandler locationHandler =
+                blockManagerMaster.getBlockLocationHandler(blockIdToRead);
+            if (locationHandler.getLocationFuture().isDone()) {
+              try {
+                final String location = locationHandler.getLocationFuture().get();
+                while (timeoutInNanoseconds > 0) {
+                  if (scheduleToLocalExecutor(scheduledTaskGroup, jobStateManager, location)) {
+                    return true;
+                  }
+                  try {
+                    timeoutInNanoseconds = moreExecutorsAvailableCondition.awaitNanos(timeoutInNanoseconds);
+                  } catch (final InterruptedException e) {
+                    throw new SchedulingException(e);
+                  }
+                }
+                return false;
+              } catch (final InterruptedException | ExecutionException e) {
+                LOG.error("Error during getting intermediate data location!", e);
+              }
+            }
+          }
+        }
         // No source location information found, fall back to the RoundRobinSchedulingPolicy
         return roundRobinSchedulingPolicy.scheduleTaskGroup(scheduledTaskGroup, jobStateManager);
       }
 
-      long timeoutInNanoseconds = scheduleTimeoutMs * 1000000;
       while (timeoutInNanoseconds > 0) {
         if (scheduleToLocalNode(scheduledTaskGroup, jobStateManager, sourceLocations)) {
           return true;
@@ -142,6 +180,40 @@ public final class SourceLocationAwareSchedulingPolicy implements SchedulingPoli
       selectedExecutor.onTaskGroupScheduled(scheduledTaskGroup);
       LOG.info("Scheduling {} (source location: {}) to {} (node name: {})", scheduledTaskGroup.getTaskGroupId(),
           String.join(", ", sourceLocations), selectedExecutor.getExecutorId(),
+          selectedExecutor.getNodeName());
+      return true;
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  /**
+   * Try to schedule a TaskGroup with intermediate data.
+   * @param scheduledTaskGroup TaskGroup to schedule
+   * @param jobStateManager {@link JobStateManager}
+   * @param intermLocation  which the TaskGroup belongs to.
+   * @return true if the task group is successfully scheduled, false otherwise.
+   */
+  private boolean scheduleToLocalExecutor(final ScheduledTaskGroup scheduledTaskGroup,
+                                          final JobStateManager jobStateManager,
+                                          final String intermLocation) {
+    lock.lock();
+    try {
+      final Optional<ExecutorRepresenter> candidateExecutor = executorRegistry.getRunningExecutorIds().stream()
+          .map(executorId -> executorRegistry.getRunningExecutorRepresenter(executorId))
+          .filter(executor -> executor.getRunningTaskGroups().size() - executor.getSmallTaskGroups().size()
+              < executor.getExecutorCapacity())
+          .filter(executor -> executor.getExecutorId().equals(intermLocation))
+          .findAny();
+      if (!candidateExecutor.isPresent()) {
+        return false;
+      }
+      final ExecutorRepresenter selectedExecutor = candidateExecutor.get();
+
+      jobStateManager.onTaskGroupStateChanged(scheduledTaskGroup.getTaskGroupId(), TaskGroupState.State.EXECUTING);
+      selectedExecutor.onTaskGroupScheduled(scheduledTaskGroup);
+      LOG.info("Scheduling {} (interm location: {}) to {} (node name: {})", scheduledTaskGroup.getTaskGroupId(),
+          String.join(", ", intermLocation), selectedExecutor.getExecutorId(),
           selectedExecutor.getNodeName());
       return true;
     } finally {
