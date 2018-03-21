@@ -126,7 +126,7 @@ public final class SourceLocationAwareSchedulingPolicy implements SchedulingPoli
                     throw new SchedulingException(e);
                   }
                 }
-                if (System.currentTimeMillis() % 10 == 0) {
+                if (System.currentTimeMillis() % 50 == 0) {
                   return roundRobinSchedulingPolicy.scheduleTaskGroup(scheduledTaskGroup, jobStateManager); // delay
                 } else {
                   return false;
