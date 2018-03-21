@@ -126,7 +126,11 @@ public final class SourceLocationAwareSchedulingPolicy implements SchedulingPoli
                     throw new SchedulingException(e);
                   }
                 }
-                return roundRobinSchedulingPolicy.scheduleTaskGroup(scheduledTaskGroup, jobStateManager); // delay
+                if (System.currentTimeMillis() % 10 == 0) {
+                  return roundRobinSchedulingPolicy.scheduleTaskGroup(scheduledTaskGroup, jobStateManager); // delay
+                } else {
+                  return false;
+                }
               } catch (final InterruptedException | ExecutionException e) {
                 LOG.error("Error during getting intermediate data location!", e);
               }
