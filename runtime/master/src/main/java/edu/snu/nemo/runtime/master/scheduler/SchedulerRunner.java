@@ -23,6 +23,10 @@ import org.apache.reef.annotations.audience.DriverSide;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +47,8 @@ public final class SchedulerRunner {
   private final ExecutorService schedulerThread;
   private boolean initialJobScheduled;
   private boolean isTerminated;
+  private final SignalQueueingCondition mustCheckSchedulingAvailabilityOrSchedulerTerminated
+      = new SignalQueueingCondition();
 
   @Inject
   public SchedulerRunner(final SchedulingPolicy schedulingPolicy,
@@ -53,6 +59,20 @@ public final class SchedulerRunner {
     this.schedulerThread = Executors.newSingleThreadExecutor(runnable -> new Thread(runnable, "SchedulerRunner"));
     this.initialJobScheduled = false;
     this.isTerminated = false;
+  }
+
+  /**
+   * Signals to the condition on executor availability.
+   */
+  public void onAnExecutorAvailable() {
+    mustCheckSchedulingAvailabilityOrSchedulerTerminated.signal();
+  }
+
+  /**
+   * Signals to the condition on TaskGroup availability.
+   */
+  public void onATaskGroupAvailable() {
+    mustCheckSchedulingAvailabilityOrSchedulerTerminated.signal();
   }
 
   /**
@@ -74,6 +94,7 @@ public final class SchedulerRunner {
   void terminate() {
     schedulingPolicy.terminate();
     isTerminated = true;
+    mustCheckSchedulingAvailabilityOrSchedulerTerminated.signal();
   }
 
   /**
@@ -82,28 +103,38 @@ public final class SchedulerRunner {
   private final class SchedulerThread implements Runnable {
     @Override
     public void run() {
+      // Run the first iteration unconditionally
+      mustCheckSchedulingAvailabilityOrSchedulerTerminated.signal();
+
       while (!isTerminated) {
-        try {
-          Optional<ScheduledTaskGroup> nextTaskGroupToSchedule;
-          do {
-            nextTaskGroupToSchedule = pendingTaskGroupQueue.dequeue();
-          } while (!nextTaskGroupToSchedule.isPresent());
+        // Iteration guard
+        mustCheckSchedulingAvailabilityOrSchedulerTerminated.await();
 
-          final JobStateManager jobStateManager = jobStateManagers.get(nextTaskGroupToSchedule.get().getJobId());
+        final Collection<ScheduledTaskGroup> schedulableTaskGroups = pendingTaskGroupQueue
+            .peekSchedulableTaskGroups().orElse(null);
+        if (schedulableTaskGroups == null) {
+          // TaskGroup queue is empty
+          continue;
+        }
+        final List<ScheduledTaskGroup> scheduledTaskGroups = new ArrayList<>();
+
+        for (final ScheduledTaskGroup schedulableTaskGroup : schedulableTaskGroups) {
+          final JobStateManager jobStateManager = jobStateManagers.get(schedulableTaskGroup.getJobId());
           final boolean isScheduled =
-              schedulingPolicy.scheduleTaskGroup(nextTaskGroupToSchedule.get(), jobStateManager);
-
-          if (!isScheduled) {
-            LOG.debug("Failed to assign an executor for {} before the timeout: {}",
-                new Object[]{nextTaskGroupToSchedule.get().getTaskGroupId(),
-                    schedulingPolicy.getScheduleTimeoutMs()});
-
-            // Put this TaskGroup back to the queue since we failed to schedule it.
-            pendingTaskGroupQueue.enqueue(nextTaskGroupToSchedule.get());
+              schedulingPolicy.scheduleTaskGroup(schedulableTaskGroup, jobStateManager);
+          if (isScheduled) {
+            scheduledTaskGroups.add(schedulableTaskGroup);
           }
-        } catch (final Exception e) {
-          e.printStackTrace();
-          throw e;
+        }
+
+        for (final ScheduledTaskGroup scheduledTaskGroup : scheduledTaskGroups) {
+          pendingTaskGroupQueue.remove(scheduledTaskGroup.getTaskGroupId());
+        }
+
+        if (scheduledTaskGroups.size() == schedulableTaskGroups.size()) {
+          // Scheduled all TaskGroups in the stage
+          // Immediately run next iteration to check whether there is another schedulable stage
+          mustCheckSchedulingAvailabilityOrSchedulerTerminated.signal();
         }
       }
       jobStateManagers.values().forEach(jobStateManager -> {
@@ -114,6 +145,39 @@ public final class SchedulerRunner {
         }
       });
       LOG.info("SchedulerRunner Terminated!");
+    }
+  }
+
+  /**
+   * A {@link Condition} primitive that 'queues' signal.
+   */
+  private final class SignalQueueingCondition {
+    private final AtomicBoolean hasQueuedSignal = new AtomicBoolean(false);
+    private final Lock lock = new ReentrantLock();
+    private final Condition condition = lock.newCondition();
+
+    public void signal() {
+      lock.lock();
+      try {
+        hasQueuedSignal.set(true);
+        condition.signal();
+      } finally {
+        lock.unlock();
+      }
+    }
+
+    public void await() {
+      lock.lock();
+      try {
+        if (!hasQueuedSignal.get()) {
+          condition.await();
+        }
+        hasQueuedSignal.set(false);
+      } catch (final InterruptedException e) {
+        throw new RuntimeException(e);
+      } finally {
+        lock.unlock();
+      }
     }
   }
 }

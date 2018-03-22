@@ -69,21 +69,19 @@ public final class Executor {
 
   @Inject
   public Executor(@Parameter(JobConf.ExecutorId.class) final String executorId,
-                  @Parameter(JobConf.ExecutorCapacity.class) final int executorCapacity,
                   final PersistentConnectionToMasterMap persistentConnectionToMasterMap,
                   final MessageEnvironment messageEnvironment,
                   final SerializerManager serializerManager,
                   final DataTransferFactory dataTransferFactory,
                   final MetricManagerWorker metricMessageSender) {
     this.executorId = executorId;
-    //this.executorService = Executors.newFixedThreadPool(executorCapacity);
     this.executorService = Executors.newCachedThreadPool();
     this.persistentConnectionToMasterMap = persistentConnectionToMasterMap;
     this.serializerManager = serializerManager;
     this.dataTransferFactory = dataTransferFactory;
     this.metricMessageSender = metricMessageSender;
     messageEnvironment.setupListener(MessageEnvironment.EXECUTOR_MESSAGE_LISTENER_ID, new ExecutorMessageReceiver());
-    LOG.info("Executor [{}] capacity is " + executorCapacity, executorId);
+    LOG.info("Executor [{}]", executorId);
   }
 
   public String getExecutorId() {

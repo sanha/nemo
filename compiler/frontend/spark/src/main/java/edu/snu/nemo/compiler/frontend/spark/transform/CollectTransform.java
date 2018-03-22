@@ -58,11 +58,10 @@ public final class CollectTransform<T> implements Transform<T, T> {
 
   @Override
   public void close() {
-    try {
-      fos = new FileOutputStream(filename);
-      oos = new ObjectOutputStream(fos);
-      oos.writeObject(list);
-      oos.close();
+    try (final FileOutputStream fos = new FileOutputStream(filename)) {
+      try (final ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+        oos.writeObject(list);
+      }
     } catch (Exception e) {
       throw new RuntimeException("Exception while file closing in CollectTransform " + e);
     }
