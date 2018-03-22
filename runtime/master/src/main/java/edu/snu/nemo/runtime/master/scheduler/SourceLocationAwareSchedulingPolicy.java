@@ -102,7 +102,7 @@ public final class SourceLocationAwareSchedulingPolicy implements SchedulingPoli
               final String location = locationHandler.getLocationFuture().get();
               final boolean scheduled =
                   scheduleToLocalExecutor(scheduledTaskGroup, jobStateManager, location);
-              if (!scheduled && System.currentTimeMillis() % 100 == 0) {
+              if (!scheduled && System.currentTimeMillis() % 1000 == 0) {
                 return roundRobinSchedulingPolicy.scheduleTaskGroup(scheduledTaskGroup, jobStateManager); // delay
               } else {
                 return scheduled;
