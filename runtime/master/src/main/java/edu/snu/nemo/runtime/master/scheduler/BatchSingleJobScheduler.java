@@ -435,7 +435,6 @@ public final class BatchSingleJobScheduler implements Scheduler {
     LOG.debug("{} completed in {}", new Object[]{taskGroupId, executorId});
     if (!isOnHoldToComplete) {
       schedulingPolicy.onTaskGroupExecutionComplete(executorId, taskGroupId);
-      schedulerRunner.onAnExecutorAvailable();
     }
 
     final String stageIdForTaskGroupUponCompletion = RuntimeIdGenerator.getStageIdFromTaskGroupId(taskGroupId);
@@ -445,6 +444,7 @@ public final class BatchSingleJobScheduler implements Scheduler {
         scheduleNextStage(stageIdForTaskGroupUponCompletion);
       }
     }
+    schedulerRunner.onAnExecutorAvailable();
   }
 
   /**
@@ -458,7 +458,6 @@ public final class BatchSingleJobScheduler implements Scheduler {
                                           final String taskPutOnHold) {
     LOG.info("{} put on hold in {}", new Object[]{taskGroupId, executorId});
     schedulingPolicy.onTaskGroupExecutionComplete(executorId, taskGroupId);
-    schedulerRunner.onAnExecutorAvailable();
     final String stageIdForTaskGroupUponCompletion = RuntimeIdGenerator.getStageIdFromTaskGroupId(taskGroupId);
 
     final boolean stageComplete =
@@ -483,6 +482,7 @@ public final class BatchSingleJobScheduler implements Scheduler {
     } else {
       onTaskGroupExecutionComplete(executorId, taskGroupId, true);
     }
+    schedulerRunner.onAnExecutorAvailable();
   }
 
   /**
@@ -498,7 +498,6 @@ public final class BatchSingleJobScheduler implements Scheduler {
                                                      final TaskGroupState.RecoverableFailureCause failureCause) {
     LOG.info("{} failed in {} by {}", new Object[]{taskGroupId, executorId, failureCause});
     schedulingPolicy.onTaskGroupExecutionFailed(executorId, taskGroupId);
-    schedulerRunner.onAnExecutorAvailable();
 
     final String stageId = RuntimeIdGenerator.getStageIdFromTaskGroupId(taskGroupId);
     final int attemptIndexForStage =
@@ -551,5 +550,6 @@ public final class BatchSingleJobScheduler implements Scheduler {
       default:
         throw new UnknownFailureCauseException(new Throwable("Unknown cause: " + failureCause));
     }
+    schedulerRunner.onAnExecutorAvailable();
   }
 }
