@@ -158,15 +158,18 @@ public final class FileBlock<K extends Serializable> extends AbstractBlock<K> {
     }
   }
 
-  private class LazyIterator implements Iterator, AutoCloseable, DataUtil.IteratorWithNumBytes {
+  /**
+   * WOW.
+   */
+  private final class LazyIterator implements Iterator, AutoCloseable, DataUtil.IteratorWithNumBytes {
 
-    final KeyRange keyRange;
-    final FileInputStream fileInputStream;
-    final Iterator<PartitionMetadata<K>> partitionMetadataItr;
-    final Serializer serializerToUse;
-    int readablePartitions;
-    Iterator currentIterator;
-    long numSerializedBytes;
+    private final KeyRange keyRange;
+    private final FileInputStream fileInputStream;
+    private final Iterator<PartitionMetadata<K>> partitionMetadataItr;
+    private final Serializer serializerToUse;
+    private int readablePartitions;
+    private Iterator currentIterator;
+    private long numSerializedBytes;
 
     private LazyIterator(final KeyRange keyRange) throws BlockFetchException {
       try {
@@ -261,7 +264,6 @@ public final class FileBlock<K extends Serializable> extends AbstractBlock<K> {
   }
 
   public DataUtil.IteratorWithNumBytes readLazily(final KeyRange keyRange) throws BlockFetchException {
-    // TODO: handle used data?
     if (!metadata.isCommitted()) {
       throw new BlockFetchException(new Throwable("Cannot retrieve elements before a block is committed"));
     } else {

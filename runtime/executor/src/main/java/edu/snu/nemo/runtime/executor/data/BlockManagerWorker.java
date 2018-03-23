@@ -164,7 +164,7 @@ public final class BlockManagerWorker {
     if (optionalBlock.isPresent()) {
       if (blockStore.equals(DataStoreProperty.Value.LocalFileStore)) {
         final DataUtil.IteratorWithNumBytes itr = ((FileBlock) optionalBlock.get()).readLazily(keyRange);
-        handleUsedData(blockStore, blockId);
+        handleUsedData(blockStore, blockId); // TODO #?: okay? condition?
         return CompletableFuture.completedFuture(itr);
       } else {
         final Iterable<NonSerializedPartition> partitions = optionalBlock.get().readPartitions(keyRange);
