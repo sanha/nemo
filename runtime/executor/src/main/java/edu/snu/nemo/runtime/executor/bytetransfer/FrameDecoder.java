@@ -134,8 +134,9 @@ final class FrameDecoder extends ByteToMessageDecoder {
     final long length = in.readUnsignedInt();
     if (length < 0) {
       throw new IllegalStateException(String.format("Frame length is negative: %d", length));
-    } else if (length > Integer.MAX_VALUE) {
+    } else if (length > (long) Integer.MAX_VALUE) {
       LOG.error("@@@@ frame length greater than int max!");
+      throw new RuntimeException("@@@@ frame length greater than int max!");
     }
     if ((flags & ((byte) (1 << 3))) == 0) {
       // setup context for reading control frame body
