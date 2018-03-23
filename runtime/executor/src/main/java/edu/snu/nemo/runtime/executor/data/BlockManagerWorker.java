@@ -162,26 +162,32 @@ public final class BlockManagerWorker {
     final Optional<Block> optionalBlock = store.readBlock(blockId);
 
     if (optionalBlock.isPresent()) {
-      final Iterable<NonSerializedPartition> partitions = optionalBlock.get().readPartitions(keyRange);
-      handleUsedData(blockStore, blockId);
+      if (blockStore.equals(DataStoreProperty.Value.LocalFileStore)) {
+        final DataUtil.IteratorWithNumBytes itr = ((FileBlock) optionalBlock.get()).readLazily(keyRange);
+        handleUsedData(blockStore, blockId);
+        return CompletableFuture.completedFuture(itr);
+      } else {
+        final Iterable<NonSerializedPartition> partitions = optionalBlock.get().readPartitions(keyRange);
+        handleUsedData(blockStore, blockId);
 
-      // Block resides in this evaluator!
-      try {
-        final Iterator innerIterator = DataUtil.concatNonSerPartitions(partitions).iterator();
-        long numSerializedBytes = 0;
-        long numEncodedBytes = 0;
+        // Block resides in this evaluator!
         try {
-          for (final NonSerializedPartition partition : partitions) {
-            numSerializedBytes += partition.getNumSerializedBytes();
-            numEncodedBytes += partition.getNumEncodedBytes();
+          final Iterator innerIterator = DataUtil.concatNonSerPartitions(partitions).iterator();
+          long numSerializedBytes = 0;
+          long numEncodedBytes = 0;
+          try {
+            for (final NonSerializedPartition partition : partitions) {
+              numSerializedBytes += partition.getNumSerializedBytes();
+              numEncodedBytes += partition.getNumEncodedBytes();
+            }
+            return CompletableFuture.completedFuture(DataUtil.IteratorWithNumBytes.of(innerIterator, numSerializedBytes,
+                numEncodedBytes));
+          } catch (final DataUtil.IteratorWithNumBytes.NumBytesNotSupportedException e) {
+            return CompletableFuture.completedFuture(DataUtil.IteratorWithNumBytes.of(innerIterator));
           }
-          return CompletableFuture.completedFuture(DataUtil.IteratorWithNumBytes.of(innerIterator, numSerializedBytes,
-              numEncodedBytes));
-        } catch (final DataUtil.IteratorWithNumBytes.NumBytesNotSupportedException e) {
-          return CompletableFuture.completedFuture(DataUtil.IteratorWithNumBytes.of(innerIterator));
+        } catch (final IOException e) {
+          throw new BlockFetchException(e);
         }
-      } catch (final IOException e) {
-        throw new BlockFetchException(e);
       }
     } else {
       // We don't have the block here...
