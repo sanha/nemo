@@ -57,7 +57,7 @@ public final class JobLauncher {
   private static final int LOCAL_NUMBER_OF_EVALUATORS = 100; // hopefully large enough for our use....
   private static Configuration jobAndDriverConf = null;
   private static Configuration deployModeConf = null;
-  private static Configuration jobConf = null;
+  private static Configuration builtJobConf = null;
 
   /**
    * private constructor.
@@ -72,25 +72,25 @@ public final class JobLauncher {
    */
   public static void main(final String[] args) throws Exception {
     // Get Job and Driver Confs
-    jobConf = getJobConf(args);
-    if (jobConf == null) {
+    builtJobConf = getJobConf(args);
+    if (builtJobConf == null) {
       throw new RuntimeException("Configuration for launching job is not ready");
     }
-    final Configuration driverConf = getDriverConf(jobConf);
+    final Configuration driverConf = getDriverConf(builtJobConf);
     final Configuration driverNcsConf = getDriverNcsConf();
     final Configuration driverMessageConfg = getDriverMessageConf();
-    final Configuration executorResourceConfig = getExecutorResourceConf(jobConf);
+    final Configuration executorResourceConfig = getExecutorResourceConf(builtJobConf);
     final Configuration clientConf = getClientConf();
 
     // Merge Job and Driver Confs
-    jobAndDriverConf = Configurations.merge(jobConf, driverConf, driverNcsConf, driverMessageConfg,
+    jobAndDriverConf = Configurations.merge(builtJobConf, driverConf, driverNcsConf, driverMessageConfg,
         executorResourceConfig);
 
     // Get DeployMode Conf
-    deployModeConf = Configurations.merge(getDeployModeConf(jobConf), clientConf);
+    deployModeConf = Configurations.merge(getDeployModeConf(builtJobConf), clientConf);
 
     // Launch client main
-    runUserProgramMain(jobConf);
+    runUserProgramMain(builtJobConf);
   }
 
   /**
@@ -100,7 +100,7 @@ public final class JobLauncher {
   // When modifying the signature of this method, see CompilerTestUtil#compileDAG and make corresponding changes
   public static void launchDAG(final DAG dag) {
     try {
-      if (jobAndDriverConf == null || deployModeConf == null || jobConf == null) {
+      if (jobAndDriverConf == null || deployModeConf == null || builtJobConf == null) {
         throw new RuntimeException("Configuration for launching driver or job is not ready");
       }
       final String serializedDAG = Base64.getEncoder().encodeToString(SerializationUtils.serialize(dag));
@@ -274,6 +274,6 @@ public final class JobLauncher {
   }
 
   public static Configuration getBuiltJobConf() {
-    return jobConf;
+    return builtJobConf;
   }
 }
