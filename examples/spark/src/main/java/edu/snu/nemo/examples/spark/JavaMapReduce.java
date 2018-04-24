@@ -47,8 +47,6 @@ public final class JavaMapReduce {
         .builder()
         .config("mapreduce.input.fileinputformat.input.dir.recursive", "true")
         .appName("JavaWordCount")
-        .master("yarn")
-        .config("spark.submit.deployMode", "cluster")
         .getOrCreate();
 
     final long start = System.currentTimeMillis();

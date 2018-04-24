@@ -15,7 +15,14 @@
  */
 package edu.snu.nemo.compiler.frontend.spark.sql;
 
+import edu.snu.nemo.client.JobLauncher;
+import edu.snu.nemo.compiler.frontend.spark.SparkLauncher;
+import edu.snu.nemo.conf.JobConf;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.reef.tang.Configuration;
+import org.apache.reef.tang.Injector;
+import org.apache.reef.tang.Tang;
+import org.apache.reef.tang.exceptions.InjectionException;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
@@ -27,6 +34,7 @@ import org.apache.spark.sql.types.StructType;
 import scala.Tuple2;
 
 import javax.naming.OperationNotSupportedException;
+import java.io.File;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -316,33 +324,37 @@ public final class SparkSession extends org.apache.spark.sql.SparkSession implem
       }
 
       UserGroupInformation.setLoginUser(UserGroupInformation.createRemoteUser("ubuntu"));
-/*
-      try {
-        // get and override configurations from JobLauncher.
-        final Configuration configurations = JobLauncher.getJobConf(new String[0]);
-        final Injector injector = Tang.Factory.getTang().newInjector(configurations);
 
-        final String appName = injector.getNamedInstance(JobConf.JobId.class);
+      if (!options.containsKey("nemo.appName")) {
+        try {
+          // get and override configurations from JobLauncher.
+          final Configuration configurations = JobLauncher.getBuiltJobConf();
+          final Injector injector = Tang.Factory.getTang().newInjector(configurations);
+
+          this.config("nemo.appName", injector.getNamedInstance(JobConf.JobId.class));
 //      final String mainClass;
-        final String[] appArgs = injector.getNamedInstance(JobConf.UserMainArguments.class).split(" ");
-        final File fileDirectory = new File(injector.getNamedInstance(JobConf.FileDirectory.class));
-        final String master = injector.getNamedInstance(JobConf.DeployMode.class);
-
-        final String deployMode = master.equals("yarn") ? "cluster" : "client"; // client or cluster
+          this.config("nemo.appArgs", injector.getNamedInstance(JobConf.UserMainArguments.class));
+          this.config("nemo.fileDirectory", injector.getNamedInstance(JobConf.FileDirectory.class));
+          final String master = injector.getNamedInstance(JobConf.DeployMode.class);
+          this.config("nemo.master", master);
+          this.config("nemo.deployMode", master.equals("yarn") ? "cluster" : "client"); // client or cluster
 //      final String javaHome;
 //      final String sparkHome;
 //      final String driverMemory;
 //      final String executorMemory;
 //      final String executorCores;
-
+        } catch (final InjectionException e) {
+          throw new RuntimeException(e);
+        }
+      } else {
         // SparkLauncher for setting up spark environments. This doesn't call actual program.
         final SparkLauncher launcher = (SparkLauncher) new SparkLauncher()
-            .setAppName(appName)
+            .setAppName(options.get("nemo.appName"))
 //          .setMainClass(mainClass)
-            .addAppArgs(appArgs)
-            .directory(fileDirectory)
-            .setMaster(master)
-            .setDeployMode(deployMode)
+            .addAppArgs(options.get("nemo.appArgs").split(" "))
+            .directory(new File(options.get("nemo.fileDirectory")))
+            .setMaster(options.get("nemo.master"))
+            .setDeployMode(options.get("nemo.deployMode"))
 //          .setJavaHome(javaHome)
 //          .setSparkHome(sparkHome)
 //          .addSparkArg("--driver-memory", driverMemory)
@@ -350,10 +362,7 @@ public final class SparkSession extends org.apache.spark.sql.SparkSession implem
 //          .addSparkArg("--executor-cores", executorCores)
             .setVerbose(true);
         launcher.setUpEnvironments();
-      } catch (final InjectionException | IOException e) {
-        throw new RuntimeException(e);
       }
-*/
 
       return SparkSession.from(super.getOrCreate(), this.options);
     }

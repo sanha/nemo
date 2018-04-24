@@ -15,6 +15,7 @@
  */
 package edu.snu.nemo.client;
 
+import avro.shaded.com.google.common.annotations.VisibleForTesting;
 import edu.snu.nemo.common.dag.DAG;
 import edu.snu.nemo.conf.JobConf;
 import edu.snu.nemo.driver.NemoDriver;
@@ -56,6 +57,7 @@ public final class JobLauncher {
   private static final int LOCAL_NUMBER_OF_EVALUATORS = 100; // hopefully large enough for our use....
   private static Configuration jobAndDriverConf = null;
   private static Configuration deployModeConf = null;
+  private static Configuration jobConf = null;
 
   /**
    * private constructor.
@@ -70,7 +72,10 @@ public final class JobLauncher {
    */
   public static void main(final String[] args) throws Exception {
     // Get Job and Driver Confs
-    final Configuration jobConf = getJobConf(args);
+    jobConf = getJobConf(args);
+    if (jobConf == null) {
+      throw new RuntimeException("Configuration for launching job is not ready");
+    }
     final Configuration driverConf = getDriverConf(jobConf);
     final Configuration driverNcsConf = getDriverNcsConf();
     final Configuration driverMessageConfg = getDriverMessageConf();
@@ -95,8 +100,8 @@ public final class JobLauncher {
   // When modifying the signature of this method, see CompilerTestUtil#compileDAG and make corresponding changes
   public static void launchDAG(final DAG dag) {
     try {
-      if (jobAndDriverConf == null || deployModeConf == null) {
-        throw new RuntimeException("Configuration for launching driver is not ready");
+      if (jobAndDriverConf == null || deployModeConf == null || jobConf == null) {
+        throw new RuntimeException("Configuration for launching driver or job is not ready");
       }
       final String serializedDAG = Base64.getEncoder().encodeToString(SerializationUtils.serialize(dag));
       final Configuration dagConf = TANG.newConfigurationBuilder()
@@ -200,6 +205,7 @@ public final class JobLauncher {
    * @throws IOException exception while processing command line.
    * @throws InjectionException exception while injection.
    */
+  @VisibleForTesting
   public static Configuration getJobConf(final String[] args) throws IOException, InjectionException {
     final JavaConfigurationBuilder confBuilder = TANG.newConfigurationBuilder();
     final CommandLine cl = new CommandLine(confBuilder);
@@ -265,5 +271,9 @@ public final class JobLauncher {
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public static Configuration getBuiltJobConf() {
+    return jobConf;
   }
 }
