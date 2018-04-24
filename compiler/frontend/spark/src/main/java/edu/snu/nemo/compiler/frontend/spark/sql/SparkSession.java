@@ -115,9 +115,9 @@ public final class SparkSession extends org.apache.spark.sql.SparkSession implem
       final Object[] args = command.getValue();
       final Class<?>[] argTypes = Stream.of(args).map(Object::getClass).toArray(Class[]::new);
 
-      if (!SparkSession.class.getName().equals(className)
-          && !DataFrameReader.class.getName().equals(className)
-          && !Dataset.class.getName().equals(className)) {
+      if (!className.contains("SparkSession")
+          && !className.contains("DataFrameReader")
+          && !className.contains("Dataset")) {
         throw new OperationNotSupportedException(command + " is not yet supported.");
       }
 
@@ -262,7 +262,7 @@ public final class SparkSession extends org.apache.spark.sql.SparkSession implem
    * @return the session builder.
    */
   public static Builder builder() {
-    return new Builder().master("local");
+    return new Builder();
   }
 
   /**
@@ -311,7 +311,50 @@ public final class SparkSession extends org.apache.spark.sql.SparkSession implem
 
     @Override
     public SparkSession getOrCreate() {
-      UserGroupInformation.setLoginUser(UserGroupInformation.createRemoteUser("nemo_user"));
+      if (!options.containsKey("spark.master")) { // default spark_master option.
+        return this.master("local[*]").getOrCreate();
+      }
+
+      UserGroupInformation.setLoginUser(UserGroupInformation.createRemoteUser("ubuntu"));
+/*
+      try {
+        // get and override configurations from JobLauncher.
+        final Configuration configurations = JobLauncher.getJobConf(new String[0]);
+        final Injector injector = Tang.Factory.getTang().newInjector(configurations);
+
+        final String appName = injector.getNamedInstance(JobConf.JobId.class);
+//      final String mainClass;
+        final String[] appArgs = injector.getNamedInstance(JobConf.UserMainArguments.class).split(" ");
+        final File fileDirectory = new File(injector.getNamedInstance(JobConf.FileDirectory.class));
+        final String master = injector.getNamedInstance(JobConf.DeployMode.class);
+
+        final String deployMode = master.equals("yarn") ? "cluster" : "client"; // client or cluster
+//      final String javaHome;
+//      final String sparkHome;
+//      final String driverMemory;
+//      final String executorMemory;
+//      final String executorCores;
+
+        // SparkLauncher for setting up spark environments. This doesn't call actual program.
+        final SparkLauncher launcher = (SparkLauncher) new SparkLauncher()
+            .setAppName(appName)
+//          .setMainClass(mainClass)
+            .addAppArgs(appArgs)
+            .directory(fileDirectory)
+            .setMaster(master)
+            .setDeployMode(deployMode)
+//          .setJavaHome(javaHome)
+//          .setSparkHome(sparkHome)
+//          .addSparkArg("--driver-memory", driverMemory)
+//          .addSparkArg("--executor-memory", executorMemory)
+//          .addSparkArg("--executor-cores", executorCores)
+            .setVerbose(true);
+        launcher.setUpEnvironments();
+      } catch (final InjectionException | IOException e) {
+        throw new RuntimeException(e);
+      }
+*/
+
       return SparkSession.from(super.getOrCreate(), this.options);
     }
   }

@@ -402,7 +402,10 @@ public final class TaskGroupExecutor {
         } catch (final DataUtil.IteratorWithNumBytes.NumBytesNotSupportedException e) {
           encodedBlockSize = -1;
         }
-      } catch (final InterruptedException | ExecutionException e) {
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new BlockFetchException(e);
+      } catch (final ExecutionException e) {
         throw new BlockFetchException(e);
       }
     });

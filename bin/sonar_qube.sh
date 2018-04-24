@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
-pushd $parent_path
-java -cp examples/target/nemo-examples-0.1-SNAPSHOT-shaded.jar:$1:`yarn classpath` edu.snu.nemo.client.JobLauncher "${@:2}"
-popd
+echo "You should already have SonarQube installed and running at localhost:9000"
+echo "e.g. OSX: brew install sonarqube && sonar console"
+sonar console
+mvn clean package sonar:sonar
