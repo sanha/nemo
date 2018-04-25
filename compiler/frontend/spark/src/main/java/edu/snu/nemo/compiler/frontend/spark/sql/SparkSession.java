@@ -140,6 +140,12 @@ public final class SparkSession extends org.apache.spark.sql.SparkSession implem
     return (Dataset<T>) result;
   }
 
+  public static RDD<String> initializeTextFileRDD(final SparkSession spark,
+                                                  final String inputPath,
+                                                  final int minPartitions) {
+    return spark.sparkContext().textFile(inputPath, minPartitions);
+  }
+
   @Override
   public DataFrameReader read() {
     final boolean userTriggered = initializeFunction();

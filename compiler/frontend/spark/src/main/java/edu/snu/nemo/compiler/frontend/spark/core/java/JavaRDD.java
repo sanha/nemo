@@ -27,6 +27,7 @@ import edu.snu.nemo.compiler.frontend.spark.SparkKeyExtractor;
 import edu.snu.nemo.compiler.frontend.spark.coder.SparkCoder;
 import edu.snu.nemo.compiler.frontend.spark.core.RDD;
 import edu.snu.nemo.compiler.frontend.spark.source.SparkBoundedSourceVertex;
+import edu.snu.nemo.compiler.frontend.spark.source.SparkTextFileSourceVertex;
 import edu.snu.nemo.compiler.frontend.spark.sql.Dataset;
 import edu.snu.nemo.compiler.frontend.spark.sql.SparkSession;
 import edu.snu.nemo.compiler.frontend.spark.transform.*;
@@ -68,7 +69,8 @@ public final class JavaRDD<T> extends org.apache.spark.api.java.JavaRDD<T> {
    * @return the new JavaRDD object.
    */
   public static <T> JavaRDD<T> of(final SparkContext sparkContext,
-                                  final Iterable<T> initialData, final Integer parallelism) {
+                                  final Iterable<T> initialData,
+                                  final Integer parallelism) {
     final DAGBuilder<IRVertex, IREdge> builder = new DAGBuilder<>();
 
     final IRVertex initializedSourceVertex = new InitializedSourceVertex<>(initialData);
@@ -76,6 +78,25 @@ public final class JavaRDD<T> extends org.apache.spark.api.java.JavaRDD<T> {
     builder.addVertex(initializedSourceVertex);
 
     return new JavaRDD<>(sparkContext, builder.buildWithoutSourceSinkCheck(), initializedSourceVertex);
+  }
+
+  // WARNING: for text file input. tmp func.
+  public static <T> JavaRDD<T> of(final SparkContext sparkContext,
+                                  final org.apache.spark.api.java.JavaRDD<T> rdd,
+                                  final String inputPath) {
+    final DAGBuilder<IRVertex, IREdge> builder = new DAGBuilder<>();
+
+    final SparkSession spark = SparkSession
+        .builder()
+        .config("mapreduce.input.fileinputformat.input.dir.recursive", "true")
+        .appName("TMPTMPTMPTMPTMP")
+        .getOrCreate();
+
+    final IRVertex textSourceVertex = new SparkTextFileSourceVertex(spark, inputPath, rdd.getNumPartitions());
+    textSourceVertex.setProperty(ParallelismProperty.of(rdd.getNumPartitions()));
+    builder.addVertex(textSourceVertex);
+
+    return new JavaRDD<>(sparkContext, builder.buildWithoutSourceSinkCheck(), textSourceVertex);
   }
 
   /**

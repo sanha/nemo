@@ -18,7 +18,9 @@ package edu.snu.nemo.examples.spark;
 
 import edu.snu.nemo.compiler.frontend.spark.core.java.JavaPairRDD;
 import edu.snu.nemo.compiler.frontend.spark.core.java.JavaRDD;
+import edu.snu.nemo.compiler.frontend.spark.core.java.JavaSparkContext;
 import edu.snu.nemo.compiler.frontend.spark.sql.SparkSession;
+import org.apache.spark.SparkContext;
 import scala.Tuple2;
 
 /**
@@ -52,7 +54,9 @@ public final class JavaMapReduce {
     final long start = System.currentTimeMillis();
 
     // Run MR
-    final JavaRDD<String> data = spark.read().textFile(input).javaRDD();
+    final SparkContext sparkContext = spark.sparkContext();
+    final JavaRDD<String> data = (new JavaSparkContext(sparkContext)).textFile(input);
+    // final JavaRDD<String> data = spark.read().textFile(input).javaRDD();
     final JavaPairRDD<String, Long> documentToCount = data
         .mapToPair(line -> {
           final String[] words = line.split(" +");

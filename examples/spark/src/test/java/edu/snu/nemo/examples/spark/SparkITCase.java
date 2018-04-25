@@ -19,6 +19,7 @@ import edu.snu.nemo.client.JobLauncher;
 import edu.snu.nemo.common.test.ArgBuilder;
 import edu.snu.nemo.common.test.ExampleTestUtil;
 import edu.snu.nemo.compiler.optimizer.policy.DefaultPolicy;
+import edu.snu.nemo.compiler.optimizer.policy.SailfishPolicy;
 import edu.snu.nemo.examples.spark.sql.JavaUserDefinedTypedAggregation;
 import edu.snu.nemo.examples.spark.sql.JavaUserDefinedUntypedAggregation;
 import org.junit.Before;
@@ -82,6 +83,25 @@ public final class SparkITCase {
         .addUserMain(JavaMapReduce.class.getCanonicalName())
         .addUserArgs(inputFilePath, outputFilePath)
         .addOptimizationPolicy(DefaultPolicy.class.getCanonicalName())
+        .build());
+
+    ExampleTestUtil.ensureOutputValidity(fileBasePath, outputFileName, testResourceFileName);
+    ExampleTestUtil.deleteOutputFile(fileBasePath, outputFileName);
+  }
+
+  @Test(timeout = TIMEOUT)
+  public void testSparkMapReduceSailfish() throws Exception {
+    final String inputFileName = "sample_input_mr";
+    final String outputFileName = "sample_output_mr";
+    final String testResourceFileName = "test_output_mr";
+    final String inputFilePath =  fileBasePath + inputFileName;
+    final String outputFilePath =  fileBasePath + outputFileName;
+
+    JobLauncher.main(builder
+        .addJobId(JavaMapReduce.class.getSimpleName() + "_sailfish")
+        .addUserMain(JavaMapReduce.class.getCanonicalName())
+        .addUserArgs(inputFilePath, outputFilePath)
+        .addOptimizationPolicy(SailfishPolicy.class.getCanonicalName())
         .build());
 
     ExampleTestUtil.ensureOutputValidity(fileBasePath, outputFileName, testResourceFileName);
