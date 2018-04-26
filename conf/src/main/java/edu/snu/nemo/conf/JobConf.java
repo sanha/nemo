@@ -210,6 +210,14 @@ public final class JobConf extends ConfigurationModuleBuilder {
   public final class PartitionTransportClientNumThreads implements Name<Integer> {
   }
 
+  /**
+   * Number of maximum number of parallel downloads for a runtime edge.
+   */
+  @NamedParameter(doc = "Maximum number of parallel downloads for a runtime edge.", short_name = "max_downloads",
+      default_value = "100")
+  public final class MaxNumDownloadsForARuntimeEdge implements Name<Integer> {
+  }
+
   //////////////////////////////// Intermediate Configurations
 
   /**
