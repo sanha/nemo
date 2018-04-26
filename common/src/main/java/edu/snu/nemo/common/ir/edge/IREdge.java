@@ -30,7 +30,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  */
 public final class IREdge extends Edge<IRVertex> {
   private final ExecutionPropertyMap executionProperties;
-  private final Coder coder;
+  private Coder coder;
   private final Boolean isSideInput;
 
   /**
@@ -98,6 +98,10 @@ public final class IREdge extends Edge<IRVertex> {
    */
   public Coder getCoder() {
     return coder;
+  }
+
+  public void setCoder(final Coder coderToSet) {
+    this.coder = coderToSet;
   }
 
   /**

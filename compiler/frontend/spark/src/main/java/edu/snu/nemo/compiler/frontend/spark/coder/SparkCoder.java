@@ -48,4 +48,9 @@ public final class SparkCoder<T> implements Coder<T> {
     final T obj = (T) serializer.newInstance().deserializeStream(inStream).readObject(ClassTag$.MODULE$.Any());
     return obj;
   }
+
+  @Override
+  public String toString() {
+    return serializer.toString();
+  }
 }
