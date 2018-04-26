@@ -20,10 +20,7 @@ import edu.snu.nemo.common.dag.DAG;
 import edu.snu.nemo.common.ir.edge.IREdge;
 import edu.snu.nemo.common.ir.executionproperty.ExecutionProperty;
 import edu.snu.nemo.common.ir.vertex.IRVertex;
-import org.apache.beam.sdk.coders.CoderException;
-import org.apache.beam.sdk.coders.StringUtf8Coder;
-import org.apache.beam.sdk.coders.VarLongCoder;
-import org.apache.beam.sdk.coders.VoidCoder;
+import org.apache.beam.sdk.coders.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -129,7 +126,7 @@ public final class MRBeamCoderPass extends AnnotatingPass {
    * @param <K> the type of the keys of the KVs being transcoded
    * @param <V> the type of the values of the KVs being transcoded
    */
-  public static final class Tuple2Coder<K, V> extends org.apache.beam.sdk.coders.Coder<Tuple2<K, V>> {
+  public static final class Tuple2Coder<K, V> extends StructuredCoder<Tuple2<K, V>> {
     public static <K, V> Tuple2Coder<K, V> of(final org.apache.beam.sdk.coders.Coder<K> keyCoder,
                                               final org.apache.beam.sdk.coders.Coder<V> valueCoder) {
       return new Tuple2Coder<>(keyCoder, valueCoder);
@@ -158,17 +155,32 @@ public final class MRBeamCoderPass extends AnnotatingPass {
     public void encode(final Tuple2<K, V> tuple,
                        final OutputStream outStream)
         throws IOException, CoderException {
+      encode(tuple, outStream, Context.NESTED);
+    }
+
+    @Override
+    public void encode(final Tuple2<K, V> tuple,
+                       final OutputStream outStream,
+                       final Context context)
+        throws IOException, CoderException  {
       if (tuple == null) {
         throw new CoderException("cannot encode a null KV");
       }
-      keyCoder.encode(tuple._1(), outStream);
-      valueCoder.encode(tuple._2(), outStream);
+      keyCoder.encode(tuple._1, outStream);
+      valueCoder.encode(tuple._2, outStream, context);
     }
 
     @Override
     public Tuple2<K, V> decode(final InputStream inStream) throws IOException, CoderException {
+      return decode(inStream, Context.NESTED);
+    }
+
+    @Override
+    public Tuple2<K, V> decode(final InputStream inStream,
+                               final Context context)
+        throws IOException, CoderException {
       K key = keyCoder.decode(inStream);
-      V value = valueCoder.decode(inStream);
+      V value = valueCoder.decode(inStream, context);
       return new Tuple2<>(key, value);
     }
 
