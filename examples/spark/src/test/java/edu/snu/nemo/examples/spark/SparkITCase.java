@@ -20,7 +20,7 @@ import edu.snu.nemo.common.test.ArgBuilder;
 import edu.snu.nemo.common.test.ExampleTestUtil;
 import edu.snu.nemo.compiler.optimizer.policy.DefaultMRBeamPolicy;
 import edu.snu.nemo.compiler.optimizer.policy.DefaultPolicy;
-import edu.snu.nemo.compiler.optimizer.policy.SailfishPolicy;
+import edu.snu.nemo.compiler.optimizer.policy.SailfishMRBeamPolicy;
 import edu.snu.nemo.examples.spark.sql.JavaUserDefinedTypedAggregation;
 import edu.snu.nemo.examples.spark.sql.JavaUserDefinedUntypedAggregation;
 import org.junit.Before;
@@ -102,7 +102,7 @@ public final class SparkITCase {
         .addJobId(JavaMapReduce.class.getSimpleName() + "_sailfish")
         .addUserMain(JavaMapReduce.class.getCanonicalName())
         .addUserArgs(inputFilePath, outputFilePath)
-        .addOptimizationPolicy(SailfishPolicy.class.getCanonicalName())
+        .addOptimizationPolicy(SailfishMRBeamPolicy.class.getCanonicalName())
         .build());
 
     ExampleTestUtil.ensureOutputValidity(fileBasePath, outputFileName, testResourceFileName);
