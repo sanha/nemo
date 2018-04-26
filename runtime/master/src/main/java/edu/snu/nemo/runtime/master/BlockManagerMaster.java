@@ -137,8 +137,8 @@ public final class BlockManagerMaster {
       switch (state) {
         case SCHEDULED:
         case COMMITTED:
-          return blockIdToMetadata.get(blockId).getLocationHandler();
         case READY:
+          return blockIdToMetadata.get(blockId).getLocationHandler();
         case LOST_BEFORE_COMMIT:
         case LOST:
         case REMOVED:
