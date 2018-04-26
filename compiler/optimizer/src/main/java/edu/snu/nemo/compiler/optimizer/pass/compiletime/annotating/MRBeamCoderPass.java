@@ -129,17 +129,17 @@ public final class MRBeamCoderPass extends AnnotatingPass {
    * @param <K> the type of the keys of the KVs being transcoded
    * @param <V> the type of the values of the KVs being transcoded
    */
-  public static class Tuple2Coder<K, V> extends org.apache.beam.sdk.coders.Coder<Tuple2<K, V>> {
-    public static <K, V> Tuple2Coder<K, V> of(org.apache.beam.sdk.coders.Coder<K> keyCoder,
-                                              org.apache.beam.sdk.coders.Coder<V> valueCoder) {
+  public static final class Tuple2Coder<K, V> extends org.apache.beam.sdk.coders.Coder<Tuple2<K, V>> {
+    public static <K, V> Tuple2Coder<K, V> of(final org.apache.beam.sdk.coders.Coder<K> keyCoder,
+                                              final org.apache.beam.sdk.coders.Coder<V> valueCoder) {
       return new Tuple2Coder<>(keyCoder, valueCoder);
     }
 
-    public org.apache.beam.sdk.coders.Coder<K> getKeyCoder() {
+    private org.apache.beam.sdk.coders.Coder<K> getKeyCoder() {
       return keyCoder;
     }
 
-    public org.apache.beam.sdk.coders.Coder<V> getValueCoder() {
+    private org.apache.beam.sdk.coders.Coder<V> getValueCoder() {
       return valueCoder;
     }
 
@@ -155,7 +155,8 @@ public final class MRBeamCoderPass extends AnnotatingPass {
     }
 
     @Override
-    public void encode(Tuple2<K, V> tuple, OutputStream outStream)
+    public void encode(final Tuple2<K, V> tuple,
+                       final OutputStream outStream)
         throws IOException, CoderException {
       if (tuple == null) {
         throw new CoderException("cannot encode a null KV");
@@ -165,7 +166,7 @@ public final class MRBeamCoderPass extends AnnotatingPass {
     }
 
     @Override
-    public Tuple2<K, V> decode(InputStream inStream) throws IOException, CoderException {
+    public Tuple2<K, V> decode(final InputStream inStream) throws IOException, CoderException {
       K key = keyCoder.decode(inStream);
       V value = valueCoder.decode(inStream);
       return new Tuple2<>(key, value);
