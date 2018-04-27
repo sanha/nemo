@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import scala.collection.JavaConverters;
 
 import java.lang.reflect.Field;
+import java.net.InetAddress;
 import java.util.*;
 
 /**
@@ -115,16 +116,19 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
           final InputSplit inputSplit = (InputSplit) ((SerializableWritable) inputSplitField.get(partition)).value();
 
           final String[] splitLocations = inputSplit.getLocations();
+          final List<String> parsedLocations = new ArrayList<>();
 
           final StringBuilder sb = new StringBuilder("(");
           for (final String loc : splitLocations) {
-            sb.append(loc);
+            final String canonicalHostName = InetAddress.getByName(loc).getCanonicalHostName();
+            sb.append(canonicalHostName);
             sb.append(", ");
+            parsedLocations.add(canonicalHostName);
           }
           sb.append(")");
           LOG.info(sb.toString());
 
-          locations = Arrays.asList(splitLocations);
+          locations = parsedLocations;
         } else {
           locations = Collections.emptyList();
         }
