@@ -54,7 +54,7 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
     this.inputPath = inputPath;
     this.numPartitions = numPartitions;
     for (int i = 0; i < numPartitions; i++) {
-      readables.add(new SparkBoundedSourceReadable(sparkSession.getInitialConf(), i));
+      readables.add(new SparkBoundedSourceReadable(sparkSession, sparkSession.getInitialConf(), i));
     }
   }
 
@@ -99,14 +99,12 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
      * @param sessionInitialConf spark session's initial configuration.
      * @param partitionIndex     partition for this readable.
      */
-    private SparkBoundedSourceReadable(final Map<String, String> sessionInitialConf,
+    private SparkBoundedSourceReadable(final SparkSession sparkSession,
+                                       final Map<String, String> sessionInitialConf,
                                        final int partitionIndex) {
       this.sessionInitialConf = sessionInitialConf;
       this.partitionIndex = partitionIndex;
-      final SparkSession spark = SparkSession.builder()
-          .config(sessionInitialConf)
-          .getOrCreate();
-      final RDD<String> rdd = SparkSession.initializeTextFileRDD(spark, inputPath, numPartitions);
+      final RDD<String> rdd = SparkSession.initializeTextFileRDD(sparkSession, inputPath, numPartitions);
       final Partition partition = rdd.getPartitions()[partitionIndex];
 
       try {
