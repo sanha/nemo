@@ -20,7 +20,9 @@ import edu.snu.nemo.common.ir.vertex.SourceVertex;
 import edu.snu.nemo.compiler.frontend.spark.sql.SparkSession;
 import org.apache.spark.TaskContext$;
 import org.apache.spark.rdd.RDD;
+import scala.collection.Iterator;
 import scala.collection.JavaConverters;
+import scala.collection.Seq;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -115,7 +117,7 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
 
     @Override
     public List<String> getLocations() {
-      /*
+
       final SparkSession spark = SparkSession.builder()
           .config(sessionInitialConf)
           .getOrCreate();
@@ -125,15 +127,17 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
       final List<String> locationList = new ArrayList<>(locationSeq.size());
       final Iterator<String> itr = locationSeq.iterator();
       while (itr.hasNext()) {
-        locationList.add(itr.next());
+        final String loc = itr.next();
+        locationList.add(loc);
+        System.out.print(loc + ", ");
       }
 
       if (locationList.isEmpty()) {
         throw new UnsupportedOperationException();
       } else {
         return locationList;
-      }*/
-      throw new UnsupportedOperationException();
+      }
+      //throw new UnsupportedOperationException();
     }
   }
 }
