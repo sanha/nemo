@@ -29,11 +29,7 @@ import org.slf4j.LoggerFactory;
 import scala.collection.JavaConverters;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.IntStream;
+import java.util.*;
 
 /**
  * Bounded source vertex for Spark.
@@ -57,10 +53,9 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
     this.readables = new ArrayList<>();
     this.inputPath = inputPath;
     this.numPartitions = numPartitions;
-    IntStream.range(0, numPartitions).forEach(partitionIndex ->
-        readables.add(new SparkBoundedSourceReadable(
-            sparkSession.getInitialConf(),
-            partitionIndex)));
+    for (int i = 0; i < numPartitions; i++) {
+      readables.add(new SparkBoundedSourceReadable(sparkSession.getInitialConf(), i));
+    }
   }
 
   /**
@@ -96,6 +91,7 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
   private final class SparkBoundedSourceReadable implements Readable<String> {
     private final Map<String, String> sessionInitialConf;
     private final int partitionIndex;
+    private final List<String> locations;
 
     /**
      * Constructor.
@@ -107,10 +103,39 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
                                        final int partitionIndex) {
       this.sessionInitialConf = sessionInitialConf;
       this.partitionIndex = partitionIndex;
+      final SparkSession spark = SparkSession.builder()
+          .config(sessionInitialConf)
+          .getOrCreate();
+      final RDD<String> rdd = SparkSession.initializeTextFileRDD(spark, inputPath, numPartitions);
+      final Partition partition = rdd.getPartitions()[partitionIndex];
+
+      try {
+        if (partition instanceof HadoopPartition) {
+          final Field inputSplitField = partition.getClass().getDeclaredField("inputSplit");
+          inputSplitField.setAccessible(true);
+          final InputSplit inputSplit = (InputSplit) ((SerializableWritable) inputSplitField.get(partition)).value();
+
+          final String[] splitLocations = inputSplit.getLocations();
+
+          final StringBuilder sb = new StringBuilder("(");
+          for (final String loc : splitLocations) {
+            sb.append(loc);
+            sb.append(", ");
+          }
+          sb.append(")");
+          LOG.info(sb.toString());
+
+          locations = Arrays.asList(splitLocations);
+        } else {
+          locations = Collections.emptyList();
+        }
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      }
     }
 
     @Override
-    public Iterable<String> read() throws Exception {
+    public Iterable<String> read() {
       // for setting up the same environment in the executors.
       final SparkSession spark = SparkSession.builder()
           .config(sessionInitialConf)
@@ -123,61 +148,12 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
     }
 
     @Override
-    public List<String> getLocations() throws Exception {
-
-      final SparkSession spark = SparkSession.builder()
-          .config(sessionInitialConf)
-          .getOrCreate();
-      final RDD<String> rdd = SparkSession.initializeTextFileRDD(spark, inputPath, numPartitions);
-      final Partition partition = rdd.getPartitions()[partitionIndex];
-
-      if (partition instanceof HadoopPartition) {
-        final Field inputSplitField = partition.getClass().getDeclaredField("inputSplit");
-        inputSplitField.setAccessible(true);
-        final InputSplit inputSplit = (InputSplit) ((SerializableWritable) inputSplitField.get(partition)).value();
-
-        final String[] locs = inputSplit.getLocations();
-        /*
-        final List<String> filteredLocs = new ArrayList<>();
-        for (final String loc : locs) {
-          if (loc.split("[.]").length == 1) { // not an IP form
-            filteredLocs.add(loc);
-          }
-        }*/
-
-        final StringBuilder sb = new StringBuilder("(");
-        for (final String loc : locs) {
-          sb.append(loc);
-          sb.append(", ");
-        }
-        sb.append(")");
-        LOG.info(sb.toString());
-
-        return Arrays.asList(locs);
-      } else {
-        throw new UnsupportedOperationException();
-      }
-      /*
-      final Seq<String> locationSeq = rdd.getPreferredLocations(rdd.getPartitions()[partitionIndex]);
-
-      final List<String> locationList = new ArrayList<>(locationSeq.size());
-      final Iterator<String> itr = locationSeq.iterator();
-      final StringBuilder sb = new StringBuilder("(");
-      while (itr.hasNext()) {
-        final String loc = itr.next();
-        locationList.add(loc);
-        sb.append(loc);
-        sb.append(", ");
-      }
-      sb.append(")");
-      LOG.info(sb.toString());
-
-      if (locationList.isEmpty()) {
+    public List<String> getLocations() {
+      if (locations.isEmpty()) {
         throw new UnsupportedOperationException();
       } else {
-        return locationList;
+        return locations;
       }
-      */
     }
   }
 }
