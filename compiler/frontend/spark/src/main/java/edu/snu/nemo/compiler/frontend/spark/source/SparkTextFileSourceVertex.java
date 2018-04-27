@@ -18,15 +18,19 @@ package edu.snu.nemo.compiler.frontend.spark.source;
 import edu.snu.nemo.common.ir.Readable;
 import edu.snu.nemo.common.ir.vertex.SourceVertex;
 import edu.snu.nemo.compiler.frontend.spark.sql.SparkSession;
+import org.apache.hadoop.mapred.InputSplit;
+import org.apache.spark.Partition;
+import org.apache.spark.SerializableWritable;
 import org.apache.spark.TaskContext$;
+import org.apache.spark.rdd.HadoopPartition;
 import org.apache.spark.rdd.RDD;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.collection.Iterator;
 import scala.collection.JavaConverters;
-import scala.collection.Seq;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -119,12 +123,32 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
     }
 
     @Override
-    public List<String> getLocations() {
+    public List<String> getLocations() throws Exception {
 
       final SparkSession spark = SparkSession.builder()
           .config(sessionInitialConf)
           .getOrCreate();
       final RDD<String> rdd = SparkSession.initializeTextFileRDD(spark, inputPath, numPartitions);
+      final Partition partition = rdd.getPartitions()[partitionIndex];
+
+      if (partition instanceof HadoopPartition) {
+        final Field inputSplitField = partition.getClass().getDeclaredField("inputSplit");
+        inputSplitField.setAccessible(true);
+        final InputSplit inputSplit = (InputSplit) ((SerializableWritable) inputSplitField.get(partition)).value();
+
+        final StringBuilder sb = new StringBuilder("(");
+        for (final String loc : inputSplit.getLocations()) {
+          sb.append(loc);
+          sb.append(", ");
+        }
+        sb.append(")");
+        LOG.info(sb.toString());
+
+        return Arrays.asList(inputSplit.getLocations());
+      } else {
+        throw new UnsupportedOperationException();
+      }
+      /*
       final Seq<String> locationSeq = rdd.getPreferredLocations(rdd.getPartitions()[partitionIndex]);
 
       final List<String> locationList = new ArrayList<>(locationSeq.size());
@@ -144,7 +168,7 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
       } else {
         return locationList;
       }
-      //throw new UnsupportedOperationException();
+      */
     }
   }
 }
