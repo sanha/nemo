@@ -113,7 +113,8 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
           inputSplitField.setAccessible(true);
           final InputSplit inputSplit = (InputSplit) ((SerializableWritable) inputSplitField.get(partition)).value();
 
-          final String[] splitLocations = inputSplit.getLocations();
+          //final String[] splitLocations = inputSplit.getLocations();
+          final String[] splitLocations = new String[0];
 
           final StringBuilder sb = new StringBuilder("(");
           for (final String loc : splitLocations) {
