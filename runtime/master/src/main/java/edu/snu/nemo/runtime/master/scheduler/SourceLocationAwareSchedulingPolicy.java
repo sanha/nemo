@@ -226,10 +226,22 @@ public final class SourceLocationAwareSchedulingPolicy implements SchedulingPoli
    * @return Set of source locations from source tasks in {@code taskGroupDAG}
    * @throws Exception for any exception raised during querying source locations for a readable
    */
-  private static Set<String> getSourceLocations(final Collection<Readable> readables) throws Exception {
+  private Set<String> getSourceLocations(final Collection<Readable> readables) throws Exception {
     final List<String> sourceLocations = new ArrayList<>();
     for (final Readable readable : readables) {
-      sourceLocations.addAll(readable.getLocations());
+      final List<String> locations = readable.getLocations();
+
+      boolean locationExist = false;
+      for (final String executorId : executorRegistry.getRunningExecutorIds()) {
+        if (locations.contains(executorId)) {
+          locationExist = true;
+          break;
+        }
+      }
+
+      if (locationExist) {
+        sourceLocations.addAll(locations);
+      }
     }
     return new HashSet<>(sourceLocations);
   }

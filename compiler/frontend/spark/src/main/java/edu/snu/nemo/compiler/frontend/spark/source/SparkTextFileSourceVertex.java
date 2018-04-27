@@ -136,15 +136,24 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
         inputSplitField.setAccessible(true);
         final InputSplit inputSplit = (InputSplit) ((SerializableWritable) inputSplitField.get(partition)).value();
 
+        final String[] locs = inputSplit.getLocations();
+        /*
+        final List<String> filteredLocs = new ArrayList<>();
+        for (final String loc : locs) {
+          if (loc.split("[.]").length == 1) { // not an IP form
+            filteredLocs.add(loc);
+          }
+        }*/
+
         final StringBuilder sb = new StringBuilder("(");
-        for (final String loc : inputSplit.getLocations()) {
+        for (final String loc : locs) {
           sb.append(loc);
           sb.append(", ");
         }
         sb.append(")");
         LOG.info(sb.toString());
 
-        return Arrays.asList(inputSplit.getLocations());
+        return Arrays.asList(locs);
       } else {
         throw new UnsupportedOperationException();
       }
