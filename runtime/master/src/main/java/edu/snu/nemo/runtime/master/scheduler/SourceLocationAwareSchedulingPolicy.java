@@ -230,6 +230,7 @@ public final class SourceLocationAwareSchedulingPolicy implements SchedulingPoli
     final List<String> sourceLocations = new ArrayList<>();
     for (final Readable readable : readables) {
       final List<String> locations = readable.getLocations();
+      LOG.info(locations.toString());
 
       boolean locationExist = false;
       for (final String executorId : executorRegistry.getRunningExecutorIds()) {

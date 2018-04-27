@@ -118,15 +118,15 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
           final String[] splitLocations = inputSplit.getLocations();
           final List<String> parsedLocations = new ArrayList<>();
 
-          final StringBuilder sb = new StringBuilder("(");
+          //final StringBuilder sb = new StringBuilder("(");
           for (final String loc : splitLocations) {
             final String canonicalHostName = InetAddress.getByName(loc).getCanonicalHostName();
-            sb.append(canonicalHostName);
-            sb.append(", ");
+            //sb.append(canonicalHostName);
+            //sb.append(", ");
             parsedLocations.add(canonicalHostName);
           }
-          sb.append(")");
-          LOG.info(sb.toString());
+          //sb.append(")");
+          //LOG.info(sb.toString());
 
           locations = parsedLocations;
         } else {
