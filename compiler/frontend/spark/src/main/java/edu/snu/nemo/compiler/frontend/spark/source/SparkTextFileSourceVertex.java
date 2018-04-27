@@ -53,8 +53,11 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
     this.readables = new ArrayList<>();
     this.inputPath = inputPath;
     this.numPartitions = numPartitions;
+
+    final Partition[] partitions = SparkSession
+        .initializeTextFileRDD(sparkSession, inputPath, numPartitions).getPartitions();
     for (int i = 0; i < numPartitions; i++) {
-      readables.add(new SparkBoundedSourceReadable(sparkSession, sparkSession.getInitialConf(), i));
+      readables.add(new SparkBoundedSourceReadable(partitions[i], sparkSession.getInitialConf(), i));
     }
   }
 
@@ -99,13 +102,11 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
      * @param sessionInitialConf spark session's initial configuration.
      * @param partitionIndex     partition for this readable.
      */
-    private SparkBoundedSourceReadable(final SparkSession sparkSession,
+    private SparkBoundedSourceReadable(final Partition partition,
                                        final Map<String, String> sessionInitialConf,
                                        final int partitionIndex) {
       this.sessionInitialConf = sessionInitialConf;
       this.partitionIndex = partitionIndex;
-      final RDD<String> rdd = SparkSession.initializeTextFileRDD(sparkSession, inputPath, numPartitions);
-      final Partition partition = rdd.getPartitions()[partitionIndex];
 
       try {
         if (partition instanceof HadoopPartition) {
@@ -113,8 +114,7 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
           inputSplitField.setAccessible(true);
           final InputSplit inputSplit = (InputSplit) ((SerializableWritable) inputSplitField.get(partition)).value();
 
-          //final String[] splitLocations = inputSplit.getLocations();
-          final String[] splitLocations = new String[0];
+          final String[] splitLocations = inputSplit.getLocations();
 
           final StringBuilder sb = new StringBuilder("(");
           for (final String loc : splitLocations) {
