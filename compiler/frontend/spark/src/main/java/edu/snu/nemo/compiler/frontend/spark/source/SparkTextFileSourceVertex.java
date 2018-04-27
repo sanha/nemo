@@ -20,6 +20,8 @@ import edu.snu.nemo.common.ir.vertex.SourceVertex;
 import edu.snu.nemo.compiler.frontend.spark.sql.SparkSession;
 import org.apache.spark.TaskContext$;
 import org.apache.spark.rdd.RDD;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.collection.Iterator;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
@@ -33,6 +35,7 @@ import java.util.stream.IntStream;
  * Bounded source vertex for Spark.
  */
 public final class SparkTextFileSourceVertex extends SourceVertex<String> {
+  private static final Logger LOG = LoggerFactory.getLogger(SparkTextFileSourceVertex.class.getName());
   private final List<Readable<String>> readables;
   private final String inputPath;
   private final int numPartitions;
@@ -126,11 +129,15 @@ public final class SparkTextFileSourceVertex extends SourceVertex<String> {
 
       final List<String> locationList = new ArrayList<>(locationSeq.size());
       final Iterator<String> itr = locationSeq.iterator();
+      final StringBuilder sb = new StringBuilder("(");
       while (itr.hasNext()) {
         final String loc = itr.next();
         locationList.add(loc);
-        System.out.print(loc + ", ");
+        sb.append(loc);
+        sb.append(", ");
       }
+      sb.append(")");
+      LOG.info(sb.toString());
 
       if (locationList.isEmpty()) {
         throw new UnsupportedOperationException();
