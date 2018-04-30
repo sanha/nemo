@@ -48,7 +48,7 @@ public final class JavaMapReduce {
     final SparkSession spark = SparkSession
         .builder()
         .config("mapreduce.input.fileinputformat.input.dir.recursive", "true")
-        .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+        //.config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
         .appName("JavaWordCount")
         .getOrCreate();
 
