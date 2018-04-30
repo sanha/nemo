@@ -17,8 +17,10 @@ package edu.snu.nemo.compiler.frontend.spark.coder;
 
 import edu.snu.nemo.common.coder.Coder;
 import org.apache.spark.serializer.Serializer;
+import org.apache.spark.serializer.SerializerInstance;
 import scala.reflect.ClassTag$;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,23 +31,31 @@ import java.io.OutputStream;
  */
 public final class SparkCoder<T> implements Coder<T> {
   private final Serializer serializer;
+  @Nullable private volatile SerializerInstance serInstance;
 
   /**
    * Default constructor.
-   * @param serializer kryo serializer.
+   * @param serializer spark serializer.
    */
   public SparkCoder(final Serializer serializer) {
     this.serializer = serializer;
+    this.serInstance = null; // SerializerInstance is not Serializable.
   }
 
   @Override
   public void encode(final T element, final OutputStream outStream) throws IOException {
-    serializer.newInstance().serializeStream(outStream).writeObject(element, ClassTag$.MODULE$.Any());
+    if (serInstance == null) {
+      serInstance = serializer.newInstance();
+    }
+    serInstance.serializeStream(outStream).writeObject(element, ClassTag$.MODULE$.Any());
   }
 
   @Override
   public T decode(final InputStream inStream) throws IOException {
-    final T obj = (T) serializer.newInstance().deserializeStream(inStream).readObject(ClassTag$.MODULE$.Any());
+    if (serInstance == null) {
+      serInstance = serializer.newInstance();
+    }
+    final T obj = (T) serInstance.deserializeStream(inStream).readObject(ClassTag$.MODULE$.Any());
     return obj;
   }
 

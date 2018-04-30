@@ -83,7 +83,8 @@ public final class SparkITCase {
         .addJobId(JavaMapReduce.class.getSimpleName() + "_test")
         .addUserMain(JavaMapReduce.class.getCanonicalName())
         .addUserArgs(inputFilePath, outputFilePath)
-        .addOptimizationPolicy(DefaultMRBeamPolicy.class.getCanonicalName())
+        //.addOptimizationPolicy(DefaultMRBeamPolicy.class.getCanonicalName())
+        .addOptimizationPolicy(DefaultPolicy.class.getCanonicalName())
         .build());
 
     ExampleTestUtil.ensureOutputValidity(fileBasePath, outputFileName, testResourceFileName);
