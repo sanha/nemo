@@ -38,7 +38,7 @@ public final class BeamCoder<T> implements Coder<T> {
     this.beamCoder = beamCoder;
   }
 
-  @Override
+  /*@Override
   public void encode(final T value, final OutputStream outStream) throws IOException {
     if (beamCoder instanceof VoidCoder) {
       outStream.write(0);
@@ -61,10 +61,73 @@ public final class BeamCoder<T> implements Coder<T> {
     } catch (final CoderException e) {
       throw new IOException(e);
     }
-  }
+  }*/
 
   @Override
   public String toString() {
     return beamCoder.toString();
+  }
+
+  @Override
+  public EncoderInstance getEncoderInstance(final OutputStream outputStream) {
+    return new BeamEncoderInstance(outputStream, beamCoder);
+  }
+
+  @Override
+  public DecoderInstance getDecoderInstance(final InputStream inputStream) {
+    return new BeamDecoderInstance(inputStream, beamCoder);
+  }
+
+  /**
+   * BeamEncoderInstance.
+   */
+  private final class BeamEncoderInstance implements EncoderInstance<T> {
+
+    private final org.apache.beam.sdk.coders.Coder<T> beamCoder;
+    private final OutputStream out;
+
+    private BeamEncoderInstance(final OutputStream outputStream,
+                                final org.apache.beam.sdk.coders.Coder<T> beamCoder) {
+      this.out = outputStream;
+      this.beamCoder = beamCoder;
+    }
+
+    public void encode(final T element) throws IOException {
+      if (beamCoder instanceof VoidCoder) {
+        out.write(0);
+        return;
+      }
+      try {
+        beamCoder.encode(element, out);
+      } catch (final CoderException e) {
+        throw new IOException(e);
+      }
+    }
+  }
+
+  /**
+   * BeamDecoderInstance.
+   */
+  private final class BeamDecoderInstance implements DecoderInstance<T> {
+
+    private final org.apache.beam.sdk.coders.Coder<T> beamCoder;
+    private final InputStream in;
+
+    private BeamDecoderInstance(final InputStream inputStream,
+                                final org.apache.beam.sdk.coders.Coder<T> beamCoder) {
+      this.in = inputStream;
+      this.beamCoder = beamCoder;
+    }
+
+    public T decode() throws IOException {
+      if (beamCoder instanceof VoidCoder && in.read() == -1) {
+        throw new IOException("End of stream reached");
+      }
+      try {
+        return beamCoder.decode(in);
+      } catch (final CoderException e) {
+        throw new IOException(e);
+      }
+    }
   }
 }

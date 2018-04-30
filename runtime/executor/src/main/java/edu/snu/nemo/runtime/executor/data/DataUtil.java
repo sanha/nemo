@@ -57,8 +57,10 @@ public final class DataUtil {
                                         final NonSerializedPartition nonSerializedPartition,
                                         final OutputStream bytesOutputStream) throws IOException {
     long elementsCount = 0;
+    final Coder.EncoderInstance encoderInstance = coder.getEncoderInstance(bytesOutputStream);
     for (final Object element : nonSerializedPartition.getData()) {
-      coder.encode(element, bytesOutputStream);
+      //coder.encode(element, bytesOutputStream);
+      encoderInstance.encode(element);
       elementsCount++;
     }
 
@@ -205,6 +207,7 @@ public final class DataUtil {
 
     private volatile CountingInputStream serializedCountingStream = null;
     private volatile CountingInputStream encodedCountingStream = null;
+    private volatile Coder.DecoderInstance<T> decoderInstance = null;
     private volatile boolean hasNext = false;
     private volatile T next;
     private volatile boolean cannotContinueDecoding = false;
@@ -224,7 +227,6 @@ public final class DataUtil {
       this.serializer = serializer;
       // -1 means no limit.
       this.limit = -1;
-      //this.asBytes = serializer.getCoder() instanceof BytesCoder;
     }
 
     /**
@@ -245,7 +247,6 @@ public final class DataUtil {
       this.inputStreams = inputStreams;
       this.serializer = serializer;
       this.limit = limit;
-      //this.asBytes = false; // It is okay to use
     }
 
     @Override
@@ -263,11 +264,13 @@ public final class DataUtil {
       }
       while (true) {
         try {
-          if (encodedCountingStream == null) {
+          if (decoderInstance == null) {
+          //if (encodedCountingStream == null) {
             if (inputStreams.hasNext()) {
               serializedCountingStream = new CountingInputStream(inputStreams.next());
               encodedCountingStream = new CountingInputStream(buildInputStream(
                   serializedCountingStream, serializer.getStreamChainers()));
+              decoderInstance = serializer.getCoder().getDecoderInstance(encodedCountingStream);
             } else {
               cannotContinueDecoding = true;
               return false;
@@ -278,7 +281,8 @@ public final class DataUtil {
           throw new RuntimeException(e);
         }
         try {
-          next = serializer.getCoder().decode(encodedCountingStream);
+          //next = serializer.getCoder().decode(encodedCountingStream);
+          next = decoderInstance.decode();
           hasNext = true;
           return true;
         } catch (final IOException e) {
@@ -287,6 +291,7 @@ public final class DataUtil {
           numEncodedBytes += encodedCountingStream.getCount();
           serializedCountingStream = null;
           encodedCountingStream = null;
+          decoderInstance = null;
         }
       }
     }

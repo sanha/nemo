@@ -35,7 +35,7 @@ public interface Coder<T> extends Serializable {
    * @param outStream the stream on which encoded bytes are written
    * @throws IOException if fail to encode
    */
-  void encode(T element, OutputStream outStream) throws IOException;
+  //void encode(T element, OutputStream outStream) throws IOException;
 
   /**
    * Decodes the a value from the given input stream.
@@ -46,7 +46,7 @@ public interface Coder<T> extends Serializable {
    * @return the decoded element
    * @throws IOException if fail to decode
    */
-  T decode(InputStream inStream) throws IOException;
+  //T decode(InputStream inStream) throws IOException;
 
   /**
    * Dummy coder.
@@ -54,11 +54,67 @@ public interface Coder<T> extends Serializable {
   Coder DUMMY_CODER = new DummyCoder();
 
   /**
+   * EncoderInstance.
+   * @param <T> element type.
+   */
+  interface EncoderInstance<T> {
+    void encode(T element) throws IOException;
+  }
+
+  /**
+   * DecoderInstance.
+   * @param <T> element type.
+   */
+  interface DecoderInstance<T> {
+    T decode() throws IOException;
+  }
+
+  /**
+   * getEncoderInstance.
+   */
+  EncoderInstance getEncoderInstance(final OutputStream outputStream) throws IOException;
+
+  /**
+   * getDecoderInstance.
+   */
+  DecoderInstance getDecoderInstance(final InputStream inputStream) throws IOException;
+
+  /**
    * Dummy coder implementation which is not supposed to be used.
    */
   final class DummyCoder implements Coder {
 
+    /**
+     * DummyEncoderInstance.
+     */
+    private final class DummyEncoderInstance implements EncoderInstance {
+
+      public void encode(final Object element) {
+        throw new RuntimeException("DummyEncoderInstance is not supposed to be used.");
+      }
+    }
+
+    /**
+     * DummyDecoderInstance.
+     */
+    private final class DummyDecoderInstance implements DecoderInstance {
+
+      public Object decode() {
+        throw new RuntimeException("DummyDecoderInstance is not supposed to be used.");
+      }
+    }
+
     @Override
+    public EncoderInstance getEncoderInstance(final OutputStream outputStream) {
+      return new DummyEncoderInstance();
+    }
+
+    @Override
+    public DecoderInstance getDecoderInstance(final InputStream inputStream) {
+      return new DummyDecoderInstance();
+    }
+
+    /*@Override
     public void encode(final Object value, final OutputStream outStream) {
       throw new RuntimeException("DummyCoder is not supposed to be used.");
     }
@@ -66,7 +122,7 @@ public interface Coder<T> extends Serializable {
     @Override
     public Object decode(final InputStream inStream) {
       throw new RuntimeException("DummyCoder is not supposed to be used.");
-    }
+    }*/
 
     @Override
     public String toString() {

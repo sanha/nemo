@@ -16,6 +16,8 @@
 package edu.snu.nemo.compiler.frontend.spark.coder;
 
 import edu.snu.nemo.common.coder.Coder;
+import org.apache.spark.serializer.DeserializationStream;
+import org.apache.spark.serializer.SerializationStream;
 import org.apache.spark.serializer.Serializer;
 import org.apache.spark.serializer.SerializerInstance;
 import scala.reflect.ClassTag$;
@@ -42,7 +44,7 @@ public final class SparkCoder<T> implements Coder<T> {
     this.serInstance = null; // SerializerInstance is not Serializable.
   }
 
-  @Override
+  /*@Override
   public void encode(final T element, final OutputStream outStream) throws IOException {
     if (serInstance == null) {
       serInstance = serializer.newInstance();
@@ -57,6 +59,57 @@ public final class SparkCoder<T> implements Coder<T> {
     }
     final T obj = (T) serInstance.deserializeStream(inStream).readObject(ClassTag$.MODULE$.Any());
     return obj;
+  }*/
+
+  @Override
+  public EncoderInstance getEncoderInstance(final OutputStream outputStream) {
+    if (serInstance == null) {
+      serInstance = serializer.newInstance();
+    }
+    return new SparkEncoderInstance(outputStream, serInstance);
+  }
+
+  @Override
+  public DecoderInstance getDecoderInstance(final InputStream inputStream) {
+    if (serInstance == null) {
+      serInstance = serializer.newInstance();
+    }
+    return new SparkDecoderInstance(inputStream, serInstance);
+  }
+
+  /**
+   * SparkEncoderInstance.
+   */
+  private final class SparkEncoderInstance implements EncoderInstance<T> {
+
+    private final SerializationStream out;
+
+    private SparkEncoderInstance(final OutputStream outputStream,
+                                 final SerializerInstance sparkSerializerInstance) {
+      this.out = sparkSerializerInstance.serializeStream(outputStream);
+    }
+
+    public void encode(final T element) throws IOException {
+      out.writeObject(element, ClassTag$.MODULE$.Any());
+    }
+  }
+
+  /**
+   * SparkDecoderInstance.
+   */
+  private final class SparkDecoderInstance implements DecoderInstance<T> {
+
+    private final DeserializationStream in;
+
+    private SparkDecoderInstance(final InputStream inputStream,
+                                 final SerializerInstance sparkSerializerInstance) {
+      this.in = sparkSerializerInstance.deserializeStream(inputStream);
+    }
+
+    public T decode() throws IOException {
+      final T obj = (T) in.readObject(ClassTag$.MODULE$.Any());
+      return obj;
+    }
   }
 
   @Override
