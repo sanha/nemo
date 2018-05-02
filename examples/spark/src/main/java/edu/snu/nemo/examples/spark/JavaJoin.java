@@ -74,7 +74,7 @@ public final class JavaJoin {
         return matcher.find();
       }
     };
-    final PairFunction<Tuple2<String, Iterable<Tuple2<String,Long>>>, String, Double> mapToPairFunction =
+    final PairFunction<Tuple2<String, Iterable<Tuple2<String, Long>>>, String, Double> mapToPairFunction =
         new PairFunction<Tuple2<String, Iterable<Tuple2<String, Long>>>, String, Double>() {
           @Override
           public Tuple2<String, Double> call(final Tuple2<String, Iterable<Tuple2<String, Long>>> t) throws Exception {
