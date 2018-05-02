@@ -25,11 +25,11 @@ import edu.snu.nemo.common.ir.vertex.OperatorVertex;
 import edu.snu.nemo.compiler.frontend.spark.SparkKeyExtractor;
 import edu.snu.nemo.compiler.frontend.spark.coder.SparkCoder;
 import edu.snu.nemo.compiler.frontend.spark.core.RDD;
-import edu.snu.nemo.compiler.frontend.spark.transform.MapTransform;
-import edu.snu.nemo.compiler.frontend.spark.transform.ReduceByKeyTransform;
+import edu.snu.nemo.compiler.frontend.spark.transform.*;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.serializer.Serializer;
 import scala.Tuple2;
 import scala.reflect.ClassTag$;
@@ -76,6 +76,36 @@ public final class JavaPairRDD<K, V> extends org.apache.spark.api.java.JavaPairR
     return sparkContext;
   }
 
+  /////////////// PRIVATE METHODS ///////////////
+
+  /**
+   * @return the IR DAG.
+   */
+  private DAG<IRVertex, IREdge> getDag() {
+    return dag;
+  }
+
+  /**
+   * @return the last vertex.
+   */
+  private IRVertex getLastVertex() {
+    return lastVertex;
+  }
+
+  /**
+   * @return the serializer.
+   */
+  private Serializer getSerializer() {
+    return serializer;
+  }
+
+  /**
+   * @return the loop vertex stack.
+   */
+  private Stack<LoopVertex> getLoopVertexStack() {
+    return loopVertexStack;
+  }
+
   /////////////// TRANSFORMATIONS ///////////////
 
   @Override
@@ -94,6 +124,36 @@ public final class JavaPairRDD<K, V> extends org.apache.spark.api.java.JavaPairR
   }
 
   @Override
+  public JavaPairRDD<K, Iterable<V>> groupByKey() {
+    final DAGBuilder<IRVertex, IREdge> builder = new DAGBuilder<>(dag);
+
+    final IRVertex groupByKeyVertex = new OperatorVertex(new GroupByKeyTransform());
+    builder.addVertex(groupByKeyVertex, loopVertexStack);
+
+    final IREdge newEdge = new IREdge(getEdgeCommunicationPattern(lastVertex, groupByKeyVertex),
+        lastVertex, groupByKeyVertex, new SparkCoder(serializer));
+    newEdge.setProperty(KeyExtractorProperty.of(new SparkKeyExtractor()));
+    builder.connectVertices(newEdge);
+
+    return new JavaPairRDD<>(this.sparkContext, builder.buildWithoutSourceSinkCheck(), groupByKeyVertex);
+  }
+
+  @Override
+  public <K2, V2> JavaPairRDD<K2, V2> mapToPair(final PairFunction<Tuple2<K, V>, K2, V2> func) {
+    final DAGBuilder<IRVertex, IREdge> builder = new DAGBuilder<>(dag);
+
+    final IRVertex mapToPairVertex = new OperatorVertex(new MapToPairTransform<>(func));
+    builder.addVertex(mapToPairVertex, loopVertexStack);
+
+    final IREdge newEdge = new IREdge(getEdgeCommunicationPattern(lastVertex, mapToPairVertex),
+        lastVertex, mapToPairVertex, new SparkCoder(serializer));
+    newEdge.setProperty(KeyExtractorProperty.of(new SparkKeyExtractor()));
+    builder.connectVertices(newEdge);
+
+    return new JavaPairRDD<>(this.sparkContext, builder.buildWithoutSourceSinkCheck(), mapToPairVertex);
+  }
+
+  @Override
   public <R> JavaRDD<R> map(final Function<Tuple2<K, V>, R> f) {
     final DAGBuilder<IRVertex, IREdge> builder = new DAGBuilder<>(dag);
 
@@ -106,6 +166,50 @@ public final class JavaPairRDD<K, V> extends org.apache.spark.api.java.JavaPairR
     builder.connectVertices(newEdge);
 
     return new JavaRDD<>(this.sparkContext, builder.buildWithoutSourceSinkCheck(), mapVertex);
+  }
+
+  /**
+   * PairRDD1(K, V) -> (oneToOne) -> PairRDD1(K, Union(V, W)) -> (shuffle) -> PairRDD(K, Tuple2(Itr(V), Itr(W)).
+   * PairRDD2(K, W) -> (oneToOne) -> PairRDD2(K, Union(V, W)) -> (shuffle)
+   *
+   * @param other the other pair RDD to cogroup.
+   * @param <W>   the type of the value of the other RDD.
+   * @return the co-grouped RDD.
+   */
+  @Override
+  public <W> JavaPairRDD<K, Tuple2<Iterable<V>, Iterable<W>>> cogroup(
+      final org.apache.spark.api.java.JavaPairRDD<K, W> other) {
+    if (other instanceof JavaPairRDD) {
+      final JavaPairRDD otherPairRdd = (JavaPairRDD) other;
+
+      // Map to union RDDs.
+      final JavaPairRDD<K, CoGroup.Union> rdd1 = this.mapToPair(CoGroup.<K, V>mapFunction(0));
+      final JavaPairRDD<K, CoGroup.Union> rdd2 = otherPairRdd.mapToPair(CoGroup.<K, W>mapFunction(1));
+
+      // Construct common DAG builder.
+      final DAGBuilder<IRVertex, IREdge> builder = new DAGBuilder<>(rdd1.getDag());
+      final DAG<IRVertex, IREdge> otherDag = rdd2.getDag();
+      otherDag.getVertices().forEach(v -> builder.addVertex(v, otherDag));
+      otherDag.getVertices().forEach(v -> otherDag.getIncomingEdgesOf(v).forEach(builder::connectVertices));
+
+      // Add a new co-group vertex.
+      final IRVertex coGroupVertex = new OperatorVertex(CoGroup.<K, V, W>coGroupTransform());
+      builder.addVertex(coGroupVertex, rdd1.getLoopVertexStack());
+
+      final IREdge newEdge1 = new IREdge(getEdgeCommunicationPattern(rdd1.getLastVertex(), coGroupVertex),
+          rdd1.getLastVertex(), coGroupVertex, new SparkCoder(rdd1.getSerializer()));
+      newEdge1.setProperty(KeyExtractorProperty.of(new SparkKeyExtractor()));
+      builder.connectVertices(newEdge1);
+
+      final IREdge newEdge2 = new IREdge(getEdgeCommunicationPattern(rdd2.getLastVertex(), coGroupVertex),
+          rdd2.getLastVertex(), coGroupVertex, new SparkCoder(rdd2.getSerializer()));
+      newEdge2.setProperty(KeyExtractorProperty.of(new SparkKeyExtractor()));
+      builder.connectVertices(newEdge2);
+
+      return new JavaPairRDD<>(rdd1.getSparkContext(), builder.buildWithoutSourceSinkCheck(), coGroupVertex);
+    } else {
+      throw new UnsupportedOperationException("Cannot cogroup with Nemo RDD and Spark RDD!");
+    }
   }
 
   /////////////// ACTIONS ///////////////

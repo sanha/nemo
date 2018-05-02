@@ -231,7 +231,6 @@ public final class SourceLocationAwareSchedulingPolicy implements SchedulingPoli
     for (final Readable readable : readables) {
       final List<String> locations = readable.getLocations();
 
-      System.out.println(locations);
       //boolean locationExist = false;
       boolean locationExist = true; // ?
       for (final String executorId : executorRegistry.getRunningExecutorIds()) {

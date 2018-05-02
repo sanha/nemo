@@ -20,30 +20,32 @@ import edu.snu.nemo.common.ir.vertex.transform.Transform;
 import org.apache.spark.api.java.function.Function;
 
 /**
- * Map Transform for Spark.
+ * Filter transform for Spark.
+ *
  * @param <I> input type.
- * @param <O> output type.
  */
-public final class MapTransform<I, O> implements Transform<I, O> {
-  private final Function<I, O> func;
-  private OutputCollector<O> outputCollector;
+public final class FilterTransform<I> implements Transform<I, I> {
+  private final Function<I, Boolean> filterFunc;
+  private OutputCollector<I> outputCollector;
 
   /**
    * Constructor.
-   * @param func the function to run map with.
+   * @param filterFunc the function to run filter with.
    */
-  public MapTransform(final Function<I, O> func) {
-    this.func = func;
+  public FilterTransform(final Function<I, Boolean> filterFunc) {
+    this.filterFunc = filterFunc;
   }
 
   @Override
-  public void prepare(final Context context, final OutputCollector<O> p) {
+  public void prepare(final Context context, final OutputCollector<I> p) {
     this.outputCollector = p;
   }
 
   public void onData(final I element) {
     try {
-      outputCollector.emit(func.call(element));
+      if (filterFunc.call(element)) {
+        outputCollector.emit(element);
+      }
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

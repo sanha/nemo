@@ -179,6 +179,21 @@ public final class JavaRDD<T> extends org.apache.spark.api.java.JavaRDD<T> {
     return new JavaRDD<>(this.sparkContext, builder.buildWithoutSourceSinkCheck(), flatMapVertex);
   }
 
+  @Override
+  public JavaRDD<T> filter(final Function<T, Boolean> func) {
+    final DAGBuilder<IRVertex, IREdge> builder = new DAGBuilder<>(dag);
+
+    final IRVertex filterVertex = new OperatorVertex(new FilterTransform<>(func));
+    builder.addVertex(filterVertex, loopVertexStack);
+
+    final IREdge newEdge = new IREdge(getEdgeCommunicationPattern(lastVertex, filterVertex),
+        lastVertex, filterVertex, new SparkCoder(serializer));
+    newEdge.setProperty(KeyExtractorProperty.of(new SparkKeyExtractor()));
+    builder.connectVertices(newEdge);
+
+    return new JavaRDD<>(this.sparkContext, builder.buildWithoutSourceSinkCheck(), filterVertex);
+  }
+
   /////////////// TRANSFORMATION TO PAIR RDD ///////////////
 
   @Override
@@ -279,11 +294,6 @@ public final class JavaRDD<T> extends org.apache.spark.api.java.JavaRDD<T> {
 
   @Override
   public JavaRDD<T> distinct(final int numPartitions) {
-    throw new UnsupportedOperationException("Operation not yet implemented.");
-  }
-
-  @Override
-  public JavaRDD<T> filter(final Function<T, Boolean> f) {
     throw new UnsupportedOperationException("Operation not yet implemented.");
   }
 

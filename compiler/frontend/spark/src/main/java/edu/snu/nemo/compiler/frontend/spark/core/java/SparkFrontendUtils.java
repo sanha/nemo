@@ -26,6 +26,7 @@ import edu.snu.nemo.common.ir.vertex.LoopVertex;
 import edu.snu.nemo.common.ir.vertex.OperatorVertex;
 import edu.snu.nemo.compiler.frontend.spark.SparkKeyExtractor;
 import edu.snu.nemo.compiler.frontend.spark.coder.SparkCoder;
+import edu.snu.nemo.compiler.frontend.spark.transform.CoGroup;
 import edu.snu.nemo.compiler.frontend.spark.transform.CollectTransform;
 import edu.snu.nemo.compiler.frontend.spark.transform.GroupByKeyTransform;
 import edu.snu.nemo.compiler.frontend.spark.transform.ReduceByKeyTransform;
@@ -129,7 +130,8 @@ public final class SparkFrontendUtils {
                                                                             final IRVertex dst) {
     if (dst instanceof OperatorVertex
         && (((OperatorVertex) dst).getTransform() instanceof ReduceByKeyTransform
-        || ((OperatorVertex) dst).getTransform() instanceof GroupByKeyTransform)) {
+        || ((OperatorVertex) dst).getTransform() instanceof GroupByKeyTransform
+        || ((OperatorVertex) dst).getTransform() instanceof CoGroup.CoGroupTransform)) {
       return DataCommunicationPatternProperty.Value.Shuffle;
     } else {
       return DataCommunicationPatternProperty.Value.OneToOne;

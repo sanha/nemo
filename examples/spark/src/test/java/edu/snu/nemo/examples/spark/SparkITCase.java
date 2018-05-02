@@ -113,6 +113,27 @@ public final class SparkITCase {
   }
 
   @Test(timeout = TIMEOUT)
+  public void testSparkJoin() throws Exception {
+    final String inputFileName0 = "lite_caida_input0";
+    final String inputFileName1 = "lite_caida_input1";
+    final String outputFileName = "test_output_caida_join";
+    final String testResourceFileName = "test_output_caida_join";
+    final String inputFilePath0 =  fileBasePath + inputFileName0;
+    final String inputFilePath1 =  fileBasePath + inputFileName1;
+    final String outputFilePath =  fileBasePath + outputFileName;
+
+    JobLauncher.main(builder
+        .addJobId(JavaJoin.class.getSimpleName() + "_test")
+        .addUserMain(JavaJoin.class.getCanonicalName())
+        .addUserArgs(inputFilePath0, inputFilePath1, outputFilePath)
+        .addOptimizationPolicy(DefaultPolicy.class.getCanonicalName())
+        .build());
+
+    ExampleTestUtil.ensureOutputValidity(fileBasePath, outputFileName, testResourceFileName);
+    ExampleTestUtil.deleteOutputFile(fileBasePath, outputFileName);
+  }
+
+  @Test(timeout = TIMEOUT)
   public void testSparkPi() throws Exception {
     final String numParallelism = "3";
 
