@@ -196,7 +196,7 @@ public final class ExecutorRepresenter {
    * @return the number of slot complying tasks.
    */
   public int getNumOfSlotComplyingTasks() {
-    return runningTasks.size() - nonComplyingRunningTasks.size();
+    return runningTasks.size();
   }
 
   /**
