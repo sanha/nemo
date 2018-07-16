@@ -39,10 +39,6 @@ public final class FreeSlotSchedulingConstraint implements SchedulingConstraint 
     }
 
     // Count the number of tasks which are running in this executor and complying the slot constraint.
-    final long numOfComplyingTasks = executor.getRunningTasks().stream()
-        .filter(runningTask -> runningTask.getPropertyValue(ExecutorSlotComplianceProperty.class)
-            .orElseGet(() -> true))
-        .count();
-    return numOfComplyingTasks < executor.getExecutorCapacity();
+    return executor.getNumOfSlotComplyingTasks() < executor.getExecutorCapacity();
   }
 }

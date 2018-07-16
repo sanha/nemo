@@ -16,6 +16,7 @@
 package edu.snu.nemo.runtime.master.resource;
 
 import com.google.protobuf.ByteString;
+import edu.snu.nemo.common.ir.vertex.executionproperty.ExecutorSlotComplianceProperty;
 import edu.snu.nemo.runtime.common.RuntimeIdGenerator;
 import edu.snu.nemo.runtime.common.comm.ControlMessage;
 import edu.snu.nemo.runtime.common.message.MessageEnvironment;
@@ -46,6 +47,7 @@ public final class ExecutorRepresenter {
   private final String executorId;
   private final ResourceSpecification resourceSpecification;
   private final Set<Task> runningTasks;
+  private final Set<Task> nonComplyingRunningTasks;
   private final Map<Task, Integer> runningTaskToAttempt;
   private final Set<Task> completeTasks;
   private final Set<Task> failedTasks;
@@ -76,6 +78,7 @@ public final class ExecutorRepresenter {
     this.runningTaskToAttempt = new HashMap<>();
     this.completeTasks = new HashSet<>();
     this.failedTasks = new HashSet<>();
+    this.nonComplyingRunningTasks = new HashSet<>();
     this.activeContext = activeContext;
     this.serializationExecutorService = serializationExecutorService;
     this.nodeName = nodeName;
@@ -89,7 +92,9 @@ public final class ExecutorRepresenter {
     final Set<String> snapshot = runningTasks.stream()
         .map(Task::getTaskId)
         .collect(Collectors.toSet());
+    snapshot.addAll(nonComplyingRunningTasks.stream().map(Task::getTaskId).collect(Collectors.toSet()));
     runningTasks.clear();
+    nonComplyingRunningTasks.clear();
     return snapshot;
   }
 
@@ -98,7 +103,12 @@ public final class ExecutorRepresenter {
    * @param task
    */
   public void onTaskScheduled(final Task task) {
-    runningTasks.add(task);
+    if (task.getPropertyValue(ExecutorSlotComplianceProperty.class).orElseGet(() -> true)) {
+      runningTasks.add(task);
+    } else {
+      nonComplyingRunningTasks.add(task);
+    }
+
     runningTaskToAttempt.put(task, task.getAttemptIdx());
     failedTasks.remove(task);
 
@@ -133,13 +143,19 @@ public final class ExecutorRepresenter {
    *
    */
   public void onTaskExecutionComplete(final String taskId) {
-    Task completedTask = runningTasks.stream()
-        .filter(task -> task.getTaskId().equals(taskId)).findFirst()
-        .orElseThrow(() -> new RuntimeException("Completed task not found in its ExecutorRepresenter"));
+    Optional<Task> completedTask = runningTasks.stream()
+        .filter(task -> task.getTaskId().equals(taskId)).findFirst();
+    if (!completedTask.isPresent()) {
+      completedTask = Optional.of(nonComplyingRunningTasks.stream()
+          .filter(task -> task.getTaskId().equals(taskId)).findFirst()
+          .orElseThrow(() -> new RuntimeException("Completed task not found in its ExecutorRepresenter")));
+      nonComplyingRunningTasks.remove(completedTask.get());
+    } else {
+      runningTasks.remove(completedTask.get());
+    }
 
-    runningTasks.remove(completedTask);
-    runningTaskToAttempt.remove(completedTask);
-    completeTasks.add(completedTask);
+    runningTaskToAttempt.remove(completedTask.get());
+    completeTasks.add(completedTask.get());
   }
 
   /**
@@ -147,13 +163,19 @@ public final class ExecutorRepresenter {
    * @param taskId id of the Task
    */
   public void onTaskExecutionFailed(final String taskId) {
-    Task failedTask = runningTasks.stream()
-        .filter(task -> task.getTaskId().equals(taskId)).findFirst()
-        .orElseThrow(() -> new RuntimeException("Failed task not found in its ExecutorRepresenter"));
+    Optional<Task> failedTask = runningTasks.stream()
+        .filter(task -> task.getTaskId().equals(taskId)).findFirst();
+    if (!failedTask.isPresent()) {
+      failedTask = Optional.of(nonComplyingRunningTasks.stream()
+          .filter(task -> task.getTaskId().equals(taskId)).findFirst()
+          .orElseThrow(() -> new RuntimeException("Failed task not found in its ExecutorRepresenter")));
+      nonComplyingRunningTasks.remove(failedTask.get());
+    } else {
+      runningTasks.remove(failedTask.get());
+    }
 
-    runningTasks.remove(failedTask);
-    runningTaskToAttempt.remove(failedTask);
-    failedTasks.add(failedTask);
+    runningTaskToAttempt.remove(failedTask.get());
+    failedTasks.add(failedTask.get());
   }
 
   /**
@@ -168,6 +190,13 @@ public final class ExecutorRepresenter {
    */
   public Set<Task> getRunningTasks() {
     return Collections.unmodifiableSet(new HashSet<>(runningTasks));
+  }
+
+  /**
+   * @return the number of slot complying tasks.
+   */
+  public int getNumOfSlotComplyingTasks() {
+    return runningTasks.size() - nonComplyingRunningTasks.size();
   }
 
   /**
