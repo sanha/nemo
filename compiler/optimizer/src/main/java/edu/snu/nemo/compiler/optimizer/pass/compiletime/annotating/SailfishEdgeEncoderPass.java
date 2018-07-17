@@ -20,6 +20,7 @@ import edu.snu.nemo.common.dag.DAG;
 import edu.snu.nemo.common.ir.edge.IREdge;
 import edu.snu.nemo.common.ir.edge.executionproperty.DataCommunicationPatternProperty;
 import edu.snu.nemo.common.ir.edge.executionproperty.EncoderProperty;
+import edu.snu.nemo.common.ir.edge.executionproperty.PartitionerProperty;
 import edu.snu.nemo.common.ir.vertex.IRVertex;
 
 import java.util.Collections;
@@ -48,6 +49,7 @@ public final class SailfishEdgeEncoderPass extends AnnotatingPass {
           dag.getOutgoingEdgesOf(edge.getDst())
               .forEach(edgeFromRelay -> {
                 edgeFromRelay.setProperty(EncoderProperty.of(BytesEncoderFactory.of()));
+                edgeFromRelay.setProperty(PartitionerProperty.of(PartitionerProperty.Value.IncrementPartitioner));
               });
         }
       });
