@@ -18,8 +18,10 @@ package edu.snu.nemo.compiler.optimizer.pass.compiletime.annotating;
 import edu.snu.nemo.common.coder.BytesDecoderFactory;
 import edu.snu.nemo.common.dag.DAG;
 import edu.snu.nemo.common.ir.edge.IREdge;
+import edu.snu.nemo.common.ir.edge.executionproperty.CompressionProperty;
 import edu.snu.nemo.common.ir.edge.executionproperty.DataCommunicationPatternProperty;
 import edu.snu.nemo.common.ir.edge.executionproperty.DecoderProperty;
+import edu.snu.nemo.common.ir.edge.executionproperty.DecompressionProperty;
 import edu.snu.nemo.common.ir.vertex.IRVertex;
 
 import java.util.Collections;
@@ -46,6 +48,8 @@ public final class SailfishEdgeDecoderPass extends AnnotatingPass {
         if (edge.getPropertyValue(DataCommunicationPatternProperty.class).get()
             .equals(DataCommunicationPatternProperty.Value.Shuffle)) {
           edge.setProperty(DecoderProperty.of(BytesDecoderFactory.of()));
+          edge.setProperty(DecompressionProperty.of(CompressionProperty.Value.None));
+          edge.setProperty(CompressionProperty.of(CompressionProperty.Value.LZ4));
         }
       });
     });
