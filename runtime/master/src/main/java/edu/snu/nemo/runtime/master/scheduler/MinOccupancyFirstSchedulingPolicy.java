@@ -38,7 +38,8 @@ public final class MinOccupancyFirstSchedulingPolicy implements SchedulingPolicy
   public ExecutorRepresenter selectExecutor(final Collection<ExecutorRepresenter> executors, final Task task) {
     final OptionalInt minOccupancy =
         executors.stream()
-        .map(executor -> executor.getRunningTasks().size() + executor.getNonComplyingRunningTasks().size())
+        //.map(executor -> executor.getRunningTasks().size() + executor.getNonComplyingRunningTasks().size())
+        .map(executor -> executor.getRunningTasks().size())
         .mapToInt(i -> i).min();
 
     if (!minOccupancy.isPresent()) {
@@ -46,8 +47,8 @@ public final class MinOccupancyFirstSchedulingPolicy implements SchedulingPolicy
     }
 
     return executors.stream()
-        .filter(executor -> executor.getRunningTasks().size() + executor.getNonComplyingRunningTasks().size()
-            == minOccupancy.getAsInt())
+//        .filter(executor -> executor.getRunningTasks().size() + executor.getNonComplyingRunningTasks().size()
+        .filter(executor -> executor.getRunningTasks().size() == minOccupancy.getAsInt())
         .findFirst()
         .orElseThrow(() -> new RuntimeException("No such executor"));
   }

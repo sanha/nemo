@@ -188,7 +188,7 @@ public final class JobConf extends ConfigurationModuleBuilder {
    * Maximum number of parallel downloads for a runtime edge.
    */
   @NamedParameter(doc = "Maximum number of parallel downloads for a runtime edge.", short_name = "max_downloads",
-      default_value = "30")
+      default_value = "100")
   public final class MaxNumDownloadsForARuntimeEdge implements Name<Integer> {
   }
 
