@@ -474,6 +474,7 @@ public final class BlockManagerWorker {
           @Override
           public void run() {
             removeBlock(blockId, blockStore);
+            LOG.info("@@Discard!");
           }
         });
       }

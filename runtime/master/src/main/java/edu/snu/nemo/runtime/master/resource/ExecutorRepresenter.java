@@ -193,6 +193,13 @@ public final class ExecutorRepresenter {
   }
 
   /**
+   * @return the current snapshot of set of Tasks not complying slot constraint.
+   */
+  public Set<Task> getNonComplyingRunningTasks() {
+    return Collections.unmodifiableSet(new HashSet<>(nonComplyingRunningTasks));
+  }
+
+  /**
    * @return the number of slot complying tasks.
    */
   public int getNumOfSlotComplyingTasks() {
