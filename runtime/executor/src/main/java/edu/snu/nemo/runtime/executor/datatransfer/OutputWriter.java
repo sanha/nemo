@@ -107,7 +107,6 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
   public void write(final Object element) {
     if (nonDummyBlock) {
       blockToWrite.write(partitioner.partition(element), element);
-
       if (partitioner instanceof IncrementPartitioner && blockToWrite instanceof FileBlock) {
         ((FileBlock) blockToWrite).commitPartitions();
       }
