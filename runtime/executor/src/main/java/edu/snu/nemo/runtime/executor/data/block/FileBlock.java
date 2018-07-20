@@ -20,6 +20,7 @@ import edu.snu.nemo.common.exception.BlockWriteException;
 import edu.snu.nemo.runtime.common.data.KeyRange;
 import edu.snu.nemo.runtime.executor.data.*;
 import edu.snu.nemo.runtime.executor.data.partition.NonSerializedPartition;
+import edu.snu.nemo.runtime.executor.data.partition.Partition;
 import edu.snu.nemo.runtime.executor.data.partition.SerializedPartition;
 import edu.snu.nemo.runtime.executor.data.streamchainer.Serializer;
 import edu.snu.nemo.runtime.executor.data.metadata.PartitionMetadata;
@@ -336,6 +337,23 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
         }
       }
       return Optional.of(partitionSizes);
+    } catch (final IOException e) {
+      throw new BlockWriteException(e);
+    }
+  }
+
+  /**
+   * Commit un-committed partitions
+   */
+  public synchronized void commitPartitions() throws BlockWriteException {
+    final List<SerializedPartition<K>> partitions = new ArrayList<>();
+    try {
+      for (final Partition<?, K> partition : nonCommittedPartitionsMap.values()) {
+        partition.commit();
+        partitions.add((SerializedPartition<K>) partition);
+      }
+      writeToFile(partitions);
+      nonCommittedPartitionsMap.clear();
     } catch (final IOException e) {
       throw new BlockWriteException(e);
     }
