@@ -57,6 +57,7 @@ public final class PhysicalPlanGenerator implements Function<DAG<IRVertex, IREdg
     this.stagePartitioner = stagePartitioner;
     stagePartitioner.addIgnoredPropertyKey(DynamicOptimizationProperty.class);
     stagePartitioner.addIgnoredPropertyKey(AdditionalTagOutputProperty.class);
+    stagePartitioner.addIgnoredPropertyKey(IntermediateDataLocationAwareSchedulingProperty.class);
   }
 
   /**
