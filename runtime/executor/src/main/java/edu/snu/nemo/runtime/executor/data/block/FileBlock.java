@@ -343,7 +343,7 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
   }
 
   /**
-   * Commit un-committed partitions
+   * Commit un-committed partitions.
    */
   public synchronized void commitPartitions() throws BlockWriteException {
     final List<SerializedPartition<K>> partitions = new ArrayList<>();
