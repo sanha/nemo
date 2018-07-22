@@ -37,20 +37,9 @@ public final class SailfishVertexIntermediateLocationAwareSchedulingPass extends
 
   @Override
   public DAG<IRVertex, IREdge> apply(final DAG<IRVertex, IREdge> dag) {
-    dag.getVertices().stream()
-        .filter(v -> dag.getIncomingEdgesOf(v).size() == 1)
+    dag.getVertices()
         .forEach(v -> {
-          if (dag.getIncomingEdgesOf(v).stream()
-              .filter(e -> e.getPropertyValue(DataFlowModelProperty.class)
-                  .orElseThrow(
-                      () -> new RuntimeException(String.format("DataFlowModelProperty for %s must be set", e.getId())))
-                  .equals(DataFlowModelProperty.Value.Pull))
-              .filter(e -> e.getPropertyValue(DataCommunicationPatternProperty.class)
-                  .orElseThrow(() -> new RuntimeException(String.format("DataCommunicationModel for %s must be set",
-                      e.getId()))).equals(DataCommunicationPatternProperty.Value.OneToOne))
-              .count() > 0) {
-            v.getExecutionProperties().put(IntermediateDataLocationAwareSchedulingProperty.of(true));
-          }
+          v.setProperty(IntermediateDataLocationAwareSchedulingProperty.of(true));
         });
     return dag;
   }
