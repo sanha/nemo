@@ -84,8 +84,8 @@ public final class IntermediateDataLocationAwareSchedulingConstraint implements 
     final Optional<String> optionalIntermediateLoc = getIntermediateDataLocation(task);
 
     if (optionalIntermediateLoc.isPresent()) {
-      LOG.info(
-          "@@@@ loc is " + optionalIntermediateLoc.get() + ", executor id is " + executor.getExecutorId());
+      //LOG.info(
+      //    "@@@@ loc is " + optionalIntermediateLoc.get() + ", executor id is " + executor.getExecutorId());
       return optionalIntermediateLoc.get().equals(executor.getExecutorId());
     } else {
       return true;
