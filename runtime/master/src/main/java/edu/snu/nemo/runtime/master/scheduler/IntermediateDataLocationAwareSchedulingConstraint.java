@@ -54,24 +54,26 @@ public final class IntermediateDataLocationAwareSchedulingConstraint implements 
    * @return the intermediate data location in {@code taskDAG}
    */
   private Optional<String> getIntermediateDataLocation(final Task task) {
-    if (task.getTaskIncomingEdges().size() == 1) {
-      final StageEdge physicalStageEdge = task.getTaskIncomingEdges().get(0);
-      if (DataCommunicationPatternProperty.Value.OneToOne.equals(
-          physicalStageEdge.getPropertyValue(DataCommunicationPatternProperty.class)
-              .orElseThrow(() -> new RuntimeException("No comm pattern!")))) {
-        final String blockIdToRead =
-            RuntimeIdGenerator.generateBlockId(physicalStageEdge.getId(),
-                RuntimeIdGenerator.getIndexFromTaskId(task.getTaskId()));
-        final BlockManagerMaster.BlockLocationRequestHandler locationHandler =
-            blockManagerMaster.getBlockLocationHandler(blockIdToRead);
-        if (locationHandler.getLocationFuture().isDone()) {
-          try {
-            final String location = locationHandler.getLocationFuture().get();
-            return Optional.of(location);
-          } catch (final InterruptedException | ExecutionException e) {
-            LOG.error("Error during getting intermediate data location!", e);
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
+    if (task.getPropertyValue(IntermediateDataLocationAwareSchedulingProperty.class).orElse(false)) {
+      if (task.getTaskIncomingEdges().size() == 1) {
+        final StageEdge physicalStageEdge = task.getTaskIncomingEdges().get(0);
+        if (DataCommunicationPatternProperty.Value.OneToOne.equals(
+            physicalStageEdge.getPropertyValue(DataCommunicationPatternProperty.class)
+                .orElseThrow(() -> new RuntimeException("No comm pattern!")))) {
+          final String blockIdToRead =
+              RuntimeIdGenerator.generateBlockId(physicalStageEdge.getId(),
+                  RuntimeIdGenerator.getIndexFromTaskId(task.getTaskId()));
+          final BlockManagerMaster.BlockLocationRequestHandler locationHandler =
+              blockManagerMaster.getBlockLocationHandler(blockIdToRead);
+          if (locationHandler.getLocationFuture().isDone()) {
+            try {
+              final String location = locationHandler.getLocationFuture().get();
+              return Optional.of(location);
+            } catch (final InterruptedException | ExecutionException e) {
+              LOG.error("Error during getting intermediate data location!", e);
+              Thread.currentThread().interrupt();
+              throw new RuntimeException(e);
+            }
           }
         }
       }

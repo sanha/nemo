@@ -96,7 +96,7 @@ public final class Executor {
   }
 
   private synchronized void onTaskReceived(final Task task) {
-    LOG.info("Executor [{}] received Task [{}] to execute.",
+    LOG.debug("Executor [{}] received Task [{}] to execute.",
         new Object[]{executorId, task.getTaskId()});
     executorService.execute(() -> launchTask(task));
   }
@@ -165,7 +165,7 @@ public final class Executor {
     public void onMessage(final ControlMessage.Message message) {
       switch (message.getType()) {
         case ScheduleTask:
-          LOG.info("ScheduleTask message is arrived!");
+          //LOG.info("ScheduleTask message is arrived!");
           final ControlMessage.ScheduleTaskMsg scheduleTaskMsg = message.getScheduleTaskMsg();
           final Task task =
               SerializationUtils.deserialize(scheduleTaskMsg.getTask().toByteArray());
