@@ -39,8 +39,8 @@ public final class SailfishVertexIntermediateLocationAwareSchedulingPass extends
   public DAG<IRVertex, IREdge> apply(final DAG<IRVertex, IREdge> dag) {
     dag.getVertices()
         .forEach(v -> {
-          //v.setProperty(IntermediateDataLocationAwareSchedulingProperty.of(true));
-          v.setProperty(IntermediateDataLocationAwareSchedulingProperty.of(false));
+          v.setProperty(IntermediateDataLocationAwareSchedulingProperty.of(true));
+          //v.setProperty(IntermediateDataLocationAwareSchedulingProperty.of(false));
         });
     return dag;
   }
