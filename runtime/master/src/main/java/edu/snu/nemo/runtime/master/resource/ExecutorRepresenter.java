@@ -23,6 +23,8 @@ import edu.snu.nemo.runtime.common.message.MessageSender;
 import edu.snu.nemo.runtime.common.plan.Task;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.reef.driver.context.ActiveContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.util.*;
@@ -43,6 +45,7 @@ import java.util.stream.Collectors;
 @NotThreadSafe
 public final class ExecutorRepresenter {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ExecutorRepresenter.class.getName());
   private final String executorId;
   private final ResourceSpecification resourceSpecification;
   private final Set<Task> runningTasks;
@@ -126,6 +129,8 @@ public final class ExecutorRepresenter {
                         .setTask(ByteString.copyFrom(serialized))
                         .build())
                 .build());
+
+        LOG.info("{} scheduling message is sent to {}!", task.getTaskId(), executorId);
       }
     });
   }
