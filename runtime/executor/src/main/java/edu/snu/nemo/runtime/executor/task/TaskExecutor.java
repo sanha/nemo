@@ -104,7 +104,12 @@ public final class TaskExecutor {
 
     // Prepare data structures
     this.sideInputMap = new HashMap();
+
+    final long startTime = System.currentTimeMillis();
     final Pair<List<DataFetcher>, List<VertexHarness>> pair = prepare(task, irVertexDag, dataTransferFactory);
+    final long endTime = System.currentTimeMillis();
+    LOG.info("prepare time for " + taskId + " is " + (endTime - startTime));
+
     this.dataFetchers = pair.left();
     this.sortedHarnesses = pair.right();
   }
@@ -235,7 +240,10 @@ public final class TaskExecutor {
    */
   public void execute() {
     try {
+      final long startTime = System.currentTimeMillis();
       doExecute();
+      final long endTime = System.currentTimeMillis();
+      LOG.info("execute time for " + taskId + " is " + (endTime - startTime));
     } catch (Throwable throwable) {
       // ANY uncaught throwable is reported to the master
       taskStateManager.onTaskStateChanged(TaskState.State.FAILED, Optional.empty(), Optional.empty());
