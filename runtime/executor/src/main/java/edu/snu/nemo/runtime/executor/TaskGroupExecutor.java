@@ -117,7 +117,10 @@ public final class TaskGroupExecutor {
     this.encodedBlockSize = 0;
 
 
+    final long startTime = System.currentTimeMillis();
     initialize();
+    final long endTime = System.currentTimeMillis();
+    LOG.info("prepare time for " + taskGroupId + " is " + (endTime - startTime));
   }
 
   /**
@@ -428,6 +431,8 @@ public final class TaskGroupExecutor {
    * Executes the task group.
    */
   public void execute() {
+    final long startTime = System.currentTimeMillis();
+
     final Map<String, Object> metric = new HashMap<>();
     metricCollector.beginMeasurement(taskGroupId, metric);
     long boundedSrcReadStartTime = 0;
@@ -561,6 +566,8 @@ public final class TaskGroupExecutor {
           Optional.of(logicalTaskIdPutOnHold),
           Optional.empty());
     }
+    final long endTime = System.currentTimeMillis();
+    LOG.info("execute time for " + taskGroupId + " is " + (endTime - startTime));
     LOG.info("{} Complete!", taskGroupId);
   }
 
