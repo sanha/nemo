@@ -188,8 +188,13 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
               // We recommend to wrap with LimitedInputStream once more when
               // reading input from chained compression InputStream.
               // Plus, this stream must be not closed to prevent to close the filtered file partition.
+
+              final byte[] tmpBytes = new byte[partitionMetadata.getPartitionSize()];
+              fileStream.read(tmpBytes, 0, partitionMetadata.getPartitionSize());
               final LimitedInputStream limitedInputStream =
-                  new LimitedInputStream(fileStream, partitionMetadata.getPartitionSize());
+                  new LimitedInputStream(new ByteArrayInputStream(tmpBytes), partitionMetadata.getPartitionSize());
+              /*final LimitedInputStream limitedInputStream =
+                  new LimitedInputStream(fileStream, partitionMetadata.getPartitionSize());*/
               final long desStartTime = System.currentTimeMillis();
               final NonSerializedPartition<K> deserializePartition = DataUtil.deserializePartition(
                   partitionMetadata.getPartitionSize(), serializer, key, limitedInputStream);
