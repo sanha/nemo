@@ -265,6 +265,7 @@ public final class DataUtil {
               encodedCountingStream = new CountingInputStream(buildInputStream(
                   serializedCountingStream, serializer.getDecodeStreamChainers()));
               decoder = serializer.getDecoderFactory().create(encodedCountingStream);
+              LOG.info("decoder is " + decoder.toString());
             } else {
               cannotContinueDecoding = true;
               return false;

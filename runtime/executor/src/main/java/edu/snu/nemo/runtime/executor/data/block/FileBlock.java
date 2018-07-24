@@ -175,6 +175,7 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
       // Deserialize the data
       final List<NonSerializedPartition<K>> deserializedPartitions = new ArrayList<>();
       final long startTime = System.currentTimeMillis();
+      long desTimeSum = 0;
       try {
         try (final FileInputStream fileStream = new FileInputStream(filePath)) {
           for (final PartitionMetadata<K> partitionMetadata : metadata.getPartitionMetadataList()) {
@@ -189,9 +190,11 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
               // Plus, this stream must be not closed to prevent to close the filtered file partition.
               final LimitedInputStream limitedInputStream =
                   new LimitedInputStream(fileStream, partitionMetadata.getPartitionSize());
-              final NonSerializedPartition<K> deserializePartition =
-                  DataUtil.deserializePartition(
-                      partitionMetadata.getPartitionSize(), serializer, key, limitedInputStream);
+              final long desStartTime = System.currentTimeMillis();
+              final NonSerializedPartition<K> deserializePartition = DataUtil.deserializePartition(
+                  partitionMetadata.getPartitionSize(), serializer, key, limitedInputStream);
+              desTimeSum += System.currentTimeMillis() - desStartTime;
+
               deserializedPartitions.add(deserializePartition);
               // rearrange file pointer
               final long toSkip = partitionMetadata.getPartitionSize() - availableBefore + fileStream.available();
@@ -210,6 +213,7 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
         throw new BlockFetchException(e);
       }
       final long endTime = System.currentTimeMillis();
+      LOG.info("desTimeSum for " + id + " is " + desTimeSum);
       LOG.info("readPartitions time for " + id + " is " + (endTime - startTime));
 
       return deserializedPartitions;
