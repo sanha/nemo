@@ -135,10 +135,13 @@ public final class DataUtil {
     final List<NonSerializedPartition<K>> nonSerializedPartitions = new ArrayList<>();
     for (final SerializedPartition<K> partitionToConvert : partitionsToConvert) {
       final K key = partitionToConvert.getKey();
-      try (final ByteArrayInputStream byteArrayInputStream =
-               new ByteArrayInputStream(partitionToConvert.getData())) {
+      try (
+          final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(partitionToConvert.getData());
+          final InputStream limitedInputStream =
+              new LimitedInputStream(byteArrayInputStream, partitionToConvert.getLength())
+      ) {
         final NonSerializedPartition<K> deserializePartition = deserializePartition(
-            partitionToConvert.getLength(), serializer, key, byteArrayInputStream);
+            partitionToConvert.getLength(), serializer, key, limitedInputStream);
         nonSerializedPartitions.add(deserializePartition);
       }
     }
@@ -249,11 +252,11 @@ public final class DataUtil {
       if (cannotContinueDecoding) {
         return false;
       }
-      if (limit != -1 && limit == (serializedCountingStream == null
-          ? numSerializedBytes : numSerializedBytes + serializedCountingStream.getCount())) {
-        cannotContinueDecoding = true;
-        return false;
-      }
+      //if (limit != -1 && limit == (serializedCountingStream == null
+      //    ? numSerializedBytes : numSerializedBytes + serializedCountingStream.getCount())) {
+      //  cannotContinueDecoding = true;
+      //  return false;
+      //}
       while (true) {
         try {
           if (decoder == null) {

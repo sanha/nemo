@@ -105,10 +105,7 @@ public final class TaskExecutor {
     // Prepare data structures
     this.sideInputMap = new HashMap();
 
-    final long startTime = System.currentTimeMillis();
     final Pair<List<DataFetcher>, List<VertexHarness>> pair = prepare(task, irVertexDag, dataTransferFactory);
-    final long endTime = System.currentTimeMillis();
-    LOG.info("prepare time for " + taskId + " is " + (endTime - startTime));
 
     this.dataFetchers = pair.left();
     this.sortedHarnesses = pair.right();
