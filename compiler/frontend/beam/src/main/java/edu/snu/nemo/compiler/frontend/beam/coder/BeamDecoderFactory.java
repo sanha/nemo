@@ -89,6 +89,11 @@ public final class BeamDecoderFactory<T> implements DecoderFactory<T> {
     protected InputStream getInputStream() {
       return inputStream;
     }
+
+    @Override
+    public String toString() {
+      return beamCoder.toString();
+    }
   }
 
   /**
@@ -138,10 +143,5 @@ public final class BeamDecoderFactory<T> implements DecoderFactory<T> {
       }
       return decodeInternal();
     }
-  }
-
-  @Override
-  public String toString() {
-    return beamCoder.toString();
   }
 }
