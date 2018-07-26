@@ -16,7 +16,6 @@
 package edu.snu.nemo.compiler.optimizer.policy;
 
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.CompileTimePass;
-import edu.snu.nemo.compiler.optimizer.pass.compiletime.annotating.NodeNamesAssignmentPass;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.PrimitiveCompositePass;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.LoopOptimizationCompositePass;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.SailfishPass;
@@ -38,7 +37,6 @@ public final class SailfishPolicy implements Policy {
         .registerCompileTimePass(new SailfishPass())
         .registerCompileTimePass(new LoopOptimizationCompositePass())
         .registerCompileTimePass(new PrimitiveCompositePass())
-        .registerCompileTimePass(new NodeNamesAssignmentPass())
         .build();
   }
 
