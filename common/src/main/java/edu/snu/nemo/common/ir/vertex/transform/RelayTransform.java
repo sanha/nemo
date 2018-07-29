@@ -24,6 +24,7 @@ import edu.snu.nemo.common.ir.OutputCollector;
  */
 public final class RelayTransform<T> implements Transform<T, T> {
   private OutputCollector<T> outputCollector;
+  private int count;
 
   /**
    * Default constructor.

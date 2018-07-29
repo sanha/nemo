@@ -41,8 +41,8 @@ public final class WordCountITCase {
   private static final String testResourceFileName = "test_output_wordcount";
   private static final String executorResourceFileName = fileBasePath + "beam_sample_executor_resources.json";
   private static final String oneExecutorResourceFileName = fileBasePath + "beam_sample_one_executor_resources.json";
-  private static final String inputFilePath =  fileBasePath + inputFileName;
-  private static final String outputFilePath =  fileBasePath + outputFileName;
+  private static final String inputFilePath = fileBasePath + inputFileName;
+  private static final String outputFilePath = fileBasePath + outputFileName;
 
   @Before
   public void setUp() throws Exception {

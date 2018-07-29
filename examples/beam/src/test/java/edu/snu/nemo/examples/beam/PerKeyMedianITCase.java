@@ -19,6 +19,7 @@ import edu.snu.nemo.client.JobLauncher;
 import edu.snu.nemo.common.test.ArgBuilder;
 import edu.snu.nemo.common.test.ExampleTestUtil;
 import edu.snu.nemo.examples.beam.policy.DataSkewPolicyParallelismFive;
+import edu.snu.nemo.examples.beam.policy.SailfishSkewPolicyParallelismFive;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,6 +42,7 @@ public final class PerKeyMedianITCase {
   private static final String testResourceFileName = "test_output_median";
   private static final String executorResourceFileName = fileBasePath + "beam_sample_executor_resources.json";
   private static final String inputFilePath =  fileBasePath + inputFileName;
+  //private static final String inputFilePath =  "/Users/sanha/pagecounts-20160101-000000";
   private static final String outputFilePath =  fileBasePath + outputFileName;
 
   @Before
@@ -69,6 +71,14 @@ public final class PerKeyMedianITCase {
     JobLauncher.main(builder
         .addJobId(PerKeyMedianITCase.class.getSimpleName())
         .addOptimizationPolicy(DataSkewPolicyParallelismFive.class.getCanonicalName())
+        .build());
+  }
+
+  @Test (timeout = TIMEOUT)
+  public void testSailfishSkew() throws Exception {
+    JobLauncher.main(builder
+        .addJobId(PerKeyMedianITCase.class.getSimpleName())
+        .addOptimizationPolicy(SailfishSkewPolicyParallelismFive.class.getCanonicalName())
         .build());
   }
 }

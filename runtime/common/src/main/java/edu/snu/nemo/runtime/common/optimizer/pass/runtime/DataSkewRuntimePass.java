@@ -22,6 +22,7 @@ import edu.snu.nemo.common.dag.DAGBuilder;
 import edu.snu.nemo.common.eventhandler.RuntimeEventHandler;
 import edu.snu.nemo.common.exception.DynamicOptimizationException;
 
+import edu.snu.nemo.common.ir.edge.executionproperty.DataCommunicationPatternProperty;
 import edu.snu.nemo.runtime.common.RuntimeIdGenerator;
 import edu.snu.nemo.runtime.common.data.KeyRange;
 import edu.snu.nemo.runtime.common.plan.PhysicalPlan;
@@ -78,27 +79,41 @@ public final class DataSkewRuntimePass implements RuntimePass<Pair<List<String>,
     final List<String> optimizationEdgeIds = blockIds.stream().map(blockId ->
         RuntimeIdGenerator.getRuntimeEdgeIdFromBlockId(blockId)).collect(Collectors.toList());
     final DAG<Stage, StageEdge> stageDAG = originalPlan.getStageDAG();
+
+    final StageEdge edgeToOptimize = stageDAG.getVertices().stream()
+        .filter(v -> stageDAG.getIncomingEdgesOf(v).stream()
+            .filter(e -> e.getDataCommunicationPattern().equals(DataCommunicationPatternProperty.Value.Shuffle))
+            .count() > 0)
+        .map(v -> stageDAG.getIncomingEdgesOf(v).stream()
+            .filter(e -> e.getDataCommunicationPattern().equals(DataCommunicationPatternProperty.Value.Shuffle))
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("no shuffle edge in this vtx!")))
+        .findFirst()
+        .orElseThrow(() -> new RuntimeException("no shuffle edge at all!")); // TMP: assume single shuffle edge.
+
     final List<StageEdge> optimizationEdges = stageDAG.getVertices().stream()
         .flatMap(stage -> stageDAG.getIncomingEdgesOf(stage).stream())
         .filter(stageEdge -> optimizationEdgeIds.contains(stageEdge.getId()))
         .collect(Collectors.toList());
 
     // Get number of evaluators of the next stage (number of blocks).
-    final Integer numOfDstTasks = optimizationEdges.stream().findFirst().orElseThrow(() ->
-        new RuntimeException("optimization edges are empty")).getDst().getTaskIds().size();
+    //final Integer numOfDstTasks = optimizationEdges.stream().findFirst().orElseThrow(() ->
+    //    new RuntimeException("optimization edges are empty")).getDst().getTaskIds().size();
+    final Integer numOfDstTasks = edgeToOptimize.getDst().getTaskIds().size();
 
     // Calculate keyRanges.
     final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), numOfDstTasks);
 
     // Overwrite the previously assigned key range in the physical DAG with the new range.
-    optimizationEdges.forEach(optimizationEdge -> {
+    //optimizationEdges.forEach(optimizationEdge -> {
       // Update the information.
       final Map<Integer, KeyRange> taskIdxToHashRange = new HashMap<>();
       for (int taskIdx = 0; taskIdx < numOfDstTasks; taskIdx++) {
         taskIdxToHashRange.put(taskIdx, keyRanges.get(taskIdx));
       }
-      optimizationEdge.setTaskIdxToKeyRange(taskIdxToHashRange);
-    });
+      //optimizationEdge.setTaskIdxToKeyRange(taskIdxToHashRange);
+    edgeToOptimize.setTaskIdxToKeyRange(taskIdxToHashRange);
+    //});
 
     return new PhysicalPlan(originalPlan.getId(), physicalDAGBuilder.build());
   }

@@ -33,6 +33,7 @@ public final class IncrementPartitioner implements Partitioner<Integer> {
 
   @Override
   public Integer partition(final Object element) {
-    return key.getAndIncrement();
+    final int selectedKey = key.getAndIncrement();
+    return selectedKey;
   }
 }

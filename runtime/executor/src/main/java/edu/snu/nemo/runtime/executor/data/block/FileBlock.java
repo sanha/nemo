@@ -45,7 +45,8 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
 
   private static final Logger LOG = LoggerFactory.getLogger(FileBlock.class.getName());
   private final String id;
-  private final Map<K, SerializedPartition<K>> nonCommittedPartitionsMap;
+  //private final Map<K, SerializedPartition<K>> nonCommittedPartitionsMap;
+  private final Map<Integer, SerializedPartition<Integer>> nonCommittedPartitionsMap;
   private final Serializer serializer;
   private final String filePath;
   private final FileMetadata<K> metadata;
@@ -67,6 +68,18 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
     this.serializer = serializer;
     this.filePath = filePath;
     this.metadata = metadata;
+  }
+
+  public FileBlock(final String blockId,
+                   final Serializer serializer,
+                   final String filePath,
+                   final FileMetadata<K> metadata,
+                   final int hashRange) throws IOException {
+    this(blockId, serializer, filePath, metadata);
+    for (int i = 0; i < hashRange; i++) {
+      final SerializedPartition<Integer> partition = new SerializedPartition<>(i, serializer);
+      nonCommittedPartitionsMap.put(i, partition);
+    }
   }
 
   /**
@@ -104,10 +117,10 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
       throw new BlockWriteException(new Throwable("The partition is already committed!"));
     } else {
       try {
-        SerializedPartition<K> partition = nonCommittedPartitionsMap.get(key);
+        SerializedPartition<Integer> partition = nonCommittedPartitionsMap.get(key);
         if (partition == null) {
-          partition = new SerializedPartition<>(key, serializer);
-          nonCommittedPartitionsMap.put(key, partition);
+          partition = new SerializedPartition<>((Integer) key, serializer);
+          nonCommittedPartitionsMap.put((Integer) key, partition);
         }
         partition.write(element);
       } catch (final IOException e) {
@@ -331,7 +344,7 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
     try {
       if (!metadata.isCommitted()) {
         final List<SerializedPartition<K>> partitions = new ArrayList<>();
-        for (final SerializedPartition<K> partition : nonCommittedPartitionsMap.values()) {
+        for (final SerializedPartition partition : nonCommittedPartitionsMap.values()) {
           partition.commit();
           partitions.add(partition);
         }
@@ -371,7 +384,7 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
   public synchronized void commitPartitions() throws BlockWriteException {
     final List<SerializedPartition<K>> partitions = new ArrayList<>();
     try {
-      for (final Partition<?, K> partition : nonCommittedPartitionsMap.values()) {
+      for (final Partition partition : nonCommittedPartitionsMap.values()) {
         partition.commit();
         partitions.add((SerializedPartition<K>) partition);
       }

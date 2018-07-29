@@ -62,4 +62,8 @@ public final class DataSkewHashPartitioner implements Partitioner<Integer> {
   public Integer partition(final Object element) {
     return Math.abs(keyExtractor.extractKey(element).hashCode() % hashRange);
   }
+
+  public int getHashRange() {
+    return hashRange;
+  }
 }

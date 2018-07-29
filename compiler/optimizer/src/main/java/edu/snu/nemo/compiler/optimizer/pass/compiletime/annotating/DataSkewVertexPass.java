@@ -53,10 +53,10 @@ public final class DataSkewVertexPass extends AnnotatingPass {
         .filter(v -> v instanceof MetricCollectionBarrierVertex)
         .forEach(v -> v.setProperty(DynamicOptimizationProperty
             .of(DynamicOptimizationProperty.Value.DataSkewRuntimePass)));
-    dag.getVertices().stream()
-        .filter(v -> hasMetricCollectionBarrierVertexAsParent(dag, v)
-            && !v.getExecutionProperties().containsKey(SkewnessAwareSchedulingProperty.class))
-        .forEach(v -> v.getExecutionProperties().put(SkewnessAwareSchedulingProperty.of(true)));
+    //dag.getVertices().stream()
+    //    .filter(v -> hasMetricCollectionBarrierVertexAsParent(dag, v)
+    //        && !v.getExecutionProperties().containsKey(SkewnessAwareSchedulingProperty.class))
+    //    .forEach(v -> v.getExecutionProperties().put(SkewnessAwareSchedulingProperty.of(true)));
 
     return dag;
   }
