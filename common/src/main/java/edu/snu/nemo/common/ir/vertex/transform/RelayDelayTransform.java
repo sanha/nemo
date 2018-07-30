@@ -22,14 +22,14 @@ import edu.snu.nemo.common.ir.OutputCollector;
  * This transform can be used for merging input data into the {@link OutputCollector}.
  * @param <T> input/output type.
  */
-public final class RelayTransform<T> implements Transform<T, T> {
+public final class RelayDelayTransform<T> implements Transform<T, T> {
   private OutputCollector<T> outputCollector;
   private int count;
 
   /**
    * Default constructor.
    */
-  public RelayTransform() {
+  public RelayDelayTransform() {
     // Do nothing.
   }
 
@@ -46,12 +46,17 @@ public final class RelayTransform<T> implements Transform<T, T> {
   @Override
   public void close() {
     // Do nothing.
+    try {
+      Thread.sleep(1000);
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder();
-    sb.append(RelayTransform.class);
+    sb.append(RelayDelayTransform.class);
     sb.append(":");
     sb.append(super.toString());
     return sb.toString();

@@ -25,6 +25,7 @@ import edu.snu.nemo.common.ir.vertex.IRVertex;
 import edu.snu.nemo.common.ir.vertex.OperatorVertex;
 import edu.snu.nemo.common.ir.vertex.executionproperty.SkewnessAwareSchedulingProperty;
 import edu.snu.nemo.common.ir.vertex.executionproperty.SkipSerDesProperty;
+import edu.snu.nemo.common.ir.vertex.transform.RelayDelayTransform;
 import edu.snu.nemo.common.ir.vertex.transform.RelayTransform;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.reshaping.ReshapingPass;
 
@@ -59,7 +60,8 @@ public final class SailfishSkewRelayReshapingPass extends ReshapingPass {
           if (DataCommunicationPatternProperty.Value.Shuffle
                 .equals(edge.getPropertyValue(DataCommunicationPatternProperty.class).get())) {
             // Insert a relay vertex vertex that pull data
-            final OperatorVertex relayVertex = new OperatorVertex(new RelayTransform());
+            //final OperatorVertex relayVertex = new OperatorVertex(new RelayTransform());
+            final OperatorVertex relayVertex = new OperatorVertex(new RelayDelayTransform());
             relayVertex.getExecutionProperties().put(SkipSerDesProperty.of());
             builder.addVertex(relayVertex);
 
