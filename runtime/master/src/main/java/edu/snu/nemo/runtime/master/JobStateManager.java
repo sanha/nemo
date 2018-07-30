@@ -183,6 +183,10 @@ public final class JobStateManager {
       // Log not-yet-completed tasks for us to track progress
       LOG.info("{} completed: {} Task(s) remaining in this stage",
           taskId, tasksOfThisStage.size() - numOfCompletedOrOnHoldTasksInThisStage);
+    } else if (newTaskState.equals(TaskState.State.ON_HOLD)) {
+      // Log not-yet-completed tasks for us to track progress
+      LOG.info("{} on hold: {} Task(s) remaining in this stage",
+          taskId, tasksOfThisStage.size() - numOfCompletedOrOnHoldTasksInThisStage);
     }
     switch (newTaskState) {
       // INCOMPLETE stage
