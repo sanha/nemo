@@ -16,6 +16,8 @@
 package edu.snu.nemo.common.ir.vertex.transform;
 
 import edu.snu.nemo.common.ir.OutputCollector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link Transform} relays input data from upstream vertex to downstream vertex promptly.
@@ -23,6 +25,7 @@ import edu.snu.nemo.common.ir.OutputCollector;
  * @param <T> input/output type.
  */
 public final class RelayTransform<T> implements Transform<T, T> {
+  private static final Logger LOG = LoggerFactory.getLogger(RelayTransform.class.getName());
   private OutputCollector<T> outputCollector;
   private int count;
 
@@ -41,11 +44,13 @@ public final class RelayTransform<T> implements Transform<T, T> {
   @Override
   public void onData(final T element) {
     outputCollector.emit(element);
+    count++;
   }
 
   @Override
   public void close() {
     // Do nothing.
+    LOG.info("@@ Relay transform count " + count);
   }
 
   @Override
