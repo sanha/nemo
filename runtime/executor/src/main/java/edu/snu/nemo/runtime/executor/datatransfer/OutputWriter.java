@@ -54,7 +54,7 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
    * @param runtimeEdge         the {@link RuntimeEdge}.
    * @param blockManagerWorker  the {@link BlockManagerWorker}.
    */
-  OutputWriter(final int hashRangeMultiplier,
+  OutputWriter(final double hashRangeMultiplier,
                final int srcTaskIdx,
                final String srcRuntimeVertexId,
                final IRVertex dstIrVertex,

@@ -44,13 +44,13 @@ public final class DataSkewHashPartitioner implements Partitioner<Integer> {
    * @param dstParallelism      the number of destination tasks.
    * @param keyExtractor        the key extractor that extracts keys from elements.
    */
-  public DataSkewHashPartitioner(final int hashRangeMultiplier,
+  public DataSkewHashPartitioner(final double hashRangeMultiplier,
                                  final int dstParallelism,
                                  final KeyExtractor keyExtractor) {
     this.keyExtractor = keyExtractor;
     // For this hash range, please check the description of HashRangeMultiplier in JobConf.
     // For actual hash range to use, we calculate a prime number right next to the desired hash range.
-    this.hashRangeBase = new BigInteger(String.valueOf(dstParallelism * hashRangeMultiplier));
+    this.hashRangeBase = new BigInteger(String.valueOf(Math.round(dstParallelism * hashRangeMultiplier)));
     this.hashRange = hashRangeBase.nextProbablePrime().intValue();
     LOG.info("hashRangeBase {} resulting hashRange {}", hashRangeBase, hashRange);
   }

@@ -29,10 +29,10 @@ import javax.inject.Inject;
 public final class DataTransferFactory {
 
   private final BlockManagerWorker blockManagerWorker;
-  private final int hashRangeMultiplier;
+  private final double hashRangeMultiplier;
 
   @Inject
-  private DataTransferFactory(@Parameter(JobConf.HashRangeMultiplier.class) final int hashRangeMultiplier,
+  private DataTransferFactory(@Parameter(JobConf.HashRangeMultiplier.class) final double hashRangeMultiplier,
                               final BlockManagerWorker blockManagerWorker) {
     this.hashRangeMultiplier = hashRangeMultiplier;
     this.blockManagerWorker = blockManagerWorker;
