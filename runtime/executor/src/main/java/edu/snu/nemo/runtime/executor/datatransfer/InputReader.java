@@ -166,13 +166,13 @@ public final class InputReader extends DataTransfer {
    * @return the parallelism of the source task.
    */
   public int getSourceParallelism() {
-    if (DataCommunicationPatternProperty.Value.OneToOne
-        .equals(runtimeEdge.getPropertyValue(DataCommunicationPatternProperty.class).get())) {
-      return 1;
-    } else {
+    //if (DataCommunicationPatternProperty.Value.OneToOne
+    //    .equals(runtimeEdge.getPropertyValue(DataCommunicationPatternProperty.class).get())) {
+    //  return 1;
+    //} else {
       final Integer numSrcTasks = srcVertex.getPropertyValue(ParallelismProperty.class).get();
       return numSrcTasks;
-    }
+    //}
   }
 
   /**
