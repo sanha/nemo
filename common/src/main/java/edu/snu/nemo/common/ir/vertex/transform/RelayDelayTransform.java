@@ -47,7 +47,7 @@ public final class RelayDelayTransform<T> implements Transform<T, T> {
   public void close() {
     // Do nothing.
     try {
-      Thread.sleep(1000);
+      Thread.sleep(10000);
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
