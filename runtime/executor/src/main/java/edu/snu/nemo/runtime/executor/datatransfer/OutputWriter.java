@@ -69,7 +69,8 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
     this.blockStoreValue = runtimeEdge.getPropertyValue(InterTaskDataStoreProperty.class).get();
 
     // Setup partitioner
-    final int dstParallelism = getDstParallelism();
+    //final int dstParallelism = getDstParallelism();
+    final int dstParallelism = dstIrVertex.getPropertyValue(ParallelismProperty.class).get();
     final Optional<KeyExtractor> keyExtractor = runtimeEdge.getPropertyValue(KeyExtractorProperty.class);
     final PartitionerProperty.Value partitionerPropertyValue =
         runtimeEdge.getPropertyValue(PartitionerProperty.class).get();
