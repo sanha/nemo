@@ -369,6 +369,7 @@ public final class TaskExecutor {
           taskStateManager.onTaskStateChanged(TaskState.State.SHOULD_RETRY,
               Optional.empty(), Optional.of(TaskState.RecoverableTaskFailureCause.INPUT_READ_FAILURE));
           LOG.error("{} Execution Failed (Recoverable: input read failure)! Exception: {}", taskId, e.toString());
+          e.printStackTrace();
           return false;
         }
 

@@ -15,6 +15,7 @@
  */
 package edu.snu.nemo.runtime.executor.data.block;
 
+import edu.snu.nemo.common.Pair;
 import edu.snu.nemo.common.exception.BlockFetchException;
 import edu.snu.nemo.common.exception.BlockWriteException;
 import edu.snu.nemo.common.KeyRange;
@@ -188,6 +189,7 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
       // Deserialize the data
       final List<NonSerializedPartition<K>> deserializedPartitions = new ArrayList<>();
       try {
+        final List<Pair<K, byte[]>> keyToBytesToRead = new ArrayList<>();
         try (final FileInputStream fileStream = new FileInputStream(filePath)) {
           for (final PartitionMetadata<K> partitionMetadata : metadata.getPartitionMetadataList()) {
             final K key = partitionMetadata.getKey();
@@ -202,14 +204,16 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
 
               final byte[] tmpBytes = new byte[partitionMetadata.getPartitionSize()];
               fileStream.read(tmpBytes, 0, partitionMetadata.getPartitionSize());
-              final LimitedInputStream limitedInputStream =
-                  new LimitedInputStream(new ByteArrayInputStream(tmpBytes), partitionMetadata.getPartitionSize());
+              keyToBytesToRead.add(Pair.of(key, tmpBytes));
+              //final LimitedInputStream limitedInputStream =
+              //    new LimitedInputStream(new ByteArrayInputStream(tmpBytes), partitionMetadata.getPartitionSize());
               /*final LimitedInputStream limitedInputStream =
                   new LimitedInputStream(fileStream, partitionMetadata.getPartitionSize());*/
-              final NonSerializedPartition<K> deserializePartition = DataUtil.deserializePartition(
-                  partitionMetadata.getPartitionSize(), serializer, key, limitedInputStream);
 
-              deserializedPartitions.add(deserializePartition);
+              //final NonSerializedPartition<K> deserializePartition = DataUtil.deserializePartition(
+              //    partitionMetadata.getPartitionSize(), serializer, key, limitedInputStream);
+
+              //deserializedPartitions.add(deserializePartition);
               // rearrange file pointer
               final long toSkip = partitionMetadata.getPartitionSize() - availableBefore + fileStream.available();
               if (toSkip > 0) {
@@ -222,6 +226,13 @@ public final class FileBlock<K extends Serializable> implements Block<K> {
               skipBytes(fileStream, partitionMetadata.getPartitionSize());
             }
           }
+        }
+        for (final Pair<K, byte[]> pair : keyToBytesToRead) {
+          final byte[] bytes = pair.right();
+          final InputStream is = new ByteArrayInputStream(bytes);
+          final NonSerializedPartition<K> deserializePartition = DataUtil.deserializePartition(
+              bytes.length, serializer, pair.left(), is);
+          deserializedPartitions.add(deserializePartition);
         }
       } catch (final IOException e) {
         throw new BlockFetchException(e);
