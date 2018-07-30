@@ -89,7 +89,7 @@ public final class SailfishSkewRelayReshapingPass extends ReshapingPass {
             newEdgeToRelay.setProperty(
                 KeyExtractorProperty.of(edge.getPropertyValue(KeyExtractorProperty.class).get()));
             newEdgeToRelay.setProperty(MetricCollectionProperty.of(MetricCollectionProperty.Value.DataSkewRuntimePass));
-            newEdgeToRelay.setProperty(UsedDataHandlingProperty.of(UsedDataHandlingProperty.Value.Discard));
+            //newEdgeToRelay.setProperty(UsedDataHandlingProperty.of(UsedDataHandlingProperty.Value.Discard));
             builder.connectVertices(newEdgeToRelay);
 
             newEdgeToMerger.setProperty(EncoderProperty.of(BytesEncoderFactory.of()));
