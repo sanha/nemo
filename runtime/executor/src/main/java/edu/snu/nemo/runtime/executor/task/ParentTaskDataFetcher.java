@@ -111,17 +111,17 @@ class ParentTaskDataFetcher extends DataFetcher {
         } else {
           countBytes(currentIterator);
           advanceIterator();
-          return fetchDataElement();
-          /*while (!currentIterator.hasNext() || currentIteratorIndex == expectedNumOfIterators) {
+          //return fetchDataElement();
+          while (!currentIterator.hasNext() && currentIteratorIndex != expectedNumOfIterators) {
             // Advance to the next one
+            countBytes(currentIterator);
             advanceIterator();
           }
           if (currentIterator.hasNext()) {
             return this.currentIterator.next();
           } else { // lastone
             return null;
-          }*/
-          // return fetchDataElement();
+          }
         }
       }
     } catch (final Throwable e) {
