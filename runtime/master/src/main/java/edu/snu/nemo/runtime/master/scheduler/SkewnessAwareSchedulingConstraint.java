@@ -16,11 +16,12 @@
 package edu.snu.nemo.runtime.master.scheduler;
 
 import com.google.common.annotations.VisibleForTesting;
+import edu.snu.nemo.common.ir.edge.executionproperty.DataSkewMetricProperty;
 import edu.snu.nemo.common.ir.executionproperty.AssociatedProperty;
 import edu.snu.nemo.common.ir.vertex.executionproperty.SkewnessAwareSchedulingProperty;
 import edu.snu.nemo.runtime.common.RuntimeIdGenerator;
-import edu.snu.nemo.runtime.common.data.HashRange;
-import edu.snu.nemo.runtime.common.data.KeyRange;
+import edu.snu.nemo.common.HashRange;
+import edu.snu.nemo.common.KeyRange;
 import edu.snu.nemo.runtime.common.plan.StageEdge;
 import edu.snu.nemo.runtime.common.plan.Task;
 import edu.snu.nemo.runtime.master.resource.ExecutorRepresenter;
@@ -28,6 +29,10 @@ import org.apache.reef.annotations.audience.DriverSide;
 
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This policy aims to distribute partitions with skewed keys to different executors.
@@ -36,6 +41,7 @@ import javax.inject.Inject;
 @DriverSide
 @AssociatedProperty(SkewnessAwareSchedulingProperty.class)
 public final class SkewnessAwareSchedulingConstraint implements SchedulingConstraint {
+  private static final Logger LOG = LoggerFactory.getLogger(SkewnessAwareSchedulingConstraint.class.getName());
 
   @VisibleForTesting
   @Inject
@@ -45,7 +51,9 @@ public final class SkewnessAwareSchedulingConstraint implements SchedulingConstr
   public boolean hasSkewedData(final Task task) {
     final int taskIdx = RuntimeIdGenerator.getIndexFromTaskId(task.getTaskId());
     for (StageEdge inEdge : task.getTaskIncomingEdges()) {
-      final KeyRange hashRange = inEdge.getTaskIdxToKeyRange().get(taskIdx);
+      final Map<Integer, KeyRange> taskIdxToKeyRange =
+          inEdge.getPropertyValue(DataSkewMetricProperty.class).get().getMetric();
+      final KeyRange hashRange = taskIdxToKeyRange.get(taskIdx);
       if (((HashRange) hashRange).isSkewed()) {
         return true;
       }
@@ -61,6 +69,11 @@ public final class SkewnessAwareSchedulingConstraint implements SchedulingConstr
         return false;
       }
     }
+    /*
+    if (!hasSkewedData(task)) {
+      LOG.info("Non-Skewed {} can be assigned to {}", task.getTaskId(), executor.getNodeName());
+    }
+    */
     return true;
   }
 }

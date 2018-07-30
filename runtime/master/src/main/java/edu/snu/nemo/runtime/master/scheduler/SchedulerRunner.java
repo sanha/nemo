@@ -15,6 +15,11 @@
  */
 package edu.snu.nemo.runtime.master.scheduler;
 
+import edu.snu.nemo.common.HashRange;
+import edu.snu.nemo.common.KeyRange;
+import edu.snu.nemo.common.ir.edge.executionproperty.DataSkewMetricProperty;
+import edu.snu.nemo.runtime.common.RuntimeIdGenerator;
+import edu.snu.nemo.runtime.common.plan.StageEdge;
 import edu.snu.nemo.runtime.common.plan.Task;
 import edu.snu.nemo.runtime.common.state.TaskState;
 import edu.snu.nemo.runtime.master.JobStateManager;
@@ -95,6 +100,19 @@ public final class SchedulerRunner {
     }
   }
 
+  public boolean hasSkewedData(final Task task) {
+    final int taskIdx = RuntimeIdGenerator.getIndexFromTaskId(task.getTaskId());
+    for (StageEdge inEdge : task.getTaskIncomingEdges()) {
+      final Map<Integer, KeyRange> taskIdxToKeyRange =
+          inEdge.getPropertyValue(DataSkewMetricProperty.class).get().getMetric();
+      final KeyRange hashRange = taskIdxToKeyRange.get(taskIdx);
+      if (((HashRange) hashRange).isSkewed()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   void doScheduleTaskList() {
     final Optional<Collection<Task>> taskListOptional = pendingTaskCollectionPointer.getAndSetNull();
     if (!taskListOptional.isPresent()) {
@@ -103,8 +121,10 @@ public final class SchedulerRunner {
       return;
     }
 
+    final List<String> scheduledTasks = new ArrayList<>();
     final Collection<Task> taskList = taskListOptional.get();
     final List<Task> couldNotSchedule = new ArrayList<>();
+
     for (final Task task : taskList) {
       final JobStateManager jobStateManager = jobStateManagers.get(task.getJobId());
       if (!jobStateManager.getTaskState(task.getTaskId()).equals(TaskState.State.READY)) {
@@ -112,6 +132,7 @@ public final class SchedulerRunner {
         LOG.debug("Skipping {} as it is not READY", task.getTaskId());
         continue;
       }
+      final String taskId = task.getTaskId();
 
       executorRegistry.viewExecutors(executors -> {
         final MutableObject<Set<ExecutorRepresenter>> candidateExecutors = new MutableObject<>(executors);
@@ -129,11 +150,17 @@ public final class SchedulerRunner {
               = schedulingPolicy.selectExecutor(candidateExecutors.getValue(), task);
           // update metadata first
           jobStateManager.onTaskStateChanged(task.getTaskId(), TaskState.State.EXECUTING);
-
-          LOG.info("{} scheduled to {}", task.getTaskId(), selectedExecutor.getExecutorId());
-
+          final boolean isSkewed = hasSkewedData(task);
+          if (isSkewed) {
+            LOG.info("Skewed {} scheduled to {} {}",
+                task.getTaskId(), selectedExecutor.getExecutorId(), selectedExecutor.getNodeName());
+          } else {
+            LOG.info("{} scheduled to {} {}",
+                task.getTaskId(), selectedExecutor.getExecutorId(), selectedExecutor.getNodeName());
+          }
           // send the task
           selectedExecutor.onTaskScheduled(task);
+          scheduledTasks.add(taskId);
         } else {
           couldNotSchedule.add(task);
         }

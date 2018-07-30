@@ -130,6 +130,7 @@ public final class Executor {
             e.getPropertyValue(DecompressionProperty.class).orElse(null)));
       });
 
+      LOG.info("Starting {} in {}", task.getTaskId(), executorId);
       new TaskExecutor(task, irDag, taskStateManager, dataTransferFactory,
           metricMessageSender, persistentConnectionToMasterMap).execute();
     } catch (final Exception e) {

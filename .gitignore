@@ -17,7 +17,7 @@ build
 # ----------------------------------------------------------------------
 .sample_output*
 sample_output*
-dag/*
+runtime/dag/*
 *.log
 #
 # ----------------------------------------------------------------------
@@ -33,6 +33,7 @@ nb-configuration.xml
 .idea
 atlassian-ide-plugin.xml
 *.sln.DotSettings.user
+.editorconfig
 #
 # ----------------------------------------------------------------------
 # OS Files

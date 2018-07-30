@@ -20,7 +20,6 @@ import edu.snu.nemo.common.ir.edge.IREdge;
 import edu.snu.nemo.common.ir.vertex.IRVertex;
 import edu.snu.nemo.common.ir.vertex.MetricCollectionBarrierVertex;
 import edu.snu.nemo.common.ir.vertex.executionproperty.DynamicOptimizationProperty;
-import edu.snu.nemo.common.ir.vertex.executionproperty.SkewnessAwareSchedulingProperty;
 
 import java.util.List;
 
@@ -53,10 +52,17 @@ public final class DataSkewVertexPass extends AnnotatingPass {
         .filter(v -> v instanceof MetricCollectionBarrierVertex)
         .forEach(v -> v.setProperty(DynamicOptimizationProperty
             .of(DynamicOptimizationProperty.Value.DataSkewRuntimePass)));
-    //dag.getVertices().stream()
-    //    .filter(v -> hasMetricCollectionBarrierVertexAsParent(dag, v)
-    //        && !v.getExecutionProperties().containsKey(SkewnessAwareSchedulingProperty.class))
-    //    .forEach(v -> v.getExecutionProperties().put(SkewnessAwareSchedulingProperty.of(true)));
+
+    /*
+    dag.getVertices().stream()
+        .filter(v -> hasMetricCollectionBarrierVertexAsParent(dag, v)
+            && !v.getExecutionProperties().containsKey(SkewnessAwareSchedulingProperty.class))
+        .forEach(childV -> {
+          childV.getExecutionProperties().put(SkewnessAwareSchedulingProperty.of(true));
+          dag.getDescendants(childV.getId()).forEach(descendentV -> {
+            descendentV.getExecutionProperties().put(SkewnessAwareSchedulingProperty.of(true));
+          });
+        });*/
 
     return dag;
   }

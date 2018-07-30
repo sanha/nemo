@@ -41,11 +41,14 @@ public final class RelayTransform<T> implements Transform<T, T> {
   @Override
   public void onData(final T element) {
     outputCollector.emit(element);
+    count++;
+    System.out.println("@@@ element is " + element);
   }
 
   @Override
   public void close() {
     // Do nothing.
+    System.out.println("@@@ count is " + count);
   }
 
   @Override

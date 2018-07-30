@@ -15,8 +15,8 @@
  */
 package edu.snu.nemo.runtime.common.optimizer.pass.runtime;
 
-import edu.snu.nemo.runtime.common.data.HashRange;
-import edu.snu.nemo.runtime.common.data.KeyRange;
+import edu.snu.nemo.common.HashRange;
+import edu.snu.nemo.common.KeyRange;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -47,7 +47,7 @@ public class DataSkewRuntimePassTest {
     final Integer taskNum = 5;
 
     final List<KeyRange> keyRanges =
-        new DataSkewRuntimePass().setNumSkewedKeys(2).calculateKeyRanges(testMetricData, taskNum);
+        new DataSkewRuntimePass(2).setNumSkewedKeys(2).calculateKeyRanges(testMetricData, taskNum);
 
     // Test whether it correctly redistributed hash ranges.
     assertEquals(0, keyRanges.get(0).rangeBeginInclusive());

@@ -57,6 +57,7 @@ public final class TaskExecutor {
 
   // Essential information
   private boolean isExecuted;
+  private final DAG<IRVertex, RuntimeEdge<IRVertex>> irVertexDAG;
   private final String taskId;
   private final TaskStateManager taskStateManager;
   private final List<DataFetcher> dataFetchers;
@@ -90,6 +91,7 @@ public final class TaskExecutor {
                       final PersistentConnectionToMasterMap persistentConnectionToMasterMap) {
     // Essential information
     this.isExecuted = false;
+    this.irVertexDAG = irVertexDag;
     this.taskId = task.getTaskId();
     this.taskStateManager = taskStateManager;
 
@@ -355,8 +357,9 @@ public final class TaskExecutor {
    */
   private boolean handleDataFetchers(final List<DataFetcher> fetchers) {
     final List<DataFetcher> availableFetchers = new ArrayList<>(fetchers);
-    int finishedFetcherIndex = NONE_FINISHED;
     while (!availableFetchers.isEmpty()) { // empty means we've consumed all task-external input data
+      // For this looping of available fetchers.
+      int finishedFetcherIndex = NONE_FINISHED;
       for (int i = 0; i < availableFetchers.size(); i++) {
         final DataFetcher dataFetcher = fetchers.get(i);
         final Object element;
