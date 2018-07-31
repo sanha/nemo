@@ -63,7 +63,7 @@ public final class LocalFileStore extends LocalBlockStore {
     return new FileBlock(blockId, serializer, DataUtil.blockIdToFilePath(blockId, fileDirectory), metadata);
   }
 
-  public Block createBlock(final String blockId,
+  /*public Block createBlock(final String blockId,
                            final int hashRange) throws IOException {
     deleteBlock(blockId);
 
@@ -71,7 +71,7 @@ public final class LocalFileStore extends LocalBlockStore {
     final LocalFileMetadata metadata = new LocalFileMetadata();
 
     return new FileBlock(blockId, serializer, DataUtil.blockIdToFilePath(blockId, fileDirectory), metadata, hashRange);
-  }
+  }*/
 
   /**
    * Writes a committed block to this store.

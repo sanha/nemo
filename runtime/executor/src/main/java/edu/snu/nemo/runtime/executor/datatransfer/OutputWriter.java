@@ -74,7 +74,7 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
     final Optional<KeyExtractor> keyExtractor = runtimeEdge.getPropertyValue(KeyExtractorProperty.class);
     final PartitionerProperty.Value partitionerPropertyValue =
         runtimeEdge.getPropertyValue(PartitionerProperty.class).get();
-    int hashRange = -1;
+    //int hashRange = -1;
     switch (partitionerPropertyValue) {
       case IntactPartitioner:
         this.partitioner = new IntactPartitioner();
@@ -87,7 +87,7 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
         break;
       case DataSkewHashPartitioner:
         this.partitioner = new DataSkewHashPartitioner(hashRangeMultiplier, dstParallelism, keyExtractor.get());
-        hashRange = ((DataSkewHashPartitioner) partitioner).getHashRange();
+        //hashRange = ((DataSkewHashPartitioner) partitioner).getHashRange();
         break;
       default:
         throw new UnsupportedPartitionerException(

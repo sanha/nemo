@@ -140,7 +140,7 @@ public final class BlockManagerWorker {
     return store.createBlock(blockId);
   }
 
-  public Block createBlock(final String blockId,
+  /*public Block createBlock(final String blockId,
                            final InterTaskDataStoreProperty.Value blockStore,
                            final int hashRange) throws BlockWriteException {
     final BlockStore store = getBlockStore(blockStore);
@@ -152,7 +152,7 @@ public final class BlockManagerWorker {
       }
     }
     return store.createBlock(blockId);
-  }
+  }*/
 
   /**
    * Inquiries the location of the specific block and routes the request to the local block manager worker
