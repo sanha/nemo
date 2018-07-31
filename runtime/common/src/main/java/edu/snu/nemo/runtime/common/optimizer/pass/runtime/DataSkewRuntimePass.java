@@ -22,13 +22,13 @@ import edu.snu.nemo.common.dag.DAG;
 import edu.snu.nemo.common.eventhandler.RuntimeEventHandler;
 import edu.snu.nemo.common.exception.DynamicOptimizationException;
 
-import edu.snu.nemo.common.ir.edge.executionproperty.DataCommunicationPatternProperty;
 import edu.snu.nemo.common.ir.edge.IREdge;
 import edu.snu.nemo.common.ir.edge.executionproperty.DataSkewMetricProperty;
 import edu.snu.nemo.common.ir.vertex.IRVertex;
 import edu.snu.nemo.common.ir.vertex.executionproperty.ParallelismProperty;
 import edu.snu.nemo.common.KeyRange;
 import edu.snu.nemo.common.HashRange;
+import edu.snu.nemo.runtime.common.RuntimeIdGenerator;
 import edu.snu.nemo.runtime.common.eventhandler.DynamicOptimizationEventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,38 +74,21 @@ public final class DataSkewRuntimePass implements RuntimePass<Pair<List<String>,
 
   @Override
   public DAG<IRVertex, IREdge> apply(final DAG<IRVertex, IREdge> irDAG,
-                            final Pair<List<String>, Map<Integer, Long>> metricData) {
+                                     final Pair<List<String>, Map<Integer, Long>> metricData) {
     final List<String> blockIds = metricData.left();
 
     // get edges to optimize
-    //final List<String> optimizationEdgeIds = blockIds.stream().map(blockId ->
-    //    RuntimeIdGenerator.getRuntimeEdgeIdFromBlockId(blockId)).collect(Collectors.toList());
-    final IREdge edgeToOptimize = irDAG.getVertices().stream()
-        .filter(v -> irDAG.getIncomingEdgesOf(v).stream()
-            .filter(e -> e.getPropertyValue(DataCommunicationPatternProperty.class)
-                .orElseThrow(() -> new RuntimeException("no comm pattern!"))
-                .equals(DataCommunicationPatternProperty.Value.Shuffle))
-            .count() > 0)
-        .map(v -> irDAG.getIncomingEdgesOf(v).stream()
-            .filter(e -> e.getPropertyValue(DataCommunicationPatternProperty.class)
-                .orElseThrow(() -> new RuntimeException("no comm pattern!"))
-                .equals(DataCommunicationPatternProperty.Value.Shuffle))
-            .findFirst()
-            .orElseThrow(() -> new RuntimeException("no shuffle edge in this vtx!")))
-        .findFirst()
-        .orElseThrow(() -> new RuntimeException("no shuffle edge at all!")); // TMP: assume single shuffle edge.
-    /*final List<IREdge> optimizationEdges = irDAG.getVertices().stream()
+    final List<String> optimizationEdgeIds = blockIds.stream().map(blockId ->
+        RuntimeIdGenerator.getRuntimeEdgeIdFromBlockId(blockId)).collect(Collectors.toList());
+    final List<IREdge> optimizationEdges = irDAG.getVertices().stream()
         .flatMap(v -> irDAG.getIncomingEdgesOf(v).stream())
         .filter(e -> optimizationEdgeIds.contains(e.getId()))
-        .collect(Collectors.toList());*/
+        .collect(Collectors.toList());
 
     // Get number of evaluators of the next stage (number of blocks).
-    //final IREdge targetEdge = optimizationEdges.stream().findFirst()
-    //    .orElseThrow(() -> new RuntimeException("optimization edges are empty"));
-
-    //final Integer dstParallelism = targetEdge.getDst().getPropertyValue(ParallelismProperty.class).get();
-    final Integer dstParallelism = edgeToOptimize.getDst().getPropertyValue(ParallelismProperty.class)
-        .orElseThrow(() -> new RuntimeException("no parallelism!"));
+    final IREdge targetEdge = optimizationEdges.stream().findFirst()
+        .orElseThrow(() -> new RuntimeException("optimization edges are empty"));
+    final Integer dstParallelism = targetEdge.getDst().getPropertyValue(ParallelismProperty.class).get();
     // Calculate keyRanges.
     final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), dstParallelism);
     final Map<Integer, KeyRange> taskIdxToKeyRange = new HashMap<>();
@@ -116,7 +99,7 @@ public final class DataSkewRuntimePass implements RuntimePass<Pair<List<String>,
       taskIdxToKeyRange.put(i, keyRanges.get(i));
     }
     // Overwrite the previously assigned key range in the physical DAG with the new range.
-    edgeToOptimize.setProperty(DataSkewMetricProperty.of(new DataSkewMetricFactory(taskIdxToKeyRange)));
+    targetEdge.setProperty(DataSkewMetricProperty.of(new DataSkewMetricFactory(taskIdxToKeyRange)));
     return irDAG;
   }
 
@@ -126,7 +109,7 @@ public final class DataSkewRuntimePass implements RuntimePass<Pair<List<String>,
         .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
         .collect(Collectors.toList());
     List<Integer> skewedKeys = new ArrayList<>();
-    for (int i = 0; i < numSkewedKeys; i++) {
+    for (int i = 0; i < numSkewedKeys && i < sortedMetricData.size(); i++) {
       skewedKeys.add(sortedMetricData.get(i).getKey());
       LOG.info("Skewed key: Key {} Size {}", sortedMetricData.get(i).getKey(), sortedMetricData.get(i).getValue());
     }
