@@ -51,14 +51,15 @@ public final class DefaultMetricPass extends AnnotatingPass {
             metric.put(i, HashRange.of(i, i + 1, false));
           }
           edge.setProperty(DataSkewMetricProperty.of(new DataSkewMetricFactory(metric)));
-        } else {
+        }
+        /* else {
           final int parallelism = dst.getPropertyValue(ParallelismProperty.class).get();
           final Map<Integer, KeyRange> metric = new HashMap<>();
           for (int i = 0; i < parallelism; i++) {
             metric.put(i, HashRange.of(i, i + 1, false));
           }
           edge.setProperty(DataSkewMetricProperty.of(new DataSkewMetricFactory(metric)));
-        }
+        }*/
       }));
     return dag;
   }

@@ -16,11 +16,11 @@
 package edu.snu.nemo.compiler.optimizer.policy;
 
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.CompileTimePass;
+import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.DataSkewCompositePass;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.LoopOptimizationCompositePass;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.PrimitiveCompositePass;
-import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.SailfishPass;
-import edu.snu.nemo.compiler.optimizer.pass.compiletime.sailfishskew.DataSkewCompositePassForSailfish;
-import edu.snu.nemo.compiler.optimizer.pass.compiletime.sailfishskew.DataSkewRuntimePassForSailfish;
+import edu.snu.nemo.compiler.optimizer.pass.compiletime.sailfishskew.SailfishPassForSkew;
+import edu.snu.nemo.runtime.common.optimizer.pass.runtime.DataSkewRuntimePass;
 import edu.snu.nemo.runtime.common.optimizer.pass.runtime.RuntimePass;
 
 import java.util.List;
@@ -28,16 +28,16 @@ import java.util.List;
 /**
  * A policy to demonstrate the Sailfish optimization, that batches disk seek during data shuffle.
  */
-public final class SailfishSkewPolicy implements Policy {
+public final class DeprecatedSailfishSkewPolicy implements Policy {
   private final Policy policy;
 
   /**
    * Default constructor.
    */
-  public SailfishSkewPolicy() {
+  public DeprecatedSailfishSkewPolicy() {
     this.policy = new PolicyBuilder(false)
-        .registerCompileTimePass(new SailfishPass())
-        .registerRuntimePass(new DataSkewRuntimePassForSailfish(), new DataSkewCompositePassForSailfish())
+        .registerRuntimePass(new DataSkewRuntimePass(), new DataSkewCompositePass())
+        .registerCompileTimePass(new SailfishPassForSkew())
         .registerCompileTimePass(new LoopOptimizationCompositePass())
         .registerCompileTimePass(new PrimitiveCompositePass())
         .build();

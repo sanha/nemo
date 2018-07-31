@@ -93,11 +93,11 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
         throw new UnsupportedPartitionerException(
             new Throwable("Partitioner " + partitionerPropertyValue + " is not supported."));
     }
-    if (hashRange == -1) {
+    //if (hashRange == -1) {
       blockToWrite = blockManagerWorker.createBlock(blockId, blockStoreValue);
-    } else {
-      blockToWrite = blockManagerWorker.createBlock(blockId, blockStoreValue, hashRange);
-    }
+    //} else {
+    //  blockToWrite = blockManagerWorker.createBlock(blockId, blockStoreValue, hashRange);
+    //}
 
     final Optional<DuplicateEdgeGroupPropertyValue> duplicateDataProperty =
         runtimeEdge.getPropertyValue(DuplicateEdgeGroupProperty.class);

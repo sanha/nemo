@@ -24,11 +24,11 @@ import java.util.Arrays;
 /**
  * A series of passes to support Sailfish-like disk seek batching during shuffle.
  */
-public final class SailfishPassForSkew extends CompositePass {
+public final class DeprecatedSailfishPassForSkew extends CompositePass {
   /**
    * Default constructor.
    */
-  public SailfishPassForSkew() {
+  public DeprecatedSailfishPassForSkew() {
     super(Arrays.asList(
         new DeprecatedSailfishSkewRelayReshapingPass(),
         new SailfishEdgeDataFlowModelPass(),
