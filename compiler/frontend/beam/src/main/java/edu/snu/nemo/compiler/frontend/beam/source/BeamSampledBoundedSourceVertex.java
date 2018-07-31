@@ -36,6 +36,7 @@ public final class BeamSampledBoundedSourceVertex<O> extends SourceVertex<O> {
   private static final Logger LOG = LoggerFactory.getLogger(BeamSampledBoundedSourceVertex.class.getName());
   private BoundedSource<O> source;
   private final String sourceDescription;
+  private final int numOfOriginalSplit;
   private final int numOfSplitsToSample;
 
   /**
@@ -43,22 +44,27 @@ public final class BeamSampledBoundedSourceVertex<O> extends SourceVertex<O> {
    * @param source BoundedSource to read from.
    */
   public BeamSampledBoundedSourceVertex(final BoundedSource<O> source,
+                                        final int numOfOriginalSplit,
                                         final int numOfSplitsToSample) {
     this.source = source;
     this.sourceDescription = source.toString();
+    this.numOfOriginalSplit = numOfOriginalSplit;
     this.numOfSplitsToSample = numOfSplitsToSample;
   }
 
   @Override
   public BeamSampledBoundedSourceVertex getClone() {
-    final BeamSampledBoundedSourceVertex that = new BeamSampledBoundedSourceVertex<>(this.source, numOfSplitsToSample);
+    final BeamSampledBoundedSourceVertex that =
+        new BeamSampledBoundedSourceVertex<>(this.source, numOfSplitsToSample, numOfOriginalSplit);
     this.copyExecutionPropertiesTo(that);
     return that;
   }
 
   @Override
-  public BeamSampledBoundedSourceVertex getSampledClone(final int numOfSplitsToSample2) {
-    final BeamSampledBoundedSourceVertex that = new BeamSampledBoundedSourceVertex<>(source, numOfSplitsToSample2);
+  public BeamSampledBoundedSourceVertex getSampledClone(final int numOfOriginalSplits2,
+                                                        final int numOfSplitsToSample2) {
+    final BeamSampledBoundedSourceVertex that =
+        new BeamSampledBoundedSourceVertex<>(source, numOfOriginalSplits2, numOfSplitsToSample2);
     this.copyExecutionPropertiesTo(that);
     that.setProperty(ParallelismProperty.of(numOfSplitsToSample2));
     return that;
@@ -68,18 +74,19 @@ public final class BeamSampledBoundedSourceVertex<O> extends SourceVertex<O> {
   public List<Readable<O>> getReadables(final int desiredNumOfSplits) throws Exception {
     final List<Readable<O>> readables = new ArrayList<>(numOfSplitsToSample);
     LOG.info("estimate: {}", source.getEstimatedSizeBytes(null));
+    LOG.info("original: {}", numOfOriginalSplit);
     LOG.info("desired: {}", desiredNumOfSplits);
     LOG.info("sample to: {}", numOfSplitsToSample);
     final List<? extends BoundedSource<O>> split =
-        source.split(source.getEstimatedSizeBytes(null) / desiredNumOfSplits, null);
-    if (desiredNumOfSplits != split.size()) {
+        source.split(source.getEstimatedSizeBytes(null) / numOfOriginalSplit, null);
+    if (numOfOriginalSplit != split.size()) {
       throw new RuntimeException("Split number mismatch!");
     }
 
-    final List<Integer> randomIndices = IntStream.range(0, desiredNumOfSplits).boxed().collect(Collectors.toList());
+    final List<Integer> randomIndices = IntStream.range(0, numOfOriginalSplit).boxed().collect(Collectors.toList());
     Collections.shuffle(randomIndices);
     final List<Integer> sampleIndices = randomIndices.subList(0, numOfSplitsToSample);
-    for (int i = 0; i < desiredNumOfSplits; i++) {
+    for (int i = 0; i < numOfOriginalSplit; i++) {
       if (sampleIndices.contains(i)) {
         readables.add(new BeamBoundedSourceVertex.BoundedSourceReadable<>(split.get(i)));
       }

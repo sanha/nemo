@@ -57,8 +57,11 @@ public final class BeamBoundedSourceVertex<O> extends SourceVertex<O> {
   }
 
   @Override
-  public BeamSampledBoundedSourceVertex getSampledClone(final int numOfSplitsToSample) {
-    final BeamSampledBoundedSourceVertex that = new BeamSampledBoundedSourceVertex<>(source, numOfSplitsToSample);
+  public BeamSampledBoundedSourceVertex getSampledClone(
+      final int numOfOriginalSplits,
+      final int numOfSplitsToSample) {
+    final BeamSampledBoundedSourceVertex that =
+        new BeamSampledBoundedSourceVertex<>(source, numOfOriginalSplits, numOfSplitsToSample);
     this.copyExecutionPropertiesTo(that);
     that.setProperty(ParallelismProperty.of(numOfSplitsToSample));
     return that;

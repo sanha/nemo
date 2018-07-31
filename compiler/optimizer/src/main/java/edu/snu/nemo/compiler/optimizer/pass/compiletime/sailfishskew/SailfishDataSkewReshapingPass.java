@@ -119,17 +119,17 @@ public final class SailfishDataSkewReshapingPass extends ReshapingPass {
                                                   final IRVertex lastVtx) {
     final IRVertex clonedVtx;
     if (lastVtx instanceof SourceVertex) {
+      final int originalParellalism = lastVtx.getPropertyValue(ParallelismProperty.class)
+          .orElseThrow(() -> new RuntimeException("no parallelism!"));
       clonedVtx = ((SourceVertex) lastVtx)
-          .getSampledClone((int) Math.ceil((double) lastVtx.getPropertyValue(ParallelismProperty.class)
-              .orElseThrow(() -> new RuntimeException("no parallelism!")) / 100));
+          .getSampledClone(originalParellalism, (int) Math.ceil((double) originalParellalism) / 100);
       builder.addVertex(clonedVtx);
       return Pair.of(lastVtx, clonedVtx);
     } else {
       clonedVtx = lastVtx.getClone();
       builder.addVertex(clonedVtx);
-      clonedVtx.setProperty(ParallelismProperty.of(
-          (int) Math.ceil((double) lastVtx.getPropertyValue(ParallelismProperty.class)
-          .orElseThrow(() -> new RuntimeException("no parallelism!")) / 100)));
+      int parallelismToSet = (int) Math.ceil((double) lastVtx.getPropertyValue(ParallelismProperty.class)
+          .orElseThrow(() -> new RuntimeException("no parallelism!")) / 100); // default
 
       // WARNING: assume single source vtx. let's refactor this to recognize stage.
       IRVertex originSourceVtx = lastVtx;
@@ -142,7 +142,14 @@ public final class SailfishDataSkewReshapingPass extends ReshapingPass {
             predClonedVtx, clonedVtx, edge.isSideInput());
         edge.copyExecutionPropertiesTo(clonedEdge);
         builder.connectVertices(clonedEdge);
+        if (clonedEdge.getPropertyValue(DataCommunicationPatternProperty.class).get()
+            .equals(DataCommunicationPatternProperty.Value.OneToOne)) {
+          parallelismToSet = clonedEdge.getSrc().getPropertyValue(ParallelismProperty.class).get();
+        }
       }
+
+      clonedVtx.setProperty(ParallelismProperty.of(parallelismToSet));
+
       return Pair.of(originSourceVtx, clonedVtx);
     }
   }

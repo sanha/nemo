@@ -165,6 +165,7 @@ public final class PhysicalPlanGenerator implements Function<DAG<IRVertex, IREdg
           final SourceVertex sourceVertex = (SourceVertex) irVertex;
           try {
             final List<Readable> readables = sourceVertex.getReadables(stageParallelism);
+            LOG.info("@@ vtx " + sourceVertex.getId() + ", readables " + readables);
             for (int i = 0; i < stageParallelism; i++) {
               vertexIdToReadables.get(i).put(irVertex.getId(), readables.get(i));
             }

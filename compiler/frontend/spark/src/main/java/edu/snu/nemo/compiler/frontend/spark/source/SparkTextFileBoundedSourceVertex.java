@@ -54,7 +54,8 @@ public final class SparkTextFileBoundedSourceVertex extends SourceVertex<String>
   }
 
   @Override
-  public IRVertex getSampledClone(final int numOfSplitsToSample) {
+  public IRVertex getSampledClone(final int numOfOriginalSplits,
+                                  final int numOfSplitsToSample) {
     throw new RuntimeException("This code should not be called!");
   }
 

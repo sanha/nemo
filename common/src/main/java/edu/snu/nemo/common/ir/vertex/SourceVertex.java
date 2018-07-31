@@ -38,7 +38,7 @@ public abstract class SourceVertex<O> extends IRVertex {
   /**
    * @return a clone elemnt of the IRVertex.
    */
-  public abstract IRVertex getSampledClone(final int numOfSplitsToSample);
+  public abstract IRVertex getSampledClone(final int numOfOriginalSplits, final int numOfSplitsToSample);
 
   /**
    * Clears internal states, must be called after getReadables().
