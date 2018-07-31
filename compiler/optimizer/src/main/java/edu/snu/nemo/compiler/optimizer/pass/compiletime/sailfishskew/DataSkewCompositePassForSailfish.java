@@ -17,7 +17,6 @@ package edu.snu.nemo.compiler.optimizer.pass.compiletime.sailfishskew;
 
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.annotating.DataSkewEdgeDataStorePass;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.annotating.DataSkewEdgeMetricCollectionPass;
-import edu.snu.nemo.compiler.optimizer.pass.compiletime.annotating.DataSkewVertexPass;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.CompositePass;
 
 import java.util.Arrays;
@@ -37,7 +36,7 @@ public final class DataSkewCompositePassForSailfish extends CompositePass {
   public DataSkewCompositePassForSailfish() {
     super(Arrays.asList(
         new SailfishDataSkewReshapingPass(),
-        new DataSkewVertexPass(),
+        new SailfishDataSkewVertexPass(),
         new DataSkewEdgeDataStorePass(),
         new DataSkewEdgeMetricCollectionPass(),
         new SailfishDataSkewEdgePartitionerPass()

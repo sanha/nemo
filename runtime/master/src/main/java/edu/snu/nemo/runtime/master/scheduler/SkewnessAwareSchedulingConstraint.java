@@ -16,6 +16,7 @@
 package edu.snu.nemo.runtime.master.scheduler;
 
 import com.google.common.annotations.VisibleForTesting;
+import edu.snu.nemo.common.DataSkewMetricFactory;
 import edu.snu.nemo.common.ir.edge.executionproperty.DataSkewMetricProperty;
 import edu.snu.nemo.common.ir.executionproperty.AssociatedProperty;
 import edu.snu.nemo.common.ir.vertex.executionproperty.SkewnessAwareSchedulingProperty;
@@ -29,6 +30,7 @@ import org.apache.reef.annotations.audience.DriverSide;
 
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -51,10 +53,12 @@ public final class SkewnessAwareSchedulingConstraint implements SchedulingConstr
   public boolean hasSkewedData(final Task task) {
     final int taskIdx = RuntimeIdGenerator.getIndexFromTaskId(task.getTaskId());
     for (StageEdge inEdge : task.getTaskIncomingEdges()) {
+      //LOG.info("@@ inEdge to check schedulability: " + inEdge.getId() + ", task " + task.getTaskId());
       final Map<Integer, KeyRange> taskIdxToKeyRange =
-          inEdge.getPropertyValue(DataSkewMetricProperty.class).get().getMetric();
+          inEdge.getPropertyValue(DataSkewMetricProperty.class).
+              orElseGet(() -> new DataSkewMetricFactory(new HashMap<>())).getMetric();
       final KeyRange hashRange = taskIdxToKeyRange.get(taskIdx);
-      if (((HashRange) hashRange).isSkewed()) {
+      if (hashRange != null && ((HashRange) hashRange).isSkewed()) {
         return true;
       }
     }

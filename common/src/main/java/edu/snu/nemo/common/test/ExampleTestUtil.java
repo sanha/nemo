@@ -16,12 +16,18 @@
 package edu.snu.nemo.common.test;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,14 +42,72 @@ public final class ExampleTestUtil {
   private ExampleTestUtil() {
   }
 
-  /**
-   * Ensures output correctness with the given test resource file.
-   *
-   * @param resourcePath root folder for both resources.
-   * @param outputFileName output file name.
-   * @param testResourceFileName the test result file name.
-   * @throws RuntimeException if the output is invalid.
-   */
+  public static void tmpEnsureOutputValidity() throws IOException {
+    //final String expectedFilePath = "/Users/sanha/pagecounts-20160101-000000-wc.out";
+    final String actualOutputDirectory = "/Users/sanha/pagecounts-20160101-000000-wcskew.out/";
+    final String concatOutputPath = "/Users/sanha/pagecounts-20160101-000000-wcskew-concat.out";
+
+    final ExecutorService executorService = Executors.newFixedThreadPool(8);
+
+    final ArrayList<String> testOutput = new ArrayList<>();
+    final List<ArrayList<String>> testOutputPerThread = new CopyOnWriteArrayList<>();
+    final ArrayList<Future> futures = new ArrayList<>();
+    for (int i = 0; i < 8; i++) {
+      final int threadIdx = i;
+      futures.add(executorService.submit(() -> {
+        final ArrayList<String> testOutputForThisThread = new ArrayList<>();
+        testOutputPerThread.add(testOutputForThisThread);
+        try (final Stream<Path> fileStream = Files.list(Paths.get(actualOutputDirectory))) {
+          final List<Path> paths = fileStream.collect(Collectors.toList());
+          for (int fileIdx = 0; fileIdx < paths.size(); fileIdx++) {
+            if (fileIdx % 8 == threadIdx) {
+              final Path pathToConcat = paths.get(fileIdx);
+              if (Files.isRegularFile(pathToConcat)) {
+                Files.lines(pathToConcat).forEach(testOutputForThisThread::add);
+              }
+            }
+          }
+          testOutputForThisThread.sort(String::compareTo);
+        } catch (final Exception e) {
+          e.printStackTrace();
+          throw new RuntimeException(e);
+        }
+      }));
+    }
+
+    futures.forEach(future -> {
+          try {
+            synchronized (future) {
+              future.wait();
+            }
+          } catch (final Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+
+    testOutputPerThread.forEach(testOutputForThread -> {
+      testOutput.addAll(testOutputForThread);
+    });
+
+    testOutput.sort(String::compareTo);
+
+    final String concatOutput = testOutput.stream()
+        .reduce("", (p, q) -> (p + "\n" + q));
+
+    try (final PrintWriter writer = new PrintWriter(concatOutputPath, "UTF-8");) {
+      writer.print(concatOutput);
+    }
+  }
+
+
+    /**
+     * Ensures output correctness with the given test resource file.
+     *
+     * @param resourcePath root folder for both resources.
+     * @param outputFileName output file name.
+     * @param testResourceFileName the test result file name.
+     * @throws RuntimeException if the output is invalid.
+     */
   public static void ensureOutputValidity(final String resourcePath,
                                           final String outputFileName,
                                           final String testResourceFileName) throws IOException {

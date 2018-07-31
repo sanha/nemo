@@ -29,7 +29,7 @@ public final class SailfishSkewPolicyParallelismFive implements Policy {
   private final Policy policy;
 
   public SailfishSkewPolicyParallelismFive() {
-    this.policy = PolicyTestUtil.overwriteParallelism(5, SailfishSkewPolicy.class.getCanonicalName());
+    this.policy = PolicyTestUtil.overwriteParallelism(300, SailfishSkewPolicy.class.getCanonicalName());
   }
 
   @Override

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package edu.snu.nemo.compiler.optimizer.pass.compiletime.sailfishskew;
+package edu.snu.nemo.runtime.common.optimizer.pass.runtime;
 
 import com.google.common.annotations.VisibleForTesting;
 import edu.snu.nemo.common.DataSkewMetricFactory;
@@ -28,8 +28,8 @@ import edu.snu.nemo.common.ir.edge.executionproperty.DataCommunicationPatternPro
 import edu.snu.nemo.common.ir.edge.executionproperty.DataSkewMetricProperty;
 import edu.snu.nemo.common.ir.vertex.IRVertex;
 import edu.snu.nemo.common.ir.vertex.executionproperty.ParallelismProperty;
+import edu.snu.nemo.runtime.common.RuntimeIdGenerator;
 import edu.snu.nemo.runtime.common.eventhandler.DynamicOptimizationEventHandler;
-import edu.snu.nemo.runtime.common.optimizer.pass.runtime.RuntimePass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,8 +78,8 @@ public final class DataSkewRuntimePassForSailfish implements RuntimePass<Pair<Li
     final List<String> blockIds = metricData.left();
 
     // get edges to optimize
-    //final List<String> optimizationEdgeIds = blockIds.stream().map(blockId ->
-    //    RuntimeIdGenerator.getRuntimeEdgeIdFromBlockId(blockId)).collect(Collectors.toList());
+    final List<String> blockProducedEdgeIds = blockIds.stream().map(blockId ->
+        RuntimeIdGenerator.getRuntimeEdgeIdFromBlockId(blockId)).collect(Collectors.toList());
     final IREdge edgeToOptimize = irDAG.getVertices().stream()
         .filter(v -> irDAG.getIncomingEdgesOf(v).stream()
             .filter(e -> e.getPropertyValue(DataCommunicationPatternProperty.class)
@@ -92,8 +92,10 @@ public final class DataSkewRuntimePassForSailfish implements RuntimePass<Pair<Li
                 .equals(DataCommunicationPatternProperty.Value.Shuffle))
             .findFirst()
             .orElseThrow(() -> new RuntimeException("no shuffle edge in this vtx!")))
+        .filter(edge -> !blockProducedEdgeIds.contains(edge.getId()))
         .findFirst()
         .orElseThrow(() -> new RuntimeException("no shuffle edge at all!")); // TMP: assume single shuffle edge.
+    LOG.info("Edge to optimize: " + edgeToOptimize.getId());
     /*final List<IREdge> optimizationEdges = irDAG.getVertices().stream()
         .flatMap(v -> irDAG.getIncomingEdgesOf(v).stream())
         .filter(e -> optimizationEdgeIds.contains(e.getId()))
@@ -121,12 +123,13 @@ public final class DataSkewRuntimePassForSailfish implements RuntimePass<Pair<Li
   }
 
   public List<Integer> identifySkewedKeys(final Map<Integer, Long> keyValToPartitionSizeMap) {
+    //LOG.info("@@@ metric: " + keyValToPartitionSizeMap);
     // Identify skewed keys.
     List<Map.Entry<Integer, Long>> sortedMetricData = keyValToPartitionSizeMap.entrySet().stream()
         .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
         .collect(Collectors.toList());
     List<Integer> skewedKeys = new ArrayList<>();
-    for (int i = 0; i < numSkewedKeys; i++) {
+    for (int i = 0; i < numSkewedKeys && i < sortedMetricData.size(); i++) {
       skewedKeys.add(sortedMetricData.get(i).getKey());
       LOG.info("Skewed key: Key {} Size {}", sortedMetricData.get(i).getKey(), sortedMetricData.get(i).getValue());
     }

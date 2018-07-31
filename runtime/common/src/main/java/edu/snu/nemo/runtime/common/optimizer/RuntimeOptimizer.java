@@ -20,7 +20,7 @@ import edu.snu.nemo.common.dag.DAG;
 import edu.snu.nemo.common.ir.edge.IREdge;
 import edu.snu.nemo.common.ir.vertex.IRVertex;
 import edu.snu.nemo.runtime.common.RuntimeIdGenerator;
-import edu.snu.nemo.runtime.common.optimizer.pass.runtime.DataSkewRuntimePass;
+import edu.snu.nemo.runtime.common.optimizer.pass.runtime.DataSkewRuntimePassForSailfish;
 import edu.snu.nemo.runtime.common.plan.PhysicalPlan;
 import edu.snu.nemo.runtime.common.plan.PhysicalPlanGenerator;
 import edu.snu.nemo.runtime.common.plan.Stage;
@@ -56,7 +56,7 @@ public final class RuntimeOptimizer {
       final Pair<List<String>, Map<Integer, Long>> metricData =
           (Pair<List<String>, Map<Integer, Long>>) metric;
       final DAG<IRVertex, IREdge> newIrDAG =
-          new DataSkewRuntimePass(10).apply(originalPlan.getIrDAG(), metricData);
+          new DataSkewRuntimePassForSailfish(10).apply(originalPlan.getIrDAG(), metricData);
       final DAG<Stage, StageEdge> stageDAG = newIrDAG.convert(physicalPlanGenerator);
       final PhysicalPlan physicalPlan =
           new PhysicalPlan(RuntimeIdGenerator.generatePhysicalPlanId(), newIrDAG, stageDAG);

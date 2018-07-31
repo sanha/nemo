@@ -40,7 +40,7 @@ public final class SailfishDataSkewEdgePartitionerPass extends AnnotatingPass {
   @Override
   public DAG<IRVertex, IREdge> apply(final DAG<IRVertex, IREdge> dag) {
     dag.getVertices().forEach(vertex -> {
-      if (dag.getIncomingEdgesOf(vertex).stream()
+      if (dag.getOutgoingEdgesOf(vertex).stream()
           .anyMatch(e -> e.getPropertyValue(DataCommunicationPatternProperty.class)
               .orElseThrow(() -> new RuntimeException("no comm!"))
               .equals(DataCommunicationPatternProperty.Value.Shuffle))) {

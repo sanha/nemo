@@ -15,6 +15,7 @@
  */
 package edu.snu.nemo.runtime.master.scheduler;
 
+import edu.snu.nemo.common.DataSkewMetricFactory;
 import edu.snu.nemo.common.HashRange;
 import edu.snu.nemo.common.KeyRange;
 import edu.snu.nemo.common.ir.edge.executionproperty.DataSkewMetricProperty;
@@ -104,9 +105,10 @@ public final class SchedulerRunner {
     final int taskIdx = RuntimeIdGenerator.getIndexFromTaskId(task.getTaskId());
     for (StageEdge inEdge : task.getTaskIncomingEdges()) {
       final Map<Integer, KeyRange> taskIdxToKeyRange =
-          inEdge.getPropertyValue(DataSkewMetricProperty.class).get().getMetric();
+          inEdge.getPropertyValue(DataSkewMetricProperty.class)
+              .orElseGet(() -> new DataSkewMetricFactory(new HashMap<>())).getMetric();
       final KeyRange hashRange = taskIdxToKeyRange.get(taskIdx);
-      if (((HashRange) hashRange).isSkewed()) {
+      if (hashRange != null && ((HashRange) hashRange).isSkewed()) {
         return true;
       }
     }

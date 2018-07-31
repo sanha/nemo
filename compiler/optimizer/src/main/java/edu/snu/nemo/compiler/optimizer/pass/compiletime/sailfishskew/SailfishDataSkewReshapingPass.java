@@ -27,7 +27,9 @@ import edu.snu.nemo.common.ir.vertex.IRVertex;
 import edu.snu.nemo.common.ir.vertex.MetricCollectionBarrierVertex;
 import edu.snu.nemo.common.ir.vertex.OperatorVertex;
 import edu.snu.nemo.common.ir.vertex.SourceVertex;
+import edu.snu.nemo.common.ir.vertex.executionproperty.IntermediateDataLocationAwareSchedulingProperty;
 import edu.snu.nemo.common.ir.vertex.executionproperty.ParallelismProperty;
+import edu.snu.nemo.common.ir.vertex.executionproperty.SkewnessAwareSchedulingProperty;
 import edu.snu.nemo.common.ir.vertex.transform.DummyTransform;
 import edu.snu.nemo.common.ir.vertex.transform.RelayTransform;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.reshaping.ReshapingPass;
@@ -70,10 +72,13 @@ public final class SailfishDataSkewReshapingPass extends ReshapingPass {
         final IRVertex originalDagSourceVtx = vtxPair.left();
         final IRVertex sampledDagLastVtx = vtxPair.right();
 
+        v.setProperty(SkewnessAwareSchedulingProperty.of(true));
+
         final MetricCollectionBarrierVertex<Integer, Long> metricCollectionBarrierVertex
             = new MetricCollectionBarrierVertex<>();
         metricCollectionBarrierVertex.setProperty(ParallelismProperty.of(
             sampledDagLastVtx.getPropertyValue(ParallelismProperty.class).get()));
+        metricCollectionBarrierVertex.setProperty(IntermediateDataLocationAwareSchedulingProperty.of(true));
         metricCollectionVertices.add(metricCollectionBarrierVertex);
         builder.addVertex(metricCollectionBarrierVertex);
 
@@ -122,8 +127,9 @@ public final class SailfishDataSkewReshapingPass extends ReshapingPass {
     } else {
       clonedVtx = lastVtx.getClone();
       builder.addVertex(clonedVtx);
-      clonedVtx.setProperty(ParallelismProperty.of(lastVtx.getPropertyValue(ParallelismProperty.class)
-          .orElseThrow(() -> new RuntimeException("no parallelism!")) / 100));
+      clonedVtx.setProperty(ParallelismProperty.of(
+          (int) Math.ceil((double) lastVtx.getPropertyValue(ParallelismProperty.class)
+          .orElseThrow(() -> new RuntimeException("no parallelism!")) / 100)));
 
       // WARNING: assume single source vtx. let's refactor this to recognize stage.
       IRVertex originSourceVtx = lastVtx;

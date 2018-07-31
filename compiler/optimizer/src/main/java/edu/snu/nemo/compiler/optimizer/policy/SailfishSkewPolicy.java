@@ -21,7 +21,7 @@ import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.LoopOptimizati
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.PrimitiveCompositePassWOP;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.SailfishPass;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.sailfishskew.DataSkewCompositePassForSailfish;
-import edu.snu.nemo.compiler.optimizer.pass.compiletime.sailfishskew.DataSkewRuntimePassForSailfish;
+import edu.snu.nemo.runtime.common.optimizer.pass.runtime.DataSkewRuntimePassForSailfish;
 import edu.snu.nemo.runtime.common.optimizer.pass.runtime.RuntimePass;
 
 import java.util.List;

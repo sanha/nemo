@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import edu.snu.nemo.common.ir.vertex.SourceVertex;
+import edu.snu.nemo.common.ir.vertex.executionproperty.ParallelismProperty;
 import org.apache.beam.sdk.io.BoundedSource;
 import org.apache.beam.sdk.io.hadoop.inputformat.HadoopInputFormatIO;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -57,7 +58,10 @@ public final class BeamBoundedSourceVertex<O> extends SourceVertex<O> {
 
   @Override
   public BeamSampledBoundedSourceVertex getSampledClone(final int numOfSplitsToSample) {
-    return new BeamSampledBoundedSourceVertex<>(source, numOfSplitsToSample);
+    final BeamSampledBoundedSourceVertex that = new BeamSampledBoundedSourceVertex<>(source, numOfSplitsToSample);
+    this.copyExecutionPropertiesTo(that);
+    that.setProperty(ParallelismProperty.of(numOfSplitsToSample));
+    return that;
   }
 
   @Override

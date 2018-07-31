@@ -41,8 +41,8 @@ public final class WordCountITCase {
   private static final String testResourceFileName = "test_output_wordcount";
   private static final String executorResourceFileName = fileBasePath + "beam_sample_executor_resources.json";
   private static final String oneExecutorResourceFileName = fileBasePath + "beam_sample_one_executor_resources.json";
-  private static final String inputFilePath = fileBasePath + inputFileName;
-  //private static final String inputFilePath =  "/Users/sanha/pagecounts-20160101-000000";
+  //private static final String inputFilePath = fileBasePath + inputFileName;
+  private static final String inputFilePath =  "/Users/sanha/pagecounts-20160101-000000";
   private static final String outputFilePath = fileBasePath + outputFileName;
 
   @Before
@@ -59,6 +59,11 @@ public final class WordCountITCase {
     } finally {
       ExampleTestUtil.deleteOutputFile(fileBasePath, outputFileName);
     }
+  }
+
+  @Test
+  public void tmp() throws Exception {
+    //ExampleTestUtil.tmpEnsureOutputValidity();
   }
 
   @Test (timeout = TIMEOUT)
