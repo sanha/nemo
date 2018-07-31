@@ -56,6 +56,11 @@ public final class BeamBoundedSourceVertex<O> extends SourceVertex<O> {
   }
 
   @Override
+  public BeamSampledBoundedSourceVertex getSampledClone(final int numOfSplitsToSample) {
+    return new BeamSampledBoundedSourceVertex<>(source, numOfSplitsToSample);
+  }
+
+  @Override
   public List<Readable<O>> getReadables(final int desiredNumOfSplits) throws Exception {
     final List<Readable<O>> readables = new ArrayList<>();
     LOG.info("estimate: {}", source.getEstimatedSizeBytes(null));
@@ -85,7 +90,7 @@ public final class BeamBoundedSourceVertex<O> extends SourceVertex<O> {
    * BoundedSourceReadable class.
    * @param <T> type.
    */
-  private static final class BoundedSourceReadable<T> implements Readable<T> {
+  static final class BoundedSourceReadable<T> implements Readable<T> {
     private final BoundedSource<T> boundedSource;
 
     /**

@@ -16,6 +16,7 @@
 package edu.snu.nemo.compiler.frontend.spark.source;
 
 import edu.snu.nemo.common.ir.Readable;
+import edu.snu.nemo.common.ir.vertex.IRVertex;
 import edu.snu.nemo.common.ir.vertex.SourceVertex;
 import edu.snu.nemo.compiler.frontend.spark.sql.Dataset;
 import edu.snu.nemo.compiler.frontend.spark.sql.SparkSession;
@@ -67,6 +68,11 @@ public final class SparkDatasetBoundedSourceVertex<T> extends SourceVertex<T> {
     final SparkDatasetBoundedSourceVertex<T> that = new SparkDatasetBoundedSourceVertex<>((this.readables));
     this.copyExecutionPropertiesTo(that);
     return that;
+  }
+
+  @Override
+  public IRVertex getSampledClone(final int numOfSplitsToSample) {
+    throw new RuntimeException("This code should not be called!");
   }
 
   @Override

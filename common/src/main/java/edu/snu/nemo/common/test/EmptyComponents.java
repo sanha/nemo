@@ -17,6 +17,7 @@ package edu.snu.nemo.common.test;
 
 import edu.snu.nemo.common.ir.OutputCollector;
 import edu.snu.nemo.common.ir.Readable;
+import edu.snu.nemo.common.ir.vertex.IRVertex;
 import edu.snu.nemo.common.ir.vertex.SourceVertex;
 import edu.snu.nemo.common.ir.vertex.transform.Transform;
 
@@ -76,6 +77,11 @@ public final class EmptyComponents {
    */
   public static final class EmptySourceVertex<T> extends SourceVertex<T> {
     private String name;
+
+    @Override
+    public IRVertex getSampledClone(final int numOfSplitsToSample) {
+      throw new RuntimeException("This code should not be called!");
+    }
 
     /**
      * Constructor.

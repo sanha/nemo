@@ -16,6 +16,7 @@
 package edu.snu.nemo.compiler.frontend.spark.source;
 
 import edu.snu.nemo.common.ir.Readable;
+import edu.snu.nemo.common.ir.vertex.IRVertex;
 import edu.snu.nemo.common.ir.vertex.SourceVertex;
 import org.apache.spark.*;
 import org.apache.spark.rdd.RDD;
@@ -50,6 +51,11 @@ public final class SparkTextFileBoundedSourceVertex extends SourceVertex<String>
           inputPath,
           numPartitions));
     }
+  }
+
+  @Override
+  public IRVertex getSampledClone(final int numOfSplitsToSample) {
+    throw new RuntimeException("This code should not be called!");
   }
 
   /**

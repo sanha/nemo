@@ -42,25 +42,24 @@ public final class DefaultMetricPass extends AnnotatingPass {
   @Override
   public DAG<IRVertex, IREdge> apply(final DAG<IRVertex, IREdge> dag) {
     dag.topologicalDo(dst ->
-      dag.getIncomingEdgesOf(dst).forEach(edge -> {
-        if (DataCommunicationPatternProperty.Value.Shuffle
-            .equals(edge.getPropertyValue(DataCommunicationPatternProperty.class).get())) {
-          final int parallelism = dst.getPropertyValue(ParallelismProperty.class).get();
-          final Map<Integer, KeyRange> metric = new HashMap<>();
-          for (int i = 0; i < parallelism; i++) {
-            metric.put(i, HashRange.of(i, i + 1, false));
+        dag.getIncomingEdgesOf(dst).forEach(edge -> {
+          if (DataCommunicationPatternProperty.Value.Shuffle
+              .equals(edge.getPropertyValue(DataCommunicationPatternProperty.class).get())) {
+            final int parallelism = dst.getPropertyValue(ParallelismProperty.class).get();
+            final Map<Integer, KeyRange> metric = new HashMap<>();
+            for (int i = 0; i < parallelism; i++) {
+              metric.put(i, HashRange.of(i, i + 1, false));
+            }
+            edge.setProperty(DataSkewMetricProperty.of(new DataSkewMetricFactory(metric)));
+          } else {
+            final int parallelism = dst.getPropertyValue(ParallelismProperty.class).get();
+            final Map<Integer, KeyRange> metric = new HashMap<>();
+            for (int i = 0; i < parallelism; i++) {
+              metric.put(i, HashRange.of(i, i + 1, false));
+            }
+            edge.setProperty(DataSkewMetricProperty.of(new DataSkewMetricFactory(metric)));
           }
-          edge.setProperty(DataSkewMetricProperty.of(new DataSkewMetricFactory(metric)));
-        }
-        /* else {
-          final int parallelism = dst.getPropertyValue(ParallelismProperty.class).get();
-          final Map<Integer, KeyRange> metric = new HashMap<>();
-          for (int i = 0; i < parallelism; i++) {
-            metric.put(i, HashRange.of(i, i + 1, false));
-          }
-          edge.setProperty(DataSkewMetricProperty.of(new DataSkewMetricFactory(metric)));
-        }*/
-      }));
+        }));
     return dag;
   }
 }

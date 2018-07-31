@@ -44,6 +44,11 @@ public final class InMemorySourceVertex<T> extends SourceVertex<T> {
   }
 
   @Override
+  public IRVertex getSampledClone(final int numOfSplitsToSample) {
+    throw new RuntimeException("This code should not be called!");
+  }
+
+  @Override
   public List<Readable<T>> getReadables(final int desiredNumOfSplits) throws Exception {
 
     final List<Readable<T>> readables = new ArrayList<>();

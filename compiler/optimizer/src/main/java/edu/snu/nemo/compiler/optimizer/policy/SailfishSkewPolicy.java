@@ -16,8 +16,9 @@
 package edu.snu.nemo.compiler.optimizer.policy;
 
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.CompileTimePass;
+import edu.snu.nemo.compiler.optimizer.pass.compiletime.annotating.DefaultParallelismPass;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.LoopOptimizationCompositePass;
-import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.PrimitiveCompositePass;
+import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.PrimitiveCompositePassWOP;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.composite.SailfishPass;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.sailfishskew.DataSkewCompositePassForSailfish;
 import edu.snu.nemo.compiler.optimizer.pass.compiletime.sailfishskew.DataSkewRuntimePassForSailfish;
@@ -37,9 +38,10 @@ public final class SailfishSkewPolicy implements Policy {
   public SailfishSkewPolicy() {
     this.policy = new PolicyBuilder(false)
         .registerCompileTimePass(new SailfishPass())
+        .registerCompileTimePass(new DefaultParallelismPass())
         .registerRuntimePass(new DataSkewRuntimePassForSailfish(), new DataSkewCompositePassForSailfish())
         .registerCompileTimePass(new LoopOptimizationCompositePass())
-        .registerCompileTimePass(new PrimitiveCompositePass())
+        .registerCompileTimePass(new PrimitiveCompositePassWOP())
         .build();
   }
 

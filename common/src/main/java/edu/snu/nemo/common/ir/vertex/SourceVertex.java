@@ -36,6 +36,11 @@ public abstract class SourceVertex<O> extends IRVertex {
   public abstract List<Readable<O>> getReadables(int desiredNumOfSplits) throws Exception;
 
   /**
+   * @return a clone elemnt of the IRVertex.
+   */
+  public abstract IRVertex getSampledClone(final int numOfSplitsToSample);
+
+  /**
    * Clears internal states, must be called after getReadables().
    * Concretely, this clears the huge list of input splits held by objects like BeamBoundedSourceVertex before
    * sending the vertex to remote executors.
