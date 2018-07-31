@@ -79,6 +79,7 @@ class ParentTaskDataFetcher extends DataFetcher {
   private void fetchInBackground() {
     final List<CompletableFuture<DataUtil.IteratorWithNumBytes>> futures = readersForParentTask.read();
     this.expectedNumOfIterators = futures.size();
+    LOG.info("@@ expected num of iterators for + " + readersForParentTask.getId() + ": " + expectedNumOfIterators);
 
     futures.forEach(compFuture -> compFuture.whenComplete((iterator, exception) -> {
       try {
