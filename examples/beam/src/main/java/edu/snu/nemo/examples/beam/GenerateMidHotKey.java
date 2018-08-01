@@ -58,7 +58,8 @@ public final class GenerateMidHotKey {
             final String newKey;
 
             final Random random = new Random(System.nanoTime());
-            final int mod = Math.abs(random.nextInt() % 100);
+            //final int mod = Math.abs(random.nextInt() % 100);
+            final int mod = Math.abs(random.nextInt() % 67); // 20 key 30%
 
             if (mod < 1) {
               newKey = "111.111";
