@@ -18,6 +18,7 @@ package edu.snu.nemo.examples.beam;
 import edu.snu.nemo.client.JobLauncher;
 import edu.snu.nemo.common.test.ArgBuilder;
 import edu.snu.nemo.common.test.ExampleTestUtil;
+import edu.snu.nemo.compiler.optimizer.policy.DefaultPolicy;
 import edu.snu.nemo.examples.beam.policy.*;
 import org.junit.After;
 import org.junit.Before;
@@ -42,13 +43,15 @@ public final class WordCountITCase {
   private static final String executorResourceFileName = fileBasePath + "beam_sample_executor_resources.json";
   private static final String oneExecutorResourceFileName = fileBasePath + "beam_sample_one_executor_resources.json";
   //private static final String inputFilePath = fileBasePath + inputFileName;
-  private static final String inputFilePath =  "/Users/sanha/pagecounts-20160101-000000";
+  //private static final String inputFilePath =  "/Users/sanha/pagecounts-20160101-000000";
+  private static final String inputFilePath =  "/Users/sanha/part-00000";
   private static final String outputFilePath = fileBasePath + outputFileName;
 
   @Before
   public void setUp() throws Exception {
     builder = new ArgBuilder()
-        .addUserMain(WordCount.class.getCanonicalName())
+        //.addUserMain(WordCount.class.getCanonicalName())
+        .addUserMain(GenerateMidHotKey.class.getCanonicalName())
         .addUserArgs(inputFilePath, outputFilePath);
   }
 
@@ -57,14 +60,15 @@ public final class WordCountITCase {
     try {
       //ExampleTestUtil.ensureOutputValidity(fileBasePath, outputFileName, testResourceFileName);
     } finally {
-      ExampleTestUtil.deleteOutputFile(fileBasePath, outputFileName);
+      //ExampleTestUtil.deleteOutputFile(fileBasePath, outputFileName);
     }
   }
 
   @Test
   public void tmp() throws Exception {
     //ExampleTestUtil.tmpEnsureOutputValidity();
-    ExampleTestUtil.hashTest();
+    //ExampleTestUtil.hashTest();
+    ExampleTestUtil.genTest();
   }
 
   @Test (timeout = TIMEOUT)
@@ -100,6 +104,15 @@ public final class WordCountITCase {
         .addResourceJson(executorResourceFileName)
         .addJobId(WordCountITCase.class.getSimpleName())
         .addOptimizationPolicy(SailfishSkewPolicyParallelismFive.class.getCanonicalName())
+        .build());
+  }
+
+  @Test (timeout = TIMEOUT)
+  public void generate() throws Exception {
+    JobLauncher.main(builder
+        .addResourceJson(executorResourceFileName)
+        .addJobId("generate")
+        .addOptimizationPolicy(DefaultPolicy.class.getCanonicalName())
         .build());
   }
 

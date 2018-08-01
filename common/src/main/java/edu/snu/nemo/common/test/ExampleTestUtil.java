@@ -43,6 +43,18 @@ public final class ExampleTestUtil {
   private ExampleTestUtil() {
   }
 
+  public static void genTest() {
+    long count = -1;
+    try {
+      count = Files.lines(Paths.get("/Users/sanha/bb2e4b02-e402-4c2e-bd6c-016143a2cb00"))
+          .filter(line -> line.contains("222.222"))
+          .count();
+    } catch (final Exception e) {
+
+    }
+    System.out.println(count);
+  }
+
   public static void hashTest() {
     final int mod = new BigInteger(String.valueOf(Math.round(989 * 1.5))).nextProbablePrime().intValue();
     System.out.println("mod is " + mod);
