@@ -18,6 +18,7 @@ package edu.snu.nemo.examples.beam;
 import edu.snu.nemo.client.JobLauncher;
 import edu.snu.nemo.common.test.ArgBuilder;
 import edu.snu.nemo.common.test.ExampleTestUtil;
+import edu.snu.nemo.compiler.optimizer.policy.SailfishSkewPolicyWOHashPartPolicy;
 import edu.snu.nemo.examples.beam.policy.DataSkewPolicyParallelismFive;
 import edu.snu.nemo.examples.beam.policy.SailfishSkewPolicyParallelismFive;
 import org.junit.After;
@@ -79,6 +80,14 @@ public final class PerKeyMedianITCase {
     JobLauncher.main(builder
         .addJobId(PerKeyMedianITCase.class.getSimpleName())
         .addOptimizationPolicy(SailfishSkewPolicyParallelismFive.class.getCanonicalName())
+        .build());
+  }
+
+  @Test (timeout = TIMEOUT)
+  public void testSailfishSkewWoPart() throws Exception {
+    JobLauncher.main(builder
+        .addJobId(PerKeyMedianITCase.class.getSimpleName())
+        .addOptimizationPolicy(SailfishSkewPolicyWOHashPartPolicy.class.getCanonicalName())
         .build());
   }
 }
