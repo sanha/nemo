@@ -22,6 +22,7 @@ import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.*;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.commons.lang.RandomStringUtils;
 
 import java.util.Random;
 
@@ -100,9 +101,7 @@ public final class GenerateMidHotKey {
             } else if (mod < 20) {
               newKey = "2000.000";
             } else {
-              final byte[] bytes = new byte[8];
-              random.nextBytes(bytes);
-              newKey = new String(bytes);
+              newKey = RandomStringUtils.randomAlphanumeric(8);
             }
 
             return newKey + " " + value;
