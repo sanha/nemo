@@ -17,6 +17,7 @@ package edu.snu.nemo.common.test;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,6 +41,63 @@ public final class ExampleTestUtil {
    * Private constructor.
    */
   private ExampleTestUtil() {
+  }
+
+  public static void hashTest() {
+    final int mod = new BigInteger(String.valueOf(Math.round(989 * 1.5))).nextProbablePrime().intValue();
+    System.out.println("mod is " + mod);
+    System.out.println(String.valueOf(Math.round(989 * 1.5)));
+    final ArrayList<String> keys = new ArrayList<>(20);
+    for (int i = 1; i <= 9; i++) {
+      System.out.print("keys.add(\"");
+      for (int j = 0; j < 3; j++) {
+        System.out.print(i);
+      }
+      System.out.print(".");
+      for (int j = 0; j < 3; j++) {
+        System.out.print(i);
+      }
+      System.out.println("\");");
+    }
+    for (int i = 10; i <= 20; i++) {
+      System.out.print("keys.add(\"");
+      System.out.print(i);
+      System.out.println("00.000\");");
+    }
+    keys.add("111.111");
+    keys.add("222.222");
+    keys.add("333.333");
+    keys.add("444.444");
+    keys.add("555.555");
+    keys.add("666.666");
+    keys.add("777.777");
+    keys.add("888.888");
+    keys.add("999.999");
+    keys.add("1000.000");
+    keys.add("1100.000");
+    keys.add("1200.000");
+    keys.add("1300.000");
+    keys.add("1400.000");
+    keys.add("1500.000");
+    keys.add("1600.000");
+    keys.add("1700.000");
+    keys.add("1800.000");
+    keys.add("1900.000");
+    keys.add("2000.000");
+
+    final List<Integer> indices = new ArrayList<>(20);
+    for (int i = 0; i < 20; i++) {
+      indices.add(Math.abs(keys.get(i).hashCode() % mod));
+    }
+    indices.sort(Integer::compareTo);
+    System.out.println(indices);
+
+    double prob = 1;
+    for (int i = 1; i <= 20; i++) {
+      prob = prob * (2000 - i) / 2000;
+    }
+
+    System.out.println(prob);
   }
 
   public static void tmpEnsureOutputValidity() throws IOException {

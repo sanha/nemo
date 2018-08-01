@@ -64,6 +64,7 @@ public final class WordCountITCase {
   @Test
   public void tmp() throws Exception {
     //ExampleTestUtil.tmpEnsureOutputValidity();
+    ExampleTestUtil.hashTest();
   }
 
   @Test (timeout = TIMEOUT)
