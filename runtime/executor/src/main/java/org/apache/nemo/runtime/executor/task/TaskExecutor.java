@@ -353,6 +353,7 @@ public final class TaskExecutor {
       sendDynOptData(aggregatedDynOptData);
       // set the id of this vertex to mark the corresponding stage as put on hold
       setIRVertexPutOnHold(v);
+      outputCollector.clearMain();
     } else {
       // handle main outputs
       outputCollector.iterateMain().forEach(element -> {

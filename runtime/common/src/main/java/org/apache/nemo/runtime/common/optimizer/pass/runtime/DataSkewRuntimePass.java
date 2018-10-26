@@ -77,8 +77,13 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     final Integer dstParallelism = targetEdge.getDst().getPropertyValue(ParallelismProperty.class).
         orElseThrow(() -> new RuntimeException("No parallelism on a vertex"));
 
+    LOG.info("Collected metrics:: " + metricData.right());
+
     // Calculate keyRanges.
     final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), dstParallelism);
+
+    LOG.info("Optimized key ranges: " + keyRanges);
+
     final Map<Integer, KeyRange> taskIdxToKeyRange = new HashMap<>();
     for (int i = 0; i < dstParallelism; i++) {
       taskIdxToKeyRange.put(i, keyRanges.get(i));
