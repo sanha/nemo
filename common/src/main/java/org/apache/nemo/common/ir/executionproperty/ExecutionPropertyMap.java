@@ -184,6 +184,10 @@ public final class ExecutionPropertyMap<T extends ExecutionProperty> implements 
     return properties.values().stream();
   }
 
+  public boolean isFinalized(final Class<? extends ExecutionProperty> propertyClass) {
+    return finalizedProperties.contains(propertyClass);
+  }
+
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder();

@@ -56,12 +56,6 @@ public final class SkewResourceSkewedDataPass extends AnnotatingPass {
   @Override
   public DAG<IRVertex, IREdge> apply(final DAG<IRVertex, IREdge> dag) {
     dag.getVertices().stream()
-        .filter(v -> v instanceof OperatorVertex
-          && ((OperatorVertex) v).getTransform() instanceof MetricCollectTransform)
-      .forEach(v -> v.setProperty(DynamicOptimizationProperty
-            .of(DynamicOptimizationProperty.Value.DataSkewRuntimePass)));
-
-    dag.getVertices().stream()
         .filter(v -> hasParentWithMetricCollectTransform(dag, v)
             && !v.getExecutionProperties().containsKey(ResourceSkewedDataProperty.class))
         .forEach(childV -> {

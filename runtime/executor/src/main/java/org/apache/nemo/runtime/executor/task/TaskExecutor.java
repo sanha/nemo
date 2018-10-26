@@ -319,10 +319,9 @@ public final class TaskExecutor {
    * Send aggregated statistics for dynamic optimization to master.
    * @param dynOptData the statistics to send.
    */
-  public void sendDynOptData(final Object dynOptData) {
-    Map<Object, Long> aggregatedDynOptData = (Map<Object, Long>) dynOptData;
+  private void sendDynOptData(final Map<Object, Long> dynOptData) {
     final List<ControlMessage.PartitionSizeEntry> partitionSizeEntries = new ArrayList<>();
-    aggregatedDynOptData.forEach((key, size) ->
+    dynOptData.forEach((key, size) ->
       partitionSizeEntries.add(
         ControlMessage.PartitionSizeEntry.newBuilder()
           .setKey(key == null ? NULL_KEY : String.valueOf(key))
@@ -349,7 +348,8 @@ public final class TaskExecutor {
     if (v instanceof OperatorVertex
       && ((OperatorVertex) v).getTransform() instanceof AggregateMetricTransform) {
       // send aggregated dynamic optimization data to master
-      final Object aggregatedDynOptData = outputCollector.iterateMain().iterator().next();
+      final Map<Object, Long> aggregatedDynOptData =
+        (Map<Object, Long>) outputCollector.iterateMain().iterator().next();
       sendDynOptData(aggregatedDynOptData);
       // set the id of this vertex to mark the corresponding stage as put on hold
       setIRVertexPutOnHold(v);

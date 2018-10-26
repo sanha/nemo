@@ -28,6 +28,7 @@ import org.apache.nemo.common.ir.edge.executionproperty.DecoderProperty;
 import org.apache.nemo.common.ir.edge.executionproperty.EncoderProperty;
 import org.apache.nemo.common.ir.vertex.IRVertex;
 import org.apache.nemo.common.ir.vertex.OperatorVertex;
+import org.apache.nemo.common.ir.vertex.executionproperty.ParallelismProperty;
 import org.apache.nemo.common.ir.vertex.transform.AggregateMetricTransform;
 import org.apache.nemo.common.ir.vertex.transform.MetricCollectTransform;
 import org.apache.nemo.compiler.optimizer.pass.compiletime.Requires;
@@ -79,6 +80,7 @@ public final class SkewReshapingPass extends ReshapingPass {
                 .equals(edge.getPropertyValue(CommunicationPatternProperty.class).get())) {
             final OperatorVertex abv = generateMetricAggregationVertex();
             final OperatorVertex mcv = generateMetricCollectVertex(edge, abv);
+            abv.setPropertyPermanently(ParallelismProperty.of(1)); // Fixed parallelism.
             metricCollectVertices.add(mcv);
             builder.addVertex(v);
             builder.addVertex(mcv);
@@ -175,9 +177,9 @@ public final class SkewReshapingPass extends ReshapingPass {
                                    final OperatorVertex mcv,
                                    final OperatorVertex abv) {
     final IREdge newEdge = new IREdge(CommunicationPatternProperty.Value.Shuffle, mcv, abv);
-    newEdge.setProperty(DataStoreProperty.of(DataStoreProperty.Value.LocalFileStore));
-    newEdge.setProperty(DataPersistenceProperty.of(DataPersistenceProperty.Value.Keep));
-    newEdge.setProperty(DataFlowProperty.of(DataFlowProperty.Value.Pull));
+    newEdge.setPropertyPermanently(DataStoreProperty.of(DataStoreProperty.Value.SerializedMemoryStore));
+    newEdge.setPropertyPermanently(DataPersistenceProperty.of(DataPersistenceProperty.Value.Discard));
+    newEdge.setPropertyPermanently(DataFlowProperty.of(DataFlowProperty.Value.Push));
     newEdge.setProperty(KeyExtractorProperty.of(edge.getPropertyValue(KeyExtractorProperty.class).get()));
     newEdge.setProperty(AdditionalOutputTagProperty.of("DynOptData"));
 

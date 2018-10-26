@@ -62,40 +62,42 @@ public final class DefaultParallelismPass extends AnnotatingPass {
     dag.topologicalDo(vertex -> {
       try {
         final List<IREdge> inEdges = dag.getIncomingEdgesOf(vertex);
-        if (inEdges.isEmpty() && vertex instanceof SourceVertex) {
-          // For source vertices, we try to split the source reader by the desired source parallelism.
-          // After that, we set the parallelism as the number of split readers.
-          // (It can be more/less than the desired value.)
-          final SourceVertex sourceVertex = (SourceVertex) vertex;
-          final Integer originalParallelism = vertex.getPropertyValue(ParallelismProperty.class).get();
-          // We manipulate them if it is set as default value of 1.
-          if (originalParallelism.equals(1)) {
-            vertex.setProperty(ParallelismProperty.of(
+        if (!vertex.getExecutionProperties().isFinalized(ParallelismProperty.class)) {
+          if (inEdges.isEmpty() && vertex instanceof SourceVertex) {
+            // For source vertices, we try to split the source reader by the desired source parallelism.
+            // After that, we set the parallelism as the number of split readers.
+            // (It can be more/less than the desired value.)
+            final SourceVertex sourceVertex = (SourceVertex) vertex;
+            final Integer originalParallelism = vertex.getPropertyValue(ParallelismProperty.class).get();
+            // We manipulate them if it is set as default value of 1.
+            if (originalParallelism.equals(1)) {
+              vertex.setProperty(ParallelismProperty.of(
                 sourceVertex.getReadables(desiredSourceParallelism).size()));
-          }
-        } else if (!inEdges.isEmpty()) {
-          // No reason to propagate via Broadcast edges, as the data streams that will use the broadcasted data
-          // as a sideInput will have their own number of parallelism
-          final Integer o2oParallelism = inEdges.stream()
-             .filter(edge -> CommunicationPatternProperty.Value.OneToOne
-                  .equals(edge.getPropertyValue(CommunicationPatternProperty.class).get()))
+            }
+          } else if (!inEdges.isEmpty()) {
+            // No reason to propagate via Broadcast edges, as the data streams that will use the broadcasted data
+            // as a sideInput will have their own number of parallelism
+            final Integer o2oParallelism = inEdges.stream()
+              .filter(edge -> CommunicationPatternProperty.Value.OneToOne
+                .equals(edge.getPropertyValue(CommunicationPatternProperty.class).get()))
               .mapToInt(edge -> edge.getSrc().getPropertyValue(ParallelismProperty.class).get())
               .max().orElse(1);
-          final Integer shuffleParallelism = inEdges.stream()
+            final Integer shuffleParallelism = inEdges.stream()
               .filter(edge -> CommunicationPatternProperty.Value.Shuffle
-                  .equals(edge.getPropertyValue(CommunicationPatternProperty.class).get()))
+                .equals(edge.getPropertyValue(CommunicationPatternProperty.class).get()))
               .mapToInt(edge -> edge.getSrc().getPropertyValue(ParallelismProperty.class).get())
               .map(i -> i / shuffleDecreaseFactor)
               .max().orElse(1);
-          // We set the greater value as the parallelism.
-          final Integer parallelism = o2oParallelism > shuffleParallelism ? o2oParallelism : shuffleParallelism;
-          vertex.setProperty(ParallelismProperty.of(parallelism));
-          // synchronize one-to-one edges parallelism
-          recursivelySynchronizeO2OParallelism(dag, vertex, parallelism);
-        } else if (!vertex.getPropertyValue(ParallelismProperty.class).isPresent()) {
-          throw new RuntimeException("There is a non-source vertex that doesn't have any inEdges "
+            // We set the greater value as the parallelism.
+            final Integer parallelism = o2oParallelism > shuffleParallelism ? o2oParallelism : shuffleParallelism;
+            vertex.setProperty(ParallelismProperty.of(parallelism));
+            // synchronize one-to-one edges parallelism
+            recursivelySynchronizeO2OParallelism(dag, vertex, parallelism);
+          } else if (!vertex.getPropertyValue(ParallelismProperty.class).isPresent()) {
+            throw new RuntimeException("There is a non-source vertex that doesn't have any inEdges "
               + "(excluding SideInput edges)");
-        } // No problem otherwise.
+          } // No problem otherwise.
+        }
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
