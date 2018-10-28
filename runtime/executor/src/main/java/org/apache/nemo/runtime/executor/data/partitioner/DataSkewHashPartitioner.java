@@ -29,7 +29,6 @@ import java.math.BigInteger;
  * When we need to split or recombine the output data from a task after it is stored,
  * we multiply the hash range with a multiplier, which is commonly-known by the source and destination tasks,
  * to prevent the extra deserialize - rehash - serialize process.
- * For more information, please check {@link org.apache.nemo.conf.JobConf.HashRangeMultiplier}.
  */
 public final class DataSkewHashPartitioner implements Partitioner<Integer> {
   private static final Logger LOG = LoggerFactory.getLogger(DataSkewHashPartitioner.class.getName());

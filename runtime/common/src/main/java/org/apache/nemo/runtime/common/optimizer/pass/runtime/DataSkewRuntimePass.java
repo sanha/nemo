@@ -30,6 +30,7 @@ import org.apache.nemo.runtime.common.plan.StageEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,6 +45,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
   private final Set<Class<? extends RuntimeEventHandler>> eventHandlers;
   // Skewed keys denote for top n keys in terms of partition size.
   public static final int DEFAULT_NUM_SKEWED_KEYS = 10;
+  public static final int HASH_RANGE_MULTIPLIER = 10;
   private int numSkewedKeys;
 
   /**
@@ -77,10 +79,13 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     final Integer dstParallelism = targetEdge.getDst().getPropertyValue(ParallelismProperty.class).
         orElseThrow(() -> new RuntimeException("No parallelism on a vertex"));
 
-    LOG.info("Collected metrics:: " + metricData.right());
+    final BigInteger hashRangeBase = new BigInteger(String.valueOf(dstParallelism * HASH_RANGE_MULTIPLIER));
+    final int hashRange = hashRangeBase.nextProbablePrime().intValue();
+
+    //LOG.info("Collected metrics:: " + metricData.right());
 
     // Calculate keyRanges.
-    final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), dstParallelism);
+    final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), dstParallelism, hashRange);
 
     LOG.info("Optimized key ranges: " + keyRanges);
 
@@ -92,7 +97,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     // Overwrite the previously assigned key range in the physical DAG with the new range.
     final DAG<Stage, StageEdge> stageDAG = originalPlan.getStageDAG();
     for (Stage stage : stageDAG.getVertices()) {
-      List<StageEdge> stageEdges = stageDAG.getOutgoingEdgesOf(stage);
+      final List<StageEdge> stageEdges = stageDAG.getOutgoingEdgesOf(stage);
       for (StageEdge edge : stageEdges) {
         if (edge.equals(targetEdge)) {
           edge.setTaskIdxToKeyRange(taskIdxToKeyRange);
@@ -103,7 +108,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     return new PhysicalPlan(originalPlan.getPlanId(), stageDAG);
   }
 
-  public List<Long> identifySkewedKeys(final List<Long> partitionSizeList) {
+  private List<Long> identifySkewedKeys(final List<Long> partitionSizeList) {
     // Identify skewed keys.
     List<Long> sortedMetricData = partitionSizeList.stream()
         .sorted(Comparator.reverseOrder())
@@ -136,15 +141,25 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
    * Using a map of key to partition size, this method groups the given partitions
    * to a key range of partitions with approximate size of (total size of partitions / the number of tasks).
    *
-   * @param keyToPartitionSizeMap a map of key to partition size.
+   * @param actualKeyToSizeMap a map of (actual element) key to size.
    * @param dstParallelism the number of tasks that receive this data as input.
+   * @param hashRange the range of key's hash values.
    * @return the list of key ranges calculated.
    */
   @VisibleForTesting
-  public List<KeyRange> calculateKeyRanges(final Map<Object, Long> keyToPartitionSizeMap,
-                                           final Integer dstParallelism) {
-    final List<Long> partitionSizeList = new ArrayList<>();
-    keyToPartitionSizeMap.forEach((k, v) -> partitionSizeList.add(v));
+  public List<KeyRange> calculateKeyRanges(final Map<Object, Long> actualKeyToSizeMap,
+                                           final int dstParallelism,
+                                           final int hashRange) {
+    final List<Long> partitionSizeList = new ArrayList<>(hashRange);
+    for (int i = 0; i < hashRange; i++) {
+      partitionSizeList.add(0L);
+    }
+
+    actualKeyToSizeMap.forEach((k, v) -> {
+      final int partitionKey = Math.abs(k.hashCode() % hashRange);
+      partitionSizeList.set(partitionKey, partitionSizeList.get(partitionKey) + v);
+    });
+    System.out.println("Partitions size list: " + partitionSizeList);
 
     // Get the last index.
     final int lastKey = partitionSizeList.size() - 1;

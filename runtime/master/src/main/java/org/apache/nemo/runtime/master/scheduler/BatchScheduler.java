@@ -449,7 +449,7 @@ public final class BatchScheduler implements Scheduler {
     List<StageEdge> stageEdges = planStateManager.getPhysicalPlan().getStageDAG()
       .getOutgoingEdgesOf(parentStages.get(0));
     for (StageEdge edge : stageEdges) {
-      if (!edge.getExecutionProperties().containsKey(MetricCollectionProperty.class)) {
+      if (edge.getExecutionProperties().containsKey(MetricCollectionProperty.class)) {
         LOG.warn("Target edge: " + edge);
         return edge;
       }

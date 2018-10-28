@@ -17,13 +17,14 @@ package org.apache.nemo.compiler.optimizer.pass.compiletime.annotating;
 
 import org.apache.nemo.common.dag.DAG;
 import org.apache.nemo.common.ir.edge.IREdge;
+import org.apache.nemo.common.ir.edge.executionproperty.MetricCollectionProperty;
 import org.apache.nemo.common.ir.vertex.IRVertex;
-import org.apache.nemo.common.ir.vertex.OperatorVertex;
 import org.apache.nemo.common.ir.vertex.executionproperty.DynamicOptimizationProperty;
 import org.apache.nemo.common.ir.vertex.executionproperty.ResourceSkewedDataProperty;
 import org.apache.nemo.common.ir.vertex.transform.MetricCollectTransform;
+import org.apache.nemo.compiler.optimizer.pass.compiletime.Requires;
 
-import java.util.List;
+import java.util.Optional;
 
 /**
  * Pass to annotate the IR DAG for skew handling.
@@ -33,6 +34,7 @@ import java.util.List;
  * with {@link ResourceSkewedDataProperty} to perform skewness-aware scheduling.
  */
 @Annotates(DynamicOptimizationProperty.class)
+@Requires(MetricCollectionProperty.class)
 public final class SkewResourceSkewedDataPass extends AnnotatingPass {
   /**
    * Default constructor.
@@ -41,29 +43,26 @@ public final class SkewResourceSkewedDataPass extends AnnotatingPass {
     super(SkewResourceSkewedDataPass.class);
   }
 
-  private boolean hasParentWithMetricCollectTransform(final DAG<IRVertex, IREdge> dag,
-                                                      final IRVertex v) {
-    List<IRVertex> parents = dag.getParents(v.getId());
-    for (IRVertex parent : parents) {
-      if (parent instanceof OperatorVertex
-        && ((OperatorVertex) v).getTransform() instanceof MetricCollectTransform) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   @Override
   public DAG<IRVertex, IREdge> apply(final DAG<IRVertex, IREdge> dag) {
-    dag.getVertices().stream()
-        .filter(v -> hasParentWithMetricCollectTransform(dag, v)
-            && !v.getExecutionProperties().containsKey(ResourceSkewedDataProperty.class))
-        .forEach(childV -> {
-          childV.getExecutionProperties().put(ResourceSkewedDataProperty.of(true));
-          dag.getDescendants(childV.getId()).forEach(descendentV -> {
-            descendentV.getExecutionProperties().put(ResourceSkewedDataProperty.of(true));
-          });
-        });
+    dag.getVertices()
+      .forEach(v -> dag.getOutgoingEdgesOf(v).stream()
+          .filter(edge -> {
+            final Optional<MetricCollectionProperty.Value> optionalValue =
+               edge.getPropertyValue(MetricCollectionProperty.class);
+            if (optionalValue.isPresent()) {
+              return MetricCollectionProperty.Value.DataSkewRuntimePass.equals(optionalValue.get());
+            } else {
+              return false;
+            }})
+          .forEach(skewEdge -> {
+            final IRVertex dstV = skewEdge.getDst();
+            dstV.setProperty(ResourceSkewedDataProperty.of(true));
+            dag.getDescendants(dstV.getId()).forEach(descendentV -> {
+                descendentV.getExecutionProperties().put(ResourceSkewedDataProperty.of(true));
+            });
+          })
+      );
 
     return dag;
   }

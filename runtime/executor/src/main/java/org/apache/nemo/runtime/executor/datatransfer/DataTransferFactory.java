@@ -15,11 +15,10 @@
  */
 package org.apache.nemo.runtime.executor.datatransfer;
 
-import org.apache.nemo.conf.JobConf;
 import org.apache.nemo.common.ir.vertex.IRVertex;
+import org.apache.nemo.runtime.common.optimizer.pass.runtime.DataSkewRuntimePass;
 import org.apache.nemo.runtime.common.plan.RuntimeEdge;
 import org.apache.nemo.runtime.executor.data.BlockManagerWorker;
-import org.apache.reef.tang.annotations.Parameter;
 
 import javax.inject.Inject;
 
@@ -32,9 +31,8 @@ public final class DataTransferFactory {
   private final int hashRangeMultiplier;
 
   @Inject
-  private DataTransferFactory(@Parameter(JobConf.HashRangeMultiplier.class) final int hashRangeMultiplier,
-                              final BlockManagerWorker blockManagerWorker) {
-    this.hashRangeMultiplier = hashRangeMultiplier;
+  private DataTransferFactory(final BlockManagerWorker blockManagerWorker) {
+    this.hashRangeMultiplier = DataSkewRuntimePass.HASH_RANGE_MULTIPLIER;
     this.blockManagerWorker = blockManagerWorker;
   }
 

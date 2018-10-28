@@ -15,6 +15,7 @@
  */
 package org.apache.nemo.compiler.optimizer.pass.compiletime.reshaping;
 
+import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 import org.apache.nemo.common.KeyExtractor;
 import org.apache.nemo.common.Pair;
 import org.apache.nemo.common.coder.*;
@@ -35,6 +36,7 @@ import org.apache.nemo.compiler.optimizer.pass.compiletime.Requires;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -134,16 +136,21 @@ public final class SkewReshapingPass extends ReshapingPass {
 
   private OperatorVertex generateMetricCollectVertex(final IREdge edge, final OperatorVertex abv) {
     final KeyExtractor keyExtractor = edge.getPropertyValue(KeyExtractorProperty.class).get();
+    final EncoderFactory encoderFactory = edge.getPropertyValue(EncoderProperty.class).get();
+    edge.setPropertyPermanently(EncoderProperty.of(encoderFactory)); // Finalize
+
     // Define a custom data collector for skew handling.
     // Here, the collector gathers key frequency data used in shuffle data repartitioning.
     final BiFunction<Object, Map<Object, Object>, Map<Object, Object>> dynOptDataCollector =
       (BiFunction<Object, Map<Object, Object>, Map<Object, Object>> & Serializable)
         (element, dynOptData) -> {
-          Object key = keyExtractor.extractKey(element);
+          final Object key = keyExtractor.extractKey(element);
           if (dynOptData.containsKey(key)) {
-            dynOptData.compute(key, (existingKey, existingCount) -> (long) existingCount + 1L);
+            ((List<Object>) dynOptData.get(key)).add(element);
           } else {
-            dynOptData.put(key, 1L);
+            final List<Object> elementsPerKey = new ArrayList<>();
+            elementsPerKey.add(element);
+            dynOptData.put(key, elementsPerKey);
           }
           return dynOptData;
         };
@@ -153,11 +160,20 @@ public final class SkewReshapingPass extends ReshapingPass {
     final BiFunction<Map<Object, Object>, OutputCollector, Map<Object, Object>> closer =
       (BiFunction<Map<Object, Object>, OutputCollector, Map<Object, Object>> & Serializable)
         (dynOptData, outputCollector)-> {
-          dynOptData.forEach((k, v) -> {
-            final Pair<Object, Object> pairData = Pair.of(k, v);
-            outputCollector.emit(abv.getId(), pairData);
-          });
-          return dynOptData;
+          try (final ByteOutputStream out = new ByteOutputStream()) {
+            final EncoderFactory.Encoder encoder = encoderFactory.create(out);
+            for (final Map.Entry<Object, Object> entry : dynOptData.entrySet()) {
+              for (final Object element : ((List<Object>) entry.getValue())) {
+                encoder.encode(element);
+              }
+              final Pair<Object, Object> pairData =
+                Pair.of(entry.getKey(), new Long(out.getCount())); // Calculate actual size.
+              outputCollector.emit(abv.getId(), pairData);
+            }
+            return dynOptData;
+          } catch (final IOException e) {
+            throw new RuntimeException(e);
+          }
         };
 
     final MetricCollectTransform mct

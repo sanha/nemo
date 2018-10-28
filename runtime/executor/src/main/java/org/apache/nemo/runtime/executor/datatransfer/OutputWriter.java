@@ -44,7 +44,7 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
   /**
    * Constructor.
    *
-   * @param hashRangeMultiplier the {@link org.apache.nemo.conf.JobConf.HashRangeMultiplier}.
+   * @param hashRangeMultiplier the hash range multiplier.
    * @param srcTaskId           the id of the source task.
    * @param dstIrVertex         the destination IR vertex.
    * @param runtimeEdge         the {@link RuntimeEdge}.

@@ -45,8 +45,12 @@ public final class SkewMetricCollectionPass extends AnnotatingPass {
   public DAG<IRVertex, IREdge> apply(final DAG<IRVertex, IREdge> dag) {
     dag.topologicalDo(v -> {
       // we only care about metric collection vertices.
-      if (v instanceof OperatorVertex
-        && ((OperatorVertex) v).getTransform() instanceof MetricCollectTransform) {
+      final boolean hasMetricCollectOutput = dag.getOutgoingEdgesOf(v).stream()
+          .map(edge -> edge.getDst())
+          .anyMatch(dst -> dst instanceof OperatorVertex
+              && ((OperatorVertex) dst).getTransform() instanceof MetricCollectTransform);
+
+      if (hasMetricCollectOutput) {
         dag.getOutgoingEdgesOf(v).forEach(edge -> {
           // double checking.
           if (edge.getPropertyValue(CommunicationPatternProperty.class).get()

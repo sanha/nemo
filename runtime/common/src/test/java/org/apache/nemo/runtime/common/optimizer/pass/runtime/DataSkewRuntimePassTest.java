@@ -47,7 +47,7 @@ public class DataSkewRuntimePassTest {
     final Integer taskNum = 5;
 
     final List<KeyRange> keyRanges =
-        new DataSkewRuntimePass().setNumSkewedKeys(2).calculateKeyRanges(testMetricData, taskNum);
+        new DataSkewRuntimePass().setNumSkewedKeys(2).calculateKeyRanges(testMetricData, taskNum, 2);
 
     // Test whether it correctly redistributed hash ranges.
     assertEquals(0, keyRanges.get(0).rangeBeginInclusive());
@@ -60,7 +60,7 @@ public class DataSkewRuntimePassTest {
     assertEquals(5, keyRanges.get(3).rangeEndExclusive());
     assertEquals(5, keyRanges.get(4).rangeBeginInclusive());
     assertEquals(5, keyRanges.get(4).rangeEndExclusive());
-  
+
     // Test whether it caught the provided skewness.
     assertEquals(false, ((HashRange)keyRanges.get(0)).isSkewed());
     assertEquals(false, ((HashRange)keyRanges.get(1)).isSkewed());
