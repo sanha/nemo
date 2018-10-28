@@ -44,13 +44,14 @@ public final class SkewnessAwareSchedulingConstraint implements SchedulingConstr
   public SkewnessAwareSchedulingConstraint() {
   }
 
-  public boolean hasSkewedData(final Task task) {
+  private boolean hasSkewedData(final Task task) {
     final int taskIdx = RuntimeIdManager.getIndexFromTaskId(task.getTaskId());
     for (StageEdge inEdge : task.getTaskIncomingEdges()) {
       if (CommunicationPatternProperty.Value.Shuffle
       .equals(inEdge.getDataCommunicationPattern())) {
         final Map<Integer, KeyRange> taskIdxToKeyRange =
-            inEdge.getPropertyValue(DataSkewMetricProperty.class).get().getMetric();
+            //inEdge.getPropertyValue(DataSkewMetricProperty.class).get().getMetric();
+            inEdge.getTaskIdxToKeyRange();
         final KeyRange hashRange = taskIdxToKeyRange.get(taskIdx);
         if (((HashRange) hashRange).isSkewed()) {
           return true;
