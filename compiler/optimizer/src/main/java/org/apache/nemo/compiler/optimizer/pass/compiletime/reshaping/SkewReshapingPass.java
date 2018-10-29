@@ -15,7 +15,6 @@
  */
 package org.apache.nemo.compiler.optimizer.pass.compiletime.reshaping;
 
-import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 import org.apache.nemo.common.KeyExtractor;
 import org.apache.nemo.common.Pair;
 import org.apache.nemo.common.coder.*;
@@ -36,6 +35,7 @@ import org.apache.nemo.compiler.optimizer.pass.compiletime.Requires;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -160,14 +160,14 @@ public final class SkewReshapingPass extends ReshapingPass {
     final BiFunction<Map<Object, Object>, OutputCollector, Map<Object, Object>> closer =
       (BiFunction<Map<Object, Object>, OutputCollector, Map<Object, Object>> & Serializable)
         (dynOptData, outputCollector)-> {
-          try (final ByteOutputStream out = new ByteOutputStream()) {
+          try (final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             final EncoderFactory.Encoder encoder = encoderFactory.create(out);
             for (final Map.Entry<Object, Object> entry : dynOptData.entrySet()) {
               for (final Object element : ((List<Object>) entry.getValue())) {
                 encoder.encode(element);
               }
               final Pair<Object, Object> pairData =
-                Pair.of(entry.getKey(), new Long(out.getCount())); // Calculate actual size.
+                Pair.of(entry.getKey(), new Long(out.size())); // Calculate actual size.
               outputCollector.emit(abv.getId(), pairData);
             }
             return dynOptData;
