@@ -41,6 +41,14 @@ public abstract class SourceVertex<O> extends IRVertex {
   public SourceVertex(final SourceVertex that) {
     super(that);
   }
+
+  /**
+   * @return a sampled clone of this IRVertex.
+   */
+  public IRVertex getSampledClone(final List<Integer> idxToSample) {
+    return new SampledSourceVertex<>(this, idxToSample);
+  }
+
   /**
    * Gets parallel readables.
    *

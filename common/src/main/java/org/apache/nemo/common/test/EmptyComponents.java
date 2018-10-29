@@ -193,6 +193,11 @@ public final class EmptyComponents {
     }
 
     @Override
+    public IRVertex getSampledClone(final List<Integer> idxToSample) {
+      throw new RuntimeException("This code should not be called!");
+    }
+
+    @Override
     public String toString() {
       final StringBuilder sb = new StringBuilder();
       sb.append(super.toString());

@@ -69,9 +69,10 @@ public final class BeamBoundedSourceVertex<O> extends SourceVertex<O> {
   @Override
   public List<Readable<O>> getReadables(final int desiredNumOfSplits) throws Exception {
     final List<Readable<O>> readables = new ArrayList<>();
-    LOG.info("estimate: {}", source.getEstimatedSizeBytes(null));
+    final long estimatedSizeBytes = source.getEstimatedSizeBytes(null);
+    LOG.info("estimate: {}", estimatedSizeBytes);
     LOG.info("desired: {}", desiredNumOfSplits);
-    source.split(source.getEstimatedSizeBytes(null) / desiredNumOfSplits, null)
+    source.split(estimatedSizeBytes / desiredNumOfSplits, null)
         .forEach(boundedSource -> readables.add(new BoundedSourceReadable<>(boundedSource)));
     return readables;
   }
