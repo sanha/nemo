@@ -25,6 +25,8 @@ import org.apache.nemo.runtime.common.plan.RuntimeEdge;
 import org.apache.nemo.runtime.executor.data.BlockManagerWorker;
 import org.apache.nemo.runtime.executor.data.block.Block;
 import org.apache.nemo.runtime.executor.data.partitioner.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -32,6 +34,7 @@ import java.util.*;
  * Represents the output data transfer from a task.
  */
 public final class OutputWriter extends DataTransfer implements AutoCloseable {
+  private static final Logger LOG = LoggerFactory.getLogger(OutputWriter.class.getName());
   private final RuntimeEdge<?> runtimeEdge;
   private final IRVertex dstIrVertex;
   private final DataStoreProperty.Value blockStoreValue;
@@ -74,7 +77,11 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
         this.partitioner = new IntactPartitioner();
         break;
       case HashPartitioner:
-        this.partitioner = new HashPartitioner(dstParallelism, keyExtractor.
+        // TODO #?: Hack
+        final int hashRange = runtimeEdge.getPropertyValue(ShuffleDistributionProperty.class).get().left();
+        LOG.info("Output writer hash partitioner hash range for " + runtimeEdge.toString() + ": " + hashRange);
+
+        this.partitioner = new HashPartitioner(hashRange, keyExtractor.
             orElseThrow(() -> new RuntimeException("No key extractor property on the edge")));
         break;
       case DataSkewHashPartitioner:

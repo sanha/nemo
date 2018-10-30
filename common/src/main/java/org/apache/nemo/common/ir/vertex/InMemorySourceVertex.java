@@ -54,6 +54,11 @@ public final class InMemorySourceVertex<T> extends SourceVertex<T> {
   }
 
   @Override
+  public IRVertex getSampledClone(final List<Integer> idxToSample) {
+    return new SampledSourceVertex<>(this, idxToSample);
+  }
+
+  @Override
   public List<Readable<T>> getReadables(final int desiredNumOfSplits) throws Exception {
 
     final List<Readable<T>> readables = new ArrayList<>();

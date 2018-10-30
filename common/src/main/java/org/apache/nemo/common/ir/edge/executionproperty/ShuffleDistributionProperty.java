@@ -15,29 +15,31 @@
  */
 package org.apache.nemo.common.ir.edge.executionproperty;
 
-import org.apache.nemo.common.DataSkewMetricFactory;
+import org.apache.nemo.common.KeyRange;
+import org.apache.nemo.common.Pair;
 import org.apache.nemo.common.ir.executionproperty.EdgeExecutionProperty;
 
+import java.util.HashMap;
+
 /**
- * DataSkewMetric ExecutionProperty.
+ * DataCommunicationPattern ExecutionProperty.
  */
-public final class DataSkewMetricProperty extends EdgeExecutionProperty<DataSkewMetricFactory> {
+public final class ShuffleDistributionProperty
+    extends EdgeExecutionProperty<Pair<Integer, HashMap<Integer, KeyRange>>> {
   /**
    * Constructor.
-   *
    * @param value value of the execution property.
    */
-  private DataSkewMetricProperty(final DataSkewMetricFactory value) {
+  private ShuffleDistributionProperty(final Pair<Integer, HashMap<Integer, KeyRange>> value) { // Total range map pair
     super(value);
   }
 
   /**
    * Static method exposing the constructor.
-   *
    * @param value value of the new execution property.
    * @return the newly created execution property.
    */
-  public static DataSkewMetricProperty of(final DataSkewMetricFactory value) {
-    return new DataSkewMetricProperty(value);
+  public static ShuffleDistributionProperty of(final Pair<Integer, HashMap<Integer, KeyRange>> value) {
+    return new ShuffleDistributionProperty(value);
   }
 }

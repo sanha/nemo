@@ -17,7 +17,7 @@ package org.apache.nemo.runtime.master.scheduler;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.nemo.common.ir.edge.executionproperty.CommunicationPatternProperty;
-import org.apache.nemo.common.ir.edge.executionproperty.DataSkewMetricProperty;
+import org.apache.nemo.common.ir.edge.executionproperty.ShuffleDistributionProperty;
 import org.apache.nemo.common.ir.executionproperty.AssociatedProperty;
 import org.apache.nemo.common.ir.vertex.executionproperty.ResourceSkewedDataProperty;
 import org.apache.nemo.runtime.common.RuntimeIdManager;
@@ -50,8 +50,7 @@ public final class SkewnessAwareSchedulingConstraint implements SchedulingConstr
       if (CommunicationPatternProperty.Value.Shuffle
       .equals(inEdge.getDataCommunicationPattern())) {
         final Map<Integer, KeyRange> taskIdxToKeyRange =
-            //inEdge.getPropertyValue(DataSkewMetricProperty.class).get().getMetric();
-            inEdge.getTaskIdxToKeyRange();
+            inEdge.getPropertyValue(ShuffleDistributionProperty.class).get().right();
         final KeyRange hashRange = taskIdxToKeyRange.get(taskIdx);
         if (((HashRange) hashRange).isSkewed()) {
           return true;

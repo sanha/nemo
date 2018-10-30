@@ -312,7 +312,6 @@ public final class DataTransferTest {
       for (int i = 0; i < parallelism; i++) {
         metric.put(i, HashRange.of(i, i + 1, false));
       }
-      dummyIREdge.setProperty(DataSkewMetricProperty.of(new DataSkewMetricFactory(metric)));
     }
     final ExecutionPropertyMap edgeProperties = dummyIREdge.getExecutionProperties();
     final RuntimeEdge dummyEdge;
@@ -401,7 +400,6 @@ public final class DataTransferTest {
       for (int i = 0; i < parallelism; i++) {
         metric.put(i, HashRange.of(i, i + 1, false));
       }
-      dummyIREdge.setProperty(DataSkewMetricProperty.of(new DataSkewMetricFactory(metric)));
     }
     dummyIREdge.setProperty(DataStoreProperty.of(store));
     dummyIREdge.setProperty(DataPersistenceProperty.of(DataPersistenceProperty.Value.Keep));

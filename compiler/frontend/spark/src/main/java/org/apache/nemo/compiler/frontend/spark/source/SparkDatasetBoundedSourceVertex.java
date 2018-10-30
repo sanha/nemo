@@ -16,6 +16,8 @@
 package org.apache.nemo.compiler.frontend.spark.source;
 
 import org.apache.nemo.common.ir.Readable;
+import org.apache.nemo.common.ir.vertex.IRVertex;
+import org.apache.nemo.common.ir.vertex.SampledSourceVertex;
 import org.apache.nemo.common.ir.vertex.SourceVertex;
 import org.apache.nemo.compiler.frontend.spark.sql.Dataset;
 import org.apache.nemo.compiler.frontend.spark.sql.SparkSession;
@@ -68,6 +70,11 @@ public final class SparkDatasetBoundedSourceVertex<T> extends SourceVertex<T> {
   @Override
   public SparkDatasetBoundedSourceVertex getClone() {
     return new SparkDatasetBoundedSourceVertex(this);
+  }
+
+  @Override
+  public IRVertex getSampledClone(final List<Integer> idxToSample) {
+    return new SampledSourceVertex<>(this, idxToSample);
   }
 
   @Override

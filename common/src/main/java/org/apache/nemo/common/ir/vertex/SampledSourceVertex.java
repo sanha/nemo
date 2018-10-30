@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A wrapper source vertex for a sampled bounded source vertex
+ * A wrapper source vertex for a sampled bounded source vertex.
  * @param <T> the type of data to emit.
  */
 public final class SampledSourceVertex<T> extends SourceVertex<T> {
@@ -31,14 +31,14 @@ public final class SampledSourceVertex<T> extends SourceVertex<T> {
   /**
    * Constructor.
    */
-  SampledSourceVertex(final SourceVertex<T> sourceVertexToSample,
-                      final List<Integer> idxToSample) {
+  public SampledSourceVertex(final SourceVertex<T> sourceVertexToSample,
+                             final List<Integer> idxToSample) {
     this.sourceVertexToSample = sourceVertexToSample;
     this.idxToSample = idxToSample;
   }
 
   @Override
-  public IRVertex getSampledClone(final List<Integer> idxToSample) {
+  public IRVertex getSampledClone(final List<Integer> idxToSampleToSet) {
     throw new RuntimeException("Cannot sample twice!");
   }
 
@@ -53,8 +53,8 @@ public final class SampledSourceVertex<T> extends SourceVertex<T> {
   @Override
   public List<Readable<T>> getReadables(final int desiredNumOfSplits) throws Exception {
     final List<Readable<T>> readables = sourceVertexToSample.getReadables(desiredNumOfSplits);
-    if (readables.size() < desiredNumOfSplits ||
-        desiredNumOfSplits != idxToSample.size()) {
+    if (readables.size() < desiredNumOfSplits
+        || desiredNumOfSplits != idxToSample.size()) {
       throw new RuntimeException("Sampled size mismatch!");
     }
 

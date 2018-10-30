@@ -20,6 +20,7 @@ import org.apache.nemo.common.Pair;
 import org.apache.nemo.common.dag.DAG;
 import org.apache.nemo.common.eventhandler.RuntimeEventHandler;
 
+import org.apache.nemo.common.ir.edge.executionproperty.ShuffleDistributionProperty;
 import org.apache.nemo.common.ir.vertex.executionproperty.ParallelismProperty;
 import org.apache.nemo.common.KeyRange;
 import org.apache.nemo.common.HashRange;
@@ -89,7 +90,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
 
     LOG.info("Optimized key ranges: " + keyRanges);
 
-    final Map<Integer, KeyRange> taskIdxToKeyRange = new HashMap<>();
+    final HashMap<Integer, KeyRange> taskIdxToKeyRange = new HashMap<>();
     for (int i = 0; i < dstParallelism; i++) {
       taskIdxToKeyRange.put(i, keyRanges.get(i));
     }
@@ -100,7 +101,8 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
       final List<StageEdge> stageEdges = stageDAG.getOutgoingEdgesOf(stage);
       for (StageEdge edge : stageEdges) {
         if (edge.equals(targetEdge)) {
-          edge.setTaskIdxToKeyRange(taskIdxToKeyRange);
+          edge.getExecutionProperties()
+              .put(ShuffleDistributionProperty.of(Pair.of(hashRange, taskIdxToKeyRange)), true);
         }
       }
     }

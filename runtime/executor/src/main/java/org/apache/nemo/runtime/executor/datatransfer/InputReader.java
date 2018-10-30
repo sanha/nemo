@@ -16,10 +16,8 @@
 package org.apache.nemo.runtime.executor.datatransfer;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.nemo.common.ir.edge.executionproperty.CommunicationPatternProperty;
-import org.apache.nemo.common.ir.edge.executionproperty.DataStoreProperty;
-import org.apache.nemo.common.ir.edge.executionproperty.DuplicateEdgeGroupProperty;
-import org.apache.nemo.common.ir.edge.executionproperty.DuplicateEdgeGroupPropertyValue;
+import org.apache.nemo.common.Pair;
+import org.apache.nemo.common.ir.edge.executionproperty.*;
 import org.apache.nemo.common.ir.vertex.IRVertex;
 import org.apache.nemo.common.ir.vertex.executionproperty.ParallelismProperty;
 import org.apache.nemo.runtime.common.RuntimeIdManager;
@@ -86,9 +84,14 @@ public final class InputReader extends DataTransfer {
   }
 
   private CompletableFuture<DataUtil.IteratorWithNumBytes> readOneToOne() {
-    final String blockIdWildcard = generateWildCardBlockId(dstTaskIndex);
     final Optional<DataStoreProperty.Value> dataStoreProperty
         = runtimeEdge.getPropertyValue(DataStoreProperty.class);
+    final Optional<Map<Integer, Integer>> distributionMap =
+        runtimeEdge.getPropertyValue(OneToOneDistributionProperty.class);
+    final int idxToRead =
+        distributionMap.isPresent() ? distributionMap.get().get(dstTaskIndex) : dstTaskIndex;
+
+    final String blockIdWildcard = generateWildCardBlockId(idxToRead);
     return blockManagerWorker.readBlock(blockIdWildcard, getId(), dataStoreProperty.get(), HashRange.all());
   }
 
@@ -115,8 +118,9 @@ public final class InputReader extends DataTransfer {
     assert (runtimeEdge instanceof StageEdge);
     final Optional<DataStoreProperty.Value> dataStoreProperty
         = runtimeEdge.getPropertyValue(DataStoreProperty.class);
-    ((StageEdge) runtimeEdge).getTaskIdxToKeyRange().get(dstTaskIndex);
-    final KeyRange hashRangeToRead = ((StageEdge) runtimeEdge).getTaskIdxToKeyRange().get(dstTaskIndex);
+    final KeyRange hashRangeToRead =
+        ((Pair<Integer, Map<Integer, KeyRange>>) runtimeEdge.getPropertyValue(ShuffleDistributionProperty.class).get())
+            .right().get(dstTaskIndex);
     if (hashRangeToRead == null) {
       throw new BlockFetchException(
           new Throwable("The hash range to read is not assigned to " + dstTaskIndex + "'th task"));

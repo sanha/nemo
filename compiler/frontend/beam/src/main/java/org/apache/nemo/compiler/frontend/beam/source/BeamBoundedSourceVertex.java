@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.nemo.common.ir.vertex.IRVertex;
+import org.apache.nemo.common.ir.vertex.SampledSourceVertex;
 import org.apache.nemo.common.ir.vertex.SourceVertex;
 import org.apache.beam.sdk.io.BoundedSource;
 import org.apache.beam.sdk.io.hadoop.inputformat.HadoopInputFormatIO;
@@ -64,6 +66,11 @@ public final class BeamBoundedSourceVertex<O> extends SourceVertex<O> {
   @Override
   public BeamBoundedSourceVertex getClone() {
     return new BeamBoundedSourceVertex(this);
+  }
+
+  @Override
+  public IRVertex getSampledClone(final List<Integer> idxToSample) {
+    return new SampledSourceVertex<>(this, idxToSample);
   }
 
   @Override

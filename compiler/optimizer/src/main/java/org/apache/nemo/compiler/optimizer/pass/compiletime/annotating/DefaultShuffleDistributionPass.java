@@ -15,29 +15,30 @@
  */
 package org.apache.nemo.compiler.optimizer.pass.compiletime.annotating;
 
-import org.apache.nemo.common.DataSkewMetricFactory;
 import org.apache.nemo.common.HashRange;
 import org.apache.nemo.common.KeyRange;
+import org.apache.nemo.common.Pair;
 import org.apache.nemo.common.dag.DAG;
 import org.apache.nemo.common.ir.edge.IREdge;
 import org.apache.nemo.common.ir.edge.executionproperty.CommunicationPatternProperty;
-import org.apache.nemo.common.ir.edge.executionproperty.DataSkewMetricProperty;
+import org.apache.nemo.common.ir.edge.executionproperty.ShuffleDistributionProperty;
 import org.apache.nemo.common.ir.vertex.IRVertex;
 import org.apache.nemo.common.ir.vertex.executionproperty.ParallelismProperty;
+import org.apache.nemo.compiler.optimizer.pass.compiletime.Requires;
 
 import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Pass for initiating IREdge Metric ExecutionProperty with default key range.
  */
-@Annotates(DataSkewMetricProperty.class)
-public final class DefaultMetricPass extends AnnotatingPass {
+@Requires({CommunicationPatternProperty.class})
+@Annotates(ShuffleDistributionProperty.class)
+public final class DefaultShuffleDistributionPass extends AnnotatingPass {
   /**
    * Default constructor.
    */
-  public DefaultMetricPass() {
-    super(DefaultMetricPass.class);
+  public DefaultShuffleDistributionPass() {
+    super(DefaultShuffleDistributionPass.class);
   }
 
   @Override
@@ -45,13 +46,14 @@ public final class DefaultMetricPass extends AnnotatingPass {
     dag.topologicalDo(dst ->
       dag.getIncomingEdgesOf(dst).forEach(edge -> {
         if (CommunicationPatternProperty.Value.Shuffle
-            .equals(edge.getPropertyValue(CommunicationPatternProperty.class).get())) {
+            .equals(edge.getPropertyValue(CommunicationPatternProperty.class).get())
+            && !edge.getPropertyValue(ShuffleDistributionProperty.class).isPresent()) {
           final int parallelism = dst.getPropertyValue(ParallelismProperty.class).get();
-          final Map<Integer, KeyRange> metric = new HashMap<>();
-          for (int i = 0; i < parallelism; i++) {
+          final HashMap<Integer, KeyRange> metric = new HashMap<>();
+          for (int i = 0; i < parallelism; i++) { // Consider skew hash partitioner?
             metric.put(i, HashRange.of(i, i + 1, false));
           }
-          edge.setProperty(DataSkewMetricProperty.of(new DataSkewMetricFactory(metric)));
+          edge.setProperty(ShuffleDistributionProperty.of(Pair.of(parallelism, metric)));
         }
       }));
     return dag;

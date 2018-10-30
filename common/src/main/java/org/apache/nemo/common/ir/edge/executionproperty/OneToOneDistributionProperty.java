@@ -15,19 +15,20 @@
  */
 package org.apache.nemo.common.ir.edge.executionproperty;
 
-// TODO #492: modularizing runtime components for data communication pattern.
 import org.apache.nemo.common.ir.executionproperty.EdgeExecutionProperty;
+
+import java.util.HashMap;
 
 /**
  * DataCommunicationPattern ExecutionProperty.
  */
-public final class CommunicationPatternProperty
-    extends EdgeExecutionProperty<CommunicationPatternProperty.Value> {
+public final class OneToOneDistributionProperty
+    extends EdgeExecutionProperty<HashMap<Integer, Integer>> {
   /**
    * Constructor.
    * @param value value of the execution property.
    */
-  private CommunicationPatternProperty(final Value value) {
+  private OneToOneDistributionProperty(final HashMap<Integer, Integer> value) {
     super(value);
   }
 
@@ -36,16 +37,7 @@ public final class CommunicationPatternProperty
    * @param value value of the new execution property.
    * @return the newly created execution property.
    */
-  public static CommunicationPatternProperty of(final Value value) {
-    return new CommunicationPatternProperty(value);
-  }
-
-  /**
-   * Possible values of DataCommunicationPattern ExecutionProperty.
-   */
-  public enum Value {
-    OneToOne,
-    BroadCast,
-    Shuffle
+  public static OneToOneDistributionProperty of(final HashMap<Integer, Integer> value) {
+    return new OneToOneDistributionProperty(value);
   }
 }

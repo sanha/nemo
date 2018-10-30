@@ -59,6 +59,11 @@ public final class CachedSourceVertex<T> extends SourceVertex<T> {
   }
 
   @Override
+  public IRVertex getSampledClone(final List<Integer> idxToSample) {
+    return new SampledSourceVertex<>(this, idxToSample);
+  }
+
+  @Override
   public List<Readable<T>> getReadables(final int desiredNumOfSplits) {
     // Ignore the desired number of splits.
     return readables;

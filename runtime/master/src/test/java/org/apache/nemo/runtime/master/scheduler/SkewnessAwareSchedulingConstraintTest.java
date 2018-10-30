@@ -15,11 +15,9 @@
  */
 package org.apache.nemo.runtime.master.scheduler;
 
-import org.apache.nemo.common.DataSkewMetricFactory;
 import org.apache.nemo.common.ir.edge.IREdge;
 import org.apache.nemo.common.ir.edge.executionproperty.CommunicationPatternProperty;
 import org.apache.nemo.common.ir.edge.executionproperty.DataFlowProperty;
-import org.apache.nemo.common.ir.edge.executionproperty.DataSkewMetricProperty;
 import org.apache.nemo.common.ir.vertex.IRVertex;
 import org.apache.nemo.runtime.common.RuntimeIdManager;
 import org.apache.nemo.common.HashRange;
@@ -69,7 +67,6 @@ public final class SkewnessAwareSchedulingConstraintTest {
 
     final IREdge dummyIREdge = new IREdge(CommunicationPatternProperty.Value.Shuffle, srcMockVertex, dstMockVertex);
     dummyIREdge.setProperty(DataFlowProperty.of(DataFlowProperty.Value.Pull));
-    dummyIREdge.setProperty(DataSkewMetricProperty.of(new DataSkewMetricFactory(taskIdxToKeyRange)));
     final StageEdge dummyEdge = new StageEdge("Edge0", dummyIREdge.getExecutionProperties(),
         srcMockVertex, dstMockVertex, srcMockStage, dstMockStage);
 

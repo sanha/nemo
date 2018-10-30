@@ -16,6 +16,8 @@
 package org.apache.nemo.compiler.frontend.spark.source;
 
 import org.apache.nemo.common.ir.Readable;
+import org.apache.nemo.common.ir.vertex.IRVertex;
+import org.apache.nemo.common.ir.vertex.SampledSourceVertex;
 import org.apache.nemo.common.ir.vertex.SourceVertex;
 import org.apache.spark.*;
 import org.apache.spark.rdd.RDD;
@@ -67,6 +69,11 @@ public final class SparkTextFileBoundedSourceVertex extends SourceVertex<String>
   @Override
   public SparkTextFileBoundedSourceVertex getClone() {
     return new SparkTextFileBoundedSourceVertex(this);
+  }
+
+  @Override
+  public IRVertex getSampledClone(final List<Integer> idxToSample) {
+    return new SampledSourceVertex<>(this, idxToSample);
   }
 
   @Override
