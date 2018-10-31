@@ -32,6 +32,7 @@ import org.apache.nemo.common.ir.vertex.executionproperty.ParallelismProperty;
 import org.apache.nemo.common.ir.vertex.transform.AggregateMetricTransform;
 import org.apache.nemo.common.ir.vertex.transform.MetricCollectTransform;
 import org.apache.nemo.compiler.optimizer.pass.compiletime.Requires;
+import org.apache.nemo.compiler.optimizer.pass.compiletime.annotating.Annotates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +43,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
 /**
@@ -52,6 +54,7 @@ import java.util.function.BiFunction;
  * 2) Stage-level statistic aggregation is done via vertex with {@link AggregateMetricTransform}
  * inserted before shuffle edges.
  * */
+@Annotates(MetricCollectionProperty.class)
 @Requires(CommunicationPatternProperty.class)
 public final class SkewReshapingPass extends ReshapingPass {
   private static final Logger LOG = LoggerFactory.getLogger(SkewReshapingPass.class.getName());
@@ -67,6 +70,7 @@ public final class SkewReshapingPass extends ReshapingPass {
   public DAG<IRVertex, IREdge> apply(final DAG<IRVertex, IREdge> dag) {
     final DAGBuilder<IRVertex, IREdge> builder = new DAGBuilder<>();
     final List<OperatorVertex> metricCollectVertices = new ArrayList<>();
+    final AtomicInteger metricCollectionId = new AtomicInteger(0);
 
     dag.topologicalDo(v -> {
       // We care about OperatorVertices that have shuffle incoming edges with main output.
@@ -95,10 +99,14 @@ public final class SkewReshapingPass extends ReshapingPass {
             final IREdge edgeToOriginalDstV =
               new IREdge(edge.getPropertyValue(CommunicationPatternProperty.class).get(), edge.getSrc(), v);
             edge.copyExecutionPropertiesTo(edgeToOriginalDstV);
+            edgeToABV.setPropertyPermanently(MetricCollectionProperty.of(metricCollectionId.intValue()));
+            edgeToOriginalDstV.setPropertyPermanently(MetricCollectionProperty.of(metricCollectionId.intValue()));
 
             builder.connectVertices(edgeToMCV);
             builder.connectVertices(edgeToABV);
             builder.connectVertices(edgeToOriginalDstV);
+
+            metricCollectionId.incrementAndGet();
           } else {
             builder.connectVertices(edge);
           }

@@ -22,8 +22,6 @@ import org.apache.nemo.common.ir.vertex.IRVertex;
 import org.apache.nemo.common.ir.edge.executionproperty.PartitionerProperty;
 import org.apache.nemo.compiler.optimizer.pass.compiletime.Requires;
 
-import java.util.Optional;
-
 /**
  * Transient resource pass for tagging edges with {@link PartitionerProperty}.
  */
@@ -41,15 +39,7 @@ public final class SkewPartitionerPass extends AnnotatingPass {
   public DAG<IRVertex, IREdge> apply(final DAG<IRVertex, IREdge> dag) {
     dag.getVertices()
       .forEach(v -> dag.getOutgoingEdgesOf(v).stream()
-          .filter(edge -> {
-            final Optional<MetricCollectionProperty.Value> optionalValue =
-                edge.getPropertyValue(MetricCollectionProperty.class);
-            if (optionalValue.isPresent()) {
-              return MetricCollectionProperty.Value.DataSkewRuntimePass.equals(optionalValue.get());
-            } else {
-              return false;
-            }
-          })
+          .filter(edge -> edge.getPropertyValue(MetricCollectionProperty.class).isPresent())
           .forEach(skewEdge -> skewEdge
               .setPropertyPermanently(PartitionerProperty.of(PartitionerProperty.Value.DataSkewHashPartitioner))
           )

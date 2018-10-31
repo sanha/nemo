@@ -18,6 +18,7 @@ package org.apache.nemo.compiler.optimizer.pass.compiletime.reshaping;
 import org.apache.nemo.common.ir.executionproperty.ExecutionProperty;
 import org.apache.nemo.compiler.optimizer.pass.compiletime.CompileTimePass;
 import org.apache.nemo.compiler.optimizer.pass.compiletime.Requires;
+import org.apache.nemo.compiler.optimizer.pass.compiletime.annotating.Annotates;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -28,6 +29,7 @@ import java.util.Set;
  * It is ensured by the compiler that no execution properties are modified by a ReshapingPass.
  */
 public abstract class ReshapingPass extends CompileTimePass {
+  private final Set<Class<? extends ExecutionProperty>> executionPropertiesToAnnotate;
   private final Set<Class<? extends ExecutionProperty>> prerequisiteExecutionProperties;
 
   /**
@@ -38,6 +40,18 @@ public abstract class ReshapingPass extends CompileTimePass {
     final Requires requires = cls.getAnnotation(Requires.class);
     this.prerequisiteExecutionProperties = requires == null
         ? new HashSet<>() : new HashSet<>(Arrays.asList(requires.value()));
+
+    final Annotates annotates = cls.getAnnotation(Annotates.class);
+    this.executionPropertiesToAnnotate = annotates == null
+        ? new HashSet<>() : new HashSet<>(Arrays.asList(annotates.value()));
+  }
+
+  /**
+   * Getter for the execution properties to annotate through the pass.
+   * @return key of execution properties to annotate through the pass.
+   */
+  public final Set<Class<? extends ExecutionProperty>> getExecutionPropertiesToAnnotate() {
+    return executionPropertiesToAnnotate;
   }
 
   public final Set<Class<? extends ExecutionProperty>> getPrerequisiteExecutionProperties() {

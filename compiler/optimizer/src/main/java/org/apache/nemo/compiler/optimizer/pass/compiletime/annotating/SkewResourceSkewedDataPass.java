@@ -24,8 +24,6 @@ import org.apache.nemo.common.ir.vertex.executionproperty.ResourceSkewedDataProp
 import org.apache.nemo.common.ir.vertex.transform.MetricCollectTransform;
 import org.apache.nemo.compiler.optimizer.pass.compiletime.Requires;
 
-import java.util.Optional;
-
 /**
  * Pass to annotate the IR DAG for skew handling.
  *
@@ -47,14 +45,7 @@ public final class SkewResourceSkewedDataPass extends AnnotatingPass {
   public DAG<IRVertex, IREdge> apply(final DAG<IRVertex, IREdge> dag) {
     dag.getVertices()
       .forEach(v -> dag.getOutgoingEdgesOf(v).stream()
-          .filter(edge -> {
-            final Optional<MetricCollectionProperty.Value> optionalValue =
-               edge.getPropertyValue(MetricCollectionProperty.class);
-            if (optionalValue.isPresent()) {
-              return MetricCollectionProperty.Value.DataSkewRuntimePass.equals(optionalValue.get());
-            } else {
-              return false;
-            }})
+          .filter(edge -> edge.getPropertyValue(MetricCollectionProperty.class).isPresent())
           .forEach(skewEdge -> {
             final IRVertex dstV = skewEdge.getDst();
             dstV.setProperty(ResourceSkewedDataProperty.of(true));

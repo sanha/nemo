@@ -15,7 +15,6 @@
  */
 package org.apache.nemo.compiler.optimizer.pass.compiletime.composite;
 
-import org.apache.nemo.compiler.optimizer.pass.compiletime.annotating.SamplingSkewMetricCollectionPass;
 import org.apache.nemo.compiler.optimizer.pass.compiletime.annotating.SkewPartitionerPass;
 import org.apache.nemo.compiler.optimizer.pass.compiletime.annotating.SkewResourceSkewedDataPass;
 import org.apache.nemo.compiler.optimizer.pass.compiletime.reshaping.SamplingSkewReshapingPass;
@@ -25,14 +24,13 @@ import java.util.Arrays;
 /**
  * Pass to modify the DAG for a job to perform data skew.
  */
-public final class SampllingSkewCompositePass extends CompositePass {
+public final class SamplingSkewCompositePass extends CompositePass {
   /**
    * Default constructor.
    */
-  public SampllingSkewCompositePass() {
+  public SamplingSkewCompositePass() {
     super(Arrays.asList(
       new SamplingSkewReshapingPass(),
-      new SamplingSkewMetricCollectionPass(),
       new SkewResourceSkewedDataPass(),
       new SkewPartitionerPass()
     ));

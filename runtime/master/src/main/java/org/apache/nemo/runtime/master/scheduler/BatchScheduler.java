@@ -430,28 +430,41 @@ public final class BatchScheduler implements Scheduler {
    * @return the edge to optimize.
    */
   private StageEdge getEdgeToOptimize(final String taskId) {
+    final DAG<Stage, StageEdge> stageDag = planStateManager.getPhysicalPlan().getStageDAG();
+
     // Get a stage including the given task
-    final Stage stagePutOnHold = planStateManager.getPhysicalPlan().getStageDAG().getVertices().stream()
+    final Stage stagePutOnHold = stageDag.getVertices().stream()
       .filter(stage -> stage.getId().equals(RuntimeIdManager.getStageIdFromTaskId(taskId)))
       .findFirst()
       .orElseThrow(() -> new RuntimeException());
 
     // Stage put on hold, i.e. stage with vertex containing AggregateMetricTransform
     // should have a parent stage whose outgoing edges contain the target edge of dynamic optimization.
-    final List<Stage> parentStages = planStateManager.getPhysicalPlan().getStageDAG()
-      .getParents(stagePutOnHold.getId());
+    final List<Stage> parentStages = stageDag.getParents(stagePutOnHold.getId());
 
     if (parentStages.size() > 1) {
       throw new RuntimeException("Error in setting target edge of dynamic optimization!");
     }
 
     // Get outgoing edges of that stage with MetricCollectionProperty
-    List<StageEdge> stageEdges = planStateManager.getPhysicalPlan().getStageDAG()
-      .getOutgoingEdgesOf(parentStages.get(0));
+    List<StageEdge> stageEdges = stageDag.getOutgoingEdgesOf(parentStages.get(0));
     for (StageEdge edge : stageEdges) {
-      if (edge.getExecutionProperties().containsKey(MetricCollectionProperty.class)) {
-        LOG.warn("Target edge: " + edge);
-        return edge;
+      final Optional<Integer> optionalMCId = edge.getPropertyValue(MetricCollectionProperty.class);
+      if (optionalMCId.isPresent()) {
+        for (final Stage stage : stageDag.getVertices()) {
+          final Optional<StageEdge> targetEdge = stageDag.getOutgoingEdgesOf(stage).stream()
+              .filter(candidateEdge -> {
+                final Optional<Integer> candidateMCId =
+                  candidateEdge.getPropertyValue(MetricCollectionProperty.class);
+                return candidateMCId.isPresent() && candidateMCId.get().equals(optionalMCId.get())
+                    && candidateEdge != edge;
+              })
+              .findFirst();
+          if (targetEdge.isPresent()) {
+            LOG.warn("Target edge: " + targetEdge.get());
+            return targetEdge.get();
+          }
+        }
       }
     }
 
