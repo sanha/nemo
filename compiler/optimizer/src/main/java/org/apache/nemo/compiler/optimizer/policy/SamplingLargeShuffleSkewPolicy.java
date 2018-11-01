@@ -20,10 +20,7 @@ import org.apache.nemo.common.eventhandler.PubSubEventHandlerWrapper;
 import org.apache.nemo.common.ir.edge.IREdge;
 import org.apache.nemo.common.ir.vertex.IRVertex;
 import org.apache.nemo.compiler.optimizer.pass.compiletime.annotating.DefaultParallelismPass;
-import org.apache.nemo.compiler.optimizer.pass.compiletime.composite.DefaultCompositePass;
-import org.apache.nemo.compiler.optimizer.pass.compiletime.composite.LargeShuffleCompositePass;
-import org.apache.nemo.compiler.optimizer.pass.compiletime.composite.LoopOptimizationCompositePass;
-import org.apache.nemo.compiler.optimizer.pass.compiletime.composite.SamplingSkewCompositePass;
+import org.apache.nemo.compiler.optimizer.pass.compiletime.composite.*;
 import org.apache.nemo.runtime.common.optimizer.pass.runtime.DataSkewRuntimePass;
 import org.apache.reef.tang.Injector;
 
@@ -37,7 +34,7 @@ public final class SamplingLargeShuffleSkewPolicy implements Policy {
           .registerCompileTimePass(new LargeShuffleCompositePass())
           .registerRuntimePass(new DataSkewRuntimePass(), new SamplingSkewCompositePass())
           .registerCompileTimePass(new LoopOptimizationCompositePass())
-          .registerCompileTimePass(new DefaultCompositePass());
+          .registerCompileTimePass(new DefaultCompositePassWOP());
   private final Policy policy;
 
   /**

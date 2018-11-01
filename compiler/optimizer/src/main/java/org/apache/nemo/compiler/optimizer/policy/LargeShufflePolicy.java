@@ -19,7 +19,8 @@ import org.apache.nemo.common.dag.DAG;
 import org.apache.nemo.common.eventhandler.PubSubEventHandlerWrapper;
 import org.apache.nemo.common.ir.edge.IREdge;
 import org.apache.nemo.common.ir.vertex.IRVertex;
-import org.apache.nemo.compiler.optimizer.pass.compiletime.composite.DefaultCompositePass;
+import org.apache.nemo.compiler.optimizer.pass.compiletime.annotating.DefaultParallelismPass;
+import org.apache.nemo.compiler.optimizer.pass.compiletime.composite.DefaultCompositePassWOP;
 import org.apache.nemo.compiler.optimizer.pass.compiletime.composite.LoopOptimizationCompositePass;
 import org.apache.nemo.compiler.optimizer.pass.compiletime.composite.LargeShuffleCompositePass;
 import org.apache.reef.tang.Injector;
@@ -30,9 +31,10 @@ import org.apache.reef.tang.Injector;
 public final class LargeShufflePolicy implements Policy {
   public static final PolicyBuilder BUILDER =
       new PolicyBuilder()
+          .registerCompileTimePass(new DefaultParallelismPass(5, 2))
           .registerCompileTimePass(new LargeShuffleCompositePass())
           .registerCompileTimePass(new LoopOptimizationCompositePass())
-          .registerCompileTimePass(new DefaultCompositePass());
+          .registerCompileTimePass(new DefaultCompositePassWOP());
   private final Policy policy;
 
   /**

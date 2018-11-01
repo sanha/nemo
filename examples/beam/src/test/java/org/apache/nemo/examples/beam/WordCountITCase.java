@@ -19,6 +19,7 @@ import org.apache.nemo.client.JobLauncher;
 import org.apache.nemo.common.test.ArgBuilder;
 import org.apache.nemo.common.test.ExampleTestUtil;
 import org.apache.nemo.compiler.optimizer.policy.ConditionalLargeShufflePolicy;
+import org.apache.nemo.compiler.optimizer.policy.LargeShufflePolicy;
 import org.apache.nemo.examples.beam.policy.*;
 import org.junit.After;
 import org.junit.Before;
@@ -75,7 +76,8 @@ public final class WordCountITCase {
     JobLauncher.main(builder
         .addResourceJson(executorResourceFileName)
         .addJobId(WordCountITCase.class.getSimpleName() + "_largeShuffle")
-        .addOptimizationPolicy(LargeShufflePolicyParallelismFive.class.getCanonicalName())
+        //.addOptimizationPolicy(LargeShufflePolicyParallelismFive.class.getCanonicalName())
+        .addOptimizationPolicy(LargeShufflePolicy.class.getCanonicalName())
         .build());
   }
 

@@ -79,8 +79,6 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
       case HashPartitioner:
         // TODO #?: Hack
         final int hashRange = runtimeEdge.getPropertyValue(ShuffleDistributionProperty.class).get().left();
-        LOG.info("Output writer hash partitioner hash range for " + runtimeEdge.toString() + ": " + hashRange);
-
         this.partitioner = new HashPartitioner(hashRange, keyExtractor.
             orElseThrow(() -> new RuntimeException("No key extractor property on the edge")));
         break;
