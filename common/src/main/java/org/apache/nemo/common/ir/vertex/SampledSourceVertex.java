@@ -27,32 +27,36 @@ import java.util.List;
 public final class SampledSourceVertex<T> extends SourceVertex<T> {
   private SourceVertex<T> sourceVertexToSample;
   private List<Integer> idxToSample;
+  private int originalParallelism;
 
   /**
    * Constructor.
    */
   public SampledSourceVertex(final SourceVertex<T> sourceVertexToSample,
-                             final List<Integer> idxToSample) {
+                             final List<Integer> idxToSample,
+                             final int originalParallelism) {
     this.sourceVertexToSample = sourceVertexToSample;
     this.idxToSample = idxToSample;
+    this.originalParallelism = originalParallelism;
   }
 
   @Override
-  public IRVertex getSampledClone(final List<Integer> idxToSampleToSet) {
+  public IRVertex getSampledClone(final List<Integer> idxToSampleToSet,
+                                  final int originalParallelism) {
     throw new RuntimeException("Cannot sample twice!");
   }
 
   @Override
   public SampledSourceVertex getClone() {
     final SampledSourceVertex that =
-        new SampledSourceVertex<>(this.sourceVertexToSample, this.idxToSample);
+        new SampledSourceVertex<>(this.sourceVertexToSample, this.idxToSample, this.originalParallelism);
     this.copyExecutionPropertiesTo(that);
     return that;
   }
 
   @Override
   public List<Readable<T>> getReadables(final int desiredNumOfSplits) throws Exception {
-    final List<Readable<T>> readables = sourceVertexToSample.getReadables(desiredNumOfSplits);
+    final List<Readable<T>> readables = sourceVertexToSample.getReadables(originalParallelism);
     if (readables.size() < desiredNumOfSplits
         || desiredNumOfSplits != idxToSample.size()) {
       throw new RuntimeException("Sampled size mismatch!");
@@ -70,5 +74,6 @@ public final class SampledSourceVertex<T> extends SourceVertex<T> {
   public void clearInternalStates() {
     sourceVertexToSample = null;
     idxToSample = null;
+    originalParallelism = -1;
   }
 }

@@ -54,8 +54,9 @@ public final class InMemorySourceVertex<T> extends SourceVertex<T> {
   }
 
   @Override
-  public IRVertex getSampledClone(final List<Integer> idxToSample) {
-    return new SampledSourceVertex<>(this, idxToSample);
+  public IRVertex getSampledClone(final List<Integer> idxToSample,
+                                  final int originalParallelism) {
+    return new SampledSourceVertex<>(this, idxToSample, originalParallelism);
   }
 
   @Override

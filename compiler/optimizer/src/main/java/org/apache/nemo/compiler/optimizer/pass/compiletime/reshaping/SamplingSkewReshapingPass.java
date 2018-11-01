@@ -72,6 +72,7 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
   public DAG<IRVertex, IREdge> apply(final DAG<IRVertex, IREdge> dag) {
     final DAGBuilder<IRVertex, IREdge> builder = new DAGBuilder<>();
     final AtomicInteger metricCollectionId = new AtomicInteger(0);
+    final AtomicInteger duplicateId = new AtomicInteger(0);
 
     dag.topologicalDo(v -> {
       // We care about OperatorVertices that have shuffle incoming edges with main output.
@@ -95,7 +96,7 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
             Collections.shuffle(randomIndices);
             final List<Integer> idxToSample = randomIndices.subList(0, sampledParallelism);
             final Pair<IRVertex, IRVertex> lastSampledVtxStartVtxToSamplePair =
-                appendSampledDag(originalParallelism, idxToSample, vtxToSample, builder, dag);
+                appendSampledDag(originalParallelism, idxToSample, vtxToSample, builder, dag, duplicateId);
             final IRVertex lastSampledVtx = lastSampledVtxStartVtxToSamplePair.left();
             final IRVertex startVtxToSample = lastSampledVtxStartVtxToSamplePair.right();
 
@@ -151,17 +152,18 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
                                                     final List<Integer> idxToSample,
                                                     final IRVertex vtxToSample,
                                                     final DAGBuilder<IRVertex, IREdge> builder,
-                                                    final DAG<IRVertex, IREdge> dag) {
+                                                    final DAG<IRVertex, IREdge> dag,
+                                                    final AtomicInteger duplicateId) {
     // Add sampled vertex
-    LOG.info("Vtx to sample: " + vtxToSample);
+    LOG.info("Vtx to sample: " + vtxToSample.getId());
     LOG.info("Idx to sample: " + idxToSample);
     final int sampledParallelism = idxToSample.size();
     final IRVertex sampledVtx = vtxToSample instanceof SourceVertex ?
-        ((SourceVertex) vtxToSample).getSampledClone(idxToSample) : vtxToSample.getClone();
+        ((SourceVertex) vtxToSample).getSampledClone(idxToSample, originalParallelism) : vtxToSample.getClone();
     vtxToSample.copyExecutionPropertiesTo(sampledVtx);
     sampledVtx.setPropertyPermanently(ParallelismProperty.of(sampledParallelism));
     builder.addVertex(sampledVtx);
-    LOG.info("Sampled vtx: " + sampledVtx);
+    LOG.info("Sampled vtx: " + sampledVtx.getId());
     IRVertex startVtxToSample = null;
 
     // Add edges toward the sampled vertex
@@ -172,6 +174,11 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
         case Shuffle:
           edgeToSampledVtx =
               new IREdge(CommunicationPatternProperty.Value.Shuffle, edgeToVtxToSample.getSrc(), sampledVtx);
+          if (!edgeToVtxToSample.getPropertyValue(DuplicateEdgeGroupProperty.class).isPresent()) {
+            final DuplicateEdgeGroupPropertyValue value =
+                new DuplicateEdgeGroupPropertyValue(String.valueOf(duplicateId.getAndIncrement()));
+            edgeToVtxToSample.setPropertyPermanently(DuplicateEdgeGroupProperty.of(value));
+          }
           edgeToVtxToSample.copyExecutionPropertiesTo(edgeToSampledVtx);
 
           // Assign proper partition range to read for each sampled vertex.
@@ -180,6 +187,7 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
             final int idxToRead = idxToSample.get(i);
             shuffleDistribution.put(i, HashRange.of(idxToRead, idxToRead + 1, false));
           }
+          LOG.info("Shuffle distribution: " + shuffleDistribution);
           edgeToSampledVtx.setPropertyPermanently(
               ShuffleDistributionProperty.of(Pair.of(originalParallelism, shuffleDistribution)));
 
@@ -188,6 +196,11 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
         case BroadCast:
           edgeToSampledVtx =
               new IREdge(CommunicationPatternProperty.Value.BroadCast, edgeToVtxToSample.getSrc(), sampledVtx);
+          if (!edgeToVtxToSample.getPropertyValue(DuplicateEdgeGroupProperty.class).isPresent()) {
+            final DuplicateEdgeGroupPropertyValue value =
+                new DuplicateEdgeGroupPropertyValue(String.valueOf(duplicateId.getAndIncrement()));
+            edgeToVtxToSample.setPropertyPermanently(DuplicateEdgeGroupProperty.of(value));
+          }
           edgeToVtxToSample.copyExecutionPropertiesTo(edgeToSampledVtx);
           builder.connectVertices(edgeToSampledVtx);
           break;
@@ -195,8 +208,8 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
           if (DataStoreProperty.Value.MemoryStore.equals(
               edgeToVtxToSample.getPropertyValue(DataStoreProperty.class).get())
               && dag.getIncomingEdgesOf(vtxToSample).size() == 1) {
-            final Pair<IRVertex, IRVertex> lastVtxPair =
-                appendSampledDag(originalParallelism, idxToSample, edgeToVtxToSample.getSrc(), builder, dag);
+            final Pair<IRVertex, IRVertex> lastVtxPair = appendSampledDag(
+                originalParallelism, idxToSample, edgeToVtxToSample.getSrc(), builder, dag, duplicateId);
             final IRVertex lastSampledVtx = lastVtxPair.left();
             startVtxToSample = lastVtxPair.right();
 
@@ -208,6 +221,11 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
           } else {
             edgeToSampledVtx =
               new IREdge(CommunicationPatternProperty.Value.OneToOne, edgeToVtxToSample.getSrc(), sampledVtx);
+            if (!edgeToVtxToSample.getPropertyValue(DuplicateEdgeGroupProperty.class).isPresent()) {
+              final DuplicateEdgeGroupPropertyValue value =
+                new DuplicateEdgeGroupPropertyValue("Sampling-" + String.valueOf(duplicateId.getAndIncrement()));
+              edgeToVtxToSample.setPropertyPermanently(DuplicateEdgeGroupProperty.of(value));
+            }
             edgeToVtxToSample.copyExecutionPropertiesTo(edgeToSampledVtx);
 
             // Assign proper partition range to read for each sampled vertex.
@@ -217,6 +235,8 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
             }
             edgeToSampledVtx.setPropertyPermanently(
                 OneToOneDistributionProperty.of(oneToOneDistribution));
+
+            LOG.info("O2O distribution: " + oneToOneDistribution);
 
             builder.connectVertices(edgeToSampledVtx);
           }

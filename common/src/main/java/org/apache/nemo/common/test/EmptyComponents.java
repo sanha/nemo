@@ -193,7 +193,8 @@ public final class EmptyComponents {
     }
 
     @Override
-    public IRVertex getSampledClone(final List<Integer> idxToSample) {
+    public IRVertex getSampledClone(final List<Integer> idxToSample,
+                                    final int originalParallelism) {
       throw new RuntimeException("This code should not be called!");
     }
 

@@ -20,6 +20,8 @@ import org.apache.nemo.common.ir.edge.IREdge;
 import org.apache.nemo.common.ir.edge.executionproperty.MetricCollectionProperty;
 import org.apache.nemo.common.ir.vertex.IRVertex;
 import org.apache.nemo.common.ir.edge.executionproperty.PartitionerProperty;
+import org.apache.nemo.common.ir.vertex.OperatorVertex;
+import org.apache.nemo.common.ir.vertex.transform.AggregateMetricTransform;
 import org.apache.nemo.compiler.optimizer.pass.compiletime.Requires;
 
 /**
@@ -40,6 +42,7 @@ public final class SkewPartitionerPass extends AnnotatingPass {
     dag.getVertices()
       .forEach(v -> dag.getOutgoingEdgesOf(v).stream()
           .filter(edge -> edge.getPropertyValue(MetricCollectionProperty.class).isPresent())
+          .filter(edge -> !(((OperatorVertex) edge.getDst()).getTransform() instanceof AggregateMetricTransform))
           .forEach(skewEdge -> skewEdge
               .setPropertyPermanently(PartitionerProperty.of(PartitionerProperty.Value.DataSkewHashPartitioner))
           )

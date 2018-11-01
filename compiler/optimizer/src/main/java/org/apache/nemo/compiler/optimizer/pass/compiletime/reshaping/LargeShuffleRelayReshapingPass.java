@@ -23,6 +23,7 @@ import org.apache.nemo.common.ir.edge.executionproperty.CommunicationPatternProp
 import org.apache.nemo.common.ir.edge.IREdge;
 import org.apache.nemo.common.ir.vertex.IRVertex;
 import org.apache.nemo.common.ir.vertex.OperatorVertex;
+import org.apache.nemo.common.ir.vertex.executionproperty.ParallelismProperty;
 import org.apache.nemo.common.ir.vertex.transform.RelayTransform;
 import org.apache.nemo.compiler.optimizer.pass.compiletime.Requires;
 
@@ -70,6 +71,8 @@ public final class LargeShuffleRelayReshapingPass extends ReshapingPass {
 
         if (inEdges.size() > 1 && allShuffle) {
           final OperatorVertex iFileMergerVertex = new OperatorVertex(new RelayTransform());
+          iFileMergerVertex.setPropertyPermanently(
+              ParallelismProperty.of(v.getPropertyValue(ParallelismProperty.class).get()));
           builder.addVertex(iFileMergerVertex);
 
           inEdges.forEach(edge -> {
@@ -105,6 +108,8 @@ public final class LargeShuffleRelayReshapingPass extends ReshapingPass {
             // Insert a merger vertex having transform that write received data immediately
             // before the vertex receiving shuffled data.
             final OperatorVertex iFileMergerVertex = new OperatorVertex(new RelayTransform());
+            iFileMergerVertex.setPropertyPermanently(
+                ParallelismProperty.of(v.getPropertyValue(ParallelismProperty.class).get()));
 
             builder.addVertex(iFileMergerVertex);
             final IREdge newEdgeToMerger =
