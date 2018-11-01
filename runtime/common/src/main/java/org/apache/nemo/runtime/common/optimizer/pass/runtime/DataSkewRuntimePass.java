@@ -83,7 +83,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     final BigInteger hashRangeBase = new BigInteger(String.valueOf(dstParallelism * HASH_RANGE_MULTIPLIER));
     final int hashRange = hashRangeBase.nextProbablePrime().intValue();
 
-    LOG.info("Collected metrics:: " + metricData.right());
+    //LOG.info("Collected metrics:: " + metricData.right());
 
     // Calculate keyRanges.
     final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), dstParallelism, hashRange);
