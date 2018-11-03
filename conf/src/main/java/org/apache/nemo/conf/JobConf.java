@@ -179,7 +179,7 @@ public final class JobConf extends ConfigurationModuleBuilder {
    * Number of I/O threads for block fetch requests from other executor.
    */
   @NamedParameter(doc = "Number of I/O threads for block fetch request.", short_name = "io_request_threads",
-      default_value = "20")
+      default_value = "8")
   public final class IORequestHandleThreadsTotal implements Name<Integer> {
   }
 
