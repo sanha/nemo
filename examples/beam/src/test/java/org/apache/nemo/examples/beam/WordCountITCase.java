@@ -76,8 +76,8 @@ public final class WordCountITCase {
     JobLauncher.main(builder
         .addResourceJson(executorResourceFileName)
         .addJobId(WordCountITCase.class.getSimpleName() + "_largeShuffle")
-        //.addOptimizationPolicy(LargeShufflePolicyParallelismFive.class.getCanonicalName())
-        .addOptimizationPolicy(LargeShufflePolicy.class.getCanonicalName())
+        .addOptimizationPolicy(LargeShufflePolicyParallelismFive.class.getCanonicalName())
+        //.addOptimizationPolicy(LargeShufflePolicy.class.getCanonicalName())
         .build());
   }
 

@@ -229,7 +229,7 @@ public final class PipelineTranslator
    * @param transformVertex the given CompositeTransform to translate
    * @param transform transform which can be obtained from {@code transformVertex}
    */
-  @CompositeTransformTranslator({Combine.Globally.class, Combine.PerKey.class, Combine.GroupedValues.class})
+  /*@CompositeTransformTranslator({Combine.Globally.class, Combine.PerKey.class, Combine.GroupedValues.class})
   private static void combineTranslator(final TranslationContext ctx,
                                         final CompositeTransformVertex transformVertex,
                                         final PTransform<?, ?> transform) {
@@ -271,7 +271,7 @@ public final class PipelineTranslator
     } else {
       transformVertex.getDAG().topologicalDo(ctx::translate);
     }
-  }
+  }*/
 
   /**
    * Pushes the loop vertex to the stack before translating the inner DAG, and pops it after the translation.
