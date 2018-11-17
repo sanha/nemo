@@ -15,6 +15,8 @@
  */
 package org.apache.nemo.compiler.optimizer.pass.compiletime.reshaping;
 
+import org.apache.beam.sdk.coders.RowCoder;
+import org.apache.beam.sdk.values.Row;
 import org.apache.nemo.common.HashRange;
 import org.apache.nemo.common.KeyExtractor;
 import org.apache.nemo.common.KeyRange;
@@ -302,20 +304,20 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
     final BiFunction<Map<Object, Object>, OutputCollector, Map<Object, Object>> closer =
       (BiFunction<Map<Object, Object>, OutputCollector, Map<Object, Object>> & Serializable)
         (dynOptData, outputCollector)-> {
-          try (final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            final EncoderFactory.Encoder encoder = encoderFactory.create(out);
-            for (final Map.Entry<Object, Object> entry : dynOptData.entrySet()) {
+          for (final Map.Entry<Object, Object> entry : dynOptData.entrySet()) {
+            try (final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+              final EncoderFactory.Encoder encoder = encoderFactory.create(out);
               for (final Object element : ((List<Object>) entry.getValue())) {
                 encoder.encode(element);
               }
-              final Pair<Object, Object> pairData =
+              final Pair<Object, Long> pairData =
                 Pair.of(entry.getKey(), new Long(out.size())); // Calculate actual size.
               outputCollector.emit(abv.getId(), pairData);
+            } catch (final IOException e) {
+              throw new RuntimeException(e);
             }
-            return dynOptData;
-          } catch (final IOException e) {
-            throw new RuntimeException(e);
           }
+          return dynOptData;
         };
 
     final MetricCollectTransform mct
@@ -350,8 +352,14 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
       && edge.getPropertyValue(KeyDecoderProperty.class).isPresent()) {
       final EncoderFactory keyEncoderFactory = edge.getPropertyValue(KeyEncoderProperty.class).get();
       final DecoderFactory keyDecoderFactory = edge.getPropertyValue(KeyDecoderProperty.class).get();
-      newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(keyEncoderFactory, LongEncoderFactory.of())));
-      newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(keyDecoderFactory, LongDecoderFactory.of())));
+      if (true) {
+        LOG.info("Row coder!");
+        newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(IntEncoderFactory.of(), LongEncoderFactory.of())));
+        newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(IntDecoderFactory.of(), LongDecoderFactory.of())));
+      } else {
+        newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(keyEncoderFactory, LongEncoderFactory.of())));
+        newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(keyDecoderFactory, LongDecoderFactory.of())));
+      }
     } else {
       // If not specified, follow encoder/decoder of the given shuffle edge.
       newEdge.setProperty(EncoderProperty.of(edge.getPropertyValue(EncoderProperty.class).get()));

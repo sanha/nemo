@@ -141,13 +141,12 @@ public final class Tpch {
     final String inputDirectory = args[1];
     final String outputFilePath = args[2];
 
-    LOG.info("{} / {} / {}", queryFilePath, inputDirectory, outputFilePath);
+    LOG.info("{} | {} | {}", queryFilePath, inputDirectory, outputFilePath);
 
     final PipelineOptions options = PipelineOptionsFactory.create().as(NemoPipelineOptions.class);
     options.setRunner(NemoPipelineRunner.class);
     options.setJobName("TPC-H");
     final Pipeline p = Pipeline.create(options);
-
     final String queryString = getQueryString(queryFilePath);
     // Create tables
     final CSVFormat csvFormat = CSVFormat.MYSQL
@@ -182,7 +181,7 @@ public final class Tpch {
       throw new RuntimeException(e);
     }
 
-    System.out.println(lines);
+    LOG.info(lines.toString());
 
     final StringBuilder sb = new StringBuilder();
     lines.forEach(line -> {
@@ -191,11 +190,11 @@ public final class Tpch {
     });
 
     final String concate = sb.toString();
-    System.out.println(concate);
+    LOG.info(concate);
     final String cleanOne = concate.replaceAll("\n", " ");
-    System.out.println(cleanOne);
+    LOG.info(cleanOne);
     final String cleanTwo = cleanOne.replaceAll("\t", " ");
-    System.out.println(cleanTwo);
+    LOG.info(cleanTwo);
 
     return cleanTwo;
   }

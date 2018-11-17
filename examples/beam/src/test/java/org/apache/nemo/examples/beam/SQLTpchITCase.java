@@ -18,6 +18,7 @@ package org.apache.nemo.examples.beam;
 import org.apache.nemo.client.JobLauncher;
 import org.apache.nemo.common.test.ArgBuilder;
 import org.apache.nemo.common.test.ExampleTestUtil;
+import org.apache.nemo.compiler.optimizer.policy.SamplingLargeShuffleSkewPolicy;
 import org.apache.nemo.examples.beam.policy.DefaultPolicyParallelismFive;
 import org.apache.nemo.examples.beam.tpch.Tpch;
 import org.junit.After;
@@ -71,9 +72,24 @@ public final class SQLTpchITCase {
     final int queryNum = 12;
     JobLauncher.main(builder
       .addUserMain(Tpch.class.getCanonicalName())
-      .addUserArgs(String.valueOf(queryNum), "/home/johnyangk/Desktop/tpc-concat-tbls/", outputFilePath)
+      .addUserArgs("/Users/sanha/tpch_queries/" + "tpc" + String.valueOf(queryNum) + ".sql",
+        "/Users/sanha/tpc_zipf_0.8_1gb/",
+        outputFilePath)
       .addJobId(SQLTpchITCase.class.getSimpleName())
       .addOptimizationPolicy(DefaultPolicyParallelismFive.class.getCanonicalName())
+      .build());
+  }
+
+  @Test (timeout = TIMEOUT)
+  public void testSS() throws Exception {
+    final int queryNum = 12;
+    JobLauncher.main(builder
+      .addUserMain(Tpch.class.getCanonicalName())
+      .addUserArgs(fileBasePath + "tpch_queries/" + "tpc" + String.valueOf(queryNum) + ".sql",
+        fileBasePath + "tpc_zipf_0.8_1gb/",
+        outputFilePath)
+      .addJobId(SQLTpchITCase.class.getSimpleName() + "_SS")
+      .addOptimizationPolicy(SamplingLargeShuffleSkewPolicy.class.getCanonicalName())
       .build());
   }
 
