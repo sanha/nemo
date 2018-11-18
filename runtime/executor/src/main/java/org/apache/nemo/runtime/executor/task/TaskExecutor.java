@@ -445,6 +445,7 @@ public final class TaskExecutor {
       }
       if (!isStarted) {
         try {
+          LOG.info("Sleep!");
           Thread.sleep(50);
         } catch (final InterruptedException e) {
           throw new RuntimeException(e);
