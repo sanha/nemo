@@ -248,6 +248,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
 
         prevAccumulatedSize = currentAccumulatedSize;
         startingKey = finishingKey;
+        finishingKey++;
       } else { // last one: we put the range of the rest.
         boolean isSkewedKey = containsSkewedSize(partitionSizeList, skewedSizes, startingKey, lastKey + 1);
         keyRanges.add(i - 1,

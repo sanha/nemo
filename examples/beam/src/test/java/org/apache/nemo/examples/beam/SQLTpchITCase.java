@@ -69,7 +69,7 @@ public final class SQLTpchITCase {
 
   @Test (timeout = TIMEOUT)
   public void testXX() throws Exception {
-    final int queryNum = 4;
+    final int queryNum = 12;
     JobLauncher.main(builder
       .addUserMain(Tpch.class.getCanonicalName())
       .addUserArgs("/Users/sanha/tpch_queries/tpc" + String.valueOf(queryNum) + ".sql",
@@ -87,7 +87,7 @@ public final class SQLTpchITCase {
     JobLauncher.main(builder
       .addUserMain(Tpch.class.getCanonicalName())
       .addUserArgs("/Users/sanha/tpch_queries/tpc" + String.valueOf(queryNum) + ".sql",
-        "/Users/sanha/tpc_zipf_10.0_1gb/",
+        "/Users/sanha/tpc_zipf_4.0_1gb/",
         //"/Users/sanha/tpc_1gb/",
         outputFilePath)
       .addJobId(SQLTpchITCase.class.getSimpleName() + "_SS")
