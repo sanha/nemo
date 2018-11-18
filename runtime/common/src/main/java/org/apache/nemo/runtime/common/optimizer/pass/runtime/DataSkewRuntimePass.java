@@ -31,6 +31,10 @@ import org.apache.nemo.runtime.common.plan.StageEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -47,6 +51,8 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
   // Skewed keys denote for top n keys in terms of partition size.
   public static final int DEFAULT_NUM_SKEWED_KEYS = 10;
   public static final int HASH_RANGE_MULTIPLIER = 10;
+  //private static final String FILE_BASE = "/Users/sanha/tmp/";
+  private static final String FILE_BASE = "/home/ubuntu/int_data_dist/";
   private int numSkewedKeys;
 
   /**
@@ -88,8 +94,8 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     // Calculate keyRanges.
     final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), dstParallelism, hashRange);
 
-    printUnOpimizedDist(metricData.right(), dstParallelism);
-    printOpimizedDist(metricData.right(), hashRange, keyRanges);
+    printUnOpimizedDist(metricData.right(), dstParallelism, targetEdge.getId());
+    printOpimizedDist(metricData.right(), hashRange, keyRanges, targetEdge.getId());
 
     LOG.info("Optimized key ranges: " + keyRanges);
 
@@ -141,7 +147,8 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
   }
 
   public void printUnOpimizedDist(final Map<Object, Long> actualKeyToSizeMap,
-                                  final int dstParallelism) {
+                                  final int dstParallelism,
+                                  final String targetEdgeId) {
     final List<Long> partitionSizeList = new ArrayList<>(dstParallelism);
     for (int i = 0; i < dstParallelism; i++) {
       partitionSizeList.add(0L);
@@ -150,16 +157,28 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
       final int partitionKey = Math.abs(k.hashCode() % dstParallelism);
       partitionSizeList.set(partitionKey, partitionSizeList.get(partitionKey) + v);
     });
+    partitionSizeList.sort(Long::compareTo);
 
     LOG.info("Un-optimized Dist: ");
     for (int i = 0; i < dstParallelism; i++) {
       LOG.info(String.valueOf(partitionSizeList.get(i)));
     }
+
+    try (PrintWriter out = new PrintWriter(
+      new BufferedWriter(
+        new FileWriter(FILE_BASE + targetEdgeId + "_unopt.txt", true)))) {
+      for (int i = 0; i < dstParallelism; i++) {
+        out.println(partitionSizeList.get(i).toString());
+      }
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public void printOpimizedDist(final Map<Object, Long> actualKeyToSizeMap,
-                                          final int hashRange,
-                                          final List<KeyRange> ranges) {
+                                final int hashRange,
+                                final List<KeyRange> ranges,
+                                final String targetEdgeId) {
     final List<Long> partitionSizeList = new ArrayList<>(hashRange);
     for (int i = 0; i < hashRange; i++) {
       partitionSizeList.add(0L);
@@ -170,13 +189,30 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
       partitionSizeList.set(partitionKey, partitionSizeList.get(partitionKey) + v);
     });
 
+    final List<Long> sortedSizeList = new ArrayList<>(ranges.size());
+
     LOG.info("Optimized Dist: ");
     for (final KeyRange range : ranges) {
       long size = 0;
       for (int i = (int) range.rangeBeginInclusive(); i < (int) range.rangeEndExclusive(); i++) {
         size += partitionSizeList.get(i);
       }
+      sortedSizeList.add(size);
+    }
+
+    sortedSizeList.sort(Long::compareTo);
+    for (final Long size : sortedSizeList) {
       LOG.info(String.valueOf(size));
+    }
+
+    try (PrintWriter out = new PrintWriter(
+      new BufferedWriter(
+        new FileWriter(FILE_BASE + targetEdgeId + "_opt.txt", true)))) {
+      for (final Long size : sortedSizeList) {
+        out.println(String.valueOf(size));
+      }
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
