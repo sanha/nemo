@@ -248,6 +248,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
             currentAccumulatedSize - prevAccumulatedSize);
 
         prevAccumulatedSize = currentAccumulatedSize;
+        currentAccumulatedSize += partitionSizeList.get(finishingKey);
         startingKey = finishingKey;
         finishingKey++;
       } else { // last one: we put the range of the rest.
