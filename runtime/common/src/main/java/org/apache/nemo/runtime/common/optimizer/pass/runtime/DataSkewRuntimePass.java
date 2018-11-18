@@ -225,8 +225,9 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
       if (i != dstParallelism) {
         // Ideal accumulated partition size for this task.
         final Long idealAccumulatedSize = idealSizePerTask * i;
+
         // By adding partition sizes, find the accumulated size nearest to the given ideal size.
-        while (currentAccumulatedSize < idealAccumulatedSize) {
+        while (currentAccumulatedSize < idealAccumulatedSize && (lastKey - finishingKey) >= dstParallelism - i) {
           currentAccumulatedSize += partitionSizeList.get(finishingKey);
           finishingKey++;
         }
