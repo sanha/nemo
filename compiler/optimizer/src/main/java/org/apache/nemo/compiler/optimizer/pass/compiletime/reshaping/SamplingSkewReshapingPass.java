@@ -15,6 +15,7 @@
  */
 package org.apache.nemo.compiler.optimizer.pass.compiletime.reshaping;
 
+import org.apache.beam.sdk.values.Row;
 import org.apache.nemo.common.HashRange;
 import org.apache.nemo.common.KeyExtractor;
 import org.apache.nemo.common.KeyRange;
@@ -93,7 +94,7 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
 
             final List<Integer> randomIndices =
                 IntStream.range(0, originalParallelism).boxed().collect(Collectors.toList());
-            Collections.shuffle(randomIndices);
+            Collections.shuffle(randomIndices, new Random(System.currentTimeMillis()));
             final List<Integer> idxToSample = randomIndices.subList(0, sampledParallelism);
             final Pair<IRVertex, IRVertex> lastSampledVtxStartVtxToSamplePair =
                 appendSampledDag(originalParallelism, idxToSample, vtxToSample, builder, dag, duplicateId);
@@ -286,7 +287,10 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
     final BiFunction<Object, Map<Object, Object>, Map<Object, Object>> dynOptDataCollector =
       (BiFunction<Object, Map<Object, Object>, Map<Object, Object>> & Serializable)
         (element, dynOptData) -> {
-          final Object key = keyExtractor.extractKey(element);
+          Object key = keyExtractor.extractKey(element);
+          /*if (key instanceof Row) {
+            key = ((Row) key).getValue(0);
+          }*/
           if (dynOptData.containsKey(key)) {
             ((List<Object>) dynOptData.get(key)).add(element);
           } else {
@@ -311,7 +315,12 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
               }
               final Pair<Object, Long> pairData =
                 Pair.of(entry.getKey(), new Long(out.size())); // Calculate actual size.
-              //LOG.info("Size for key " + entry.getKey() + ": " + out.size());
+              /*if (System.currentTimeMillis() % 10 == 0) {
+                for (final Object element : ((List<Object>) entry.getValue())) {
+                  LOG.info("Element: " + element);
+                }
+                LOG.info("Size for key " + entry.getKey() + ": " + out.size());
+              }*/
               outputCollector.emit(abv.getId(), pairData);
             } catch (final IOException e) {
               throw new RuntimeException(e);
@@ -352,10 +361,14 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
       && edge.getPropertyValue(KeyDecoderProperty.class).isPresent()) {
       final EncoderFactory keyEncoderFactory = edge.getPropertyValue(KeyEncoderProperty.class).get();
       final DecoderFactory keyDecoderFactory = edge.getPropertyValue(KeyDecoderProperty.class).get();
-      if (true) {
-        LOG.info("Row coder!");
+      if (keyEncoderFactory.toString().contains("RowCoder")) {
+        System.out.println("KeyEncoder with RowCoder: " + keyEncoderFactory.toString());
         newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(IntEncoderFactory.of(), LongEncoderFactory.of())));
         newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(IntDecoderFactory.of(), LongDecoderFactory.of())));
+        //newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(LongEncoderFactory.of(), LongEncoderFactory.of())));
+        //newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(LongDecoderFactory.of(), LongDecoderFactory.of())));
+        //newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(keyEncoderFactory, LongEncoderFactory.of())));
+        //newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(keyDecoderFactory, LongDecoderFactory.of())));
       } else {
         newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(keyEncoderFactory, LongEncoderFactory.of())));
         newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(keyDecoderFactory, LongDecoderFactory.of())));

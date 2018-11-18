@@ -36,6 +36,8 @@ final class BeamKeyExtractor implements KeyExtractor {
       } else if (key instanceof Row) {
         // TODO #223: Use Row.hashCode in BeamKeyExtractor
         return Arrays.hashCode(((Row) key).getValues().toArray());
+        //return ((Row) key).getValue(0);
+        //return key;
       } else {
         return key;
       }

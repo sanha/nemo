@@ -88,6 +88,9 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     // Calculate keyRanges.
     final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), dstParallelism, hashRange);
 
+    printUnOpimizedDist(metricData.right(), dstParallelism);
+    printOpimizedDist(metricData.right(), hashRange, keyRanges);
+
     LOG.info("Optimized key ranges: " + keyRanges);
 
     final HashMap<Integer, KeyRange> taskIdxToKeyRange = new HashMap<>();
@@ -135,6 +138,46 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     }
 
     return false;
+  }
+
+  public void printUnOpimizedDist(final Map<Object, Long> actualKeyToSizeMap,
+                                  final int dstParallelism) {
+    final List<Long> partitionSizeList = new ArrayList<>(dstParallelism);
+    for (int i = 0; i < dstParallelism; i++) {
+      partitionSizeList.add(0L);
+    }
+    actualKeyToSizeMap.forEach((k, v) -> {
+      final int partitionKey = Math.abs(k.hashCode() % dstParallelism);
+      partitionSizeList.set(partitionKey, partitionSizeList.get(partitionKey) + v);
+    });
+
+    LOG.info("Un-optimized Dist: ");
+    for (int i = 0; i < dstParallelism; i++) {
+      LOG.info(String.valueOf(partitionSizeList.get(i)));
+    }
+  }
+
+  public void printOpimizedDist(final Map<Object, Long> actualKeyToSizeMap,
+                                          final int hashRange,
+                                          final List<KeyRange> ranges) {
+    final List<Long> partitionSizeList = new ArrayList<>(hashRange);
+    for (int i = 0; i < hashRange; i++) {
+      partitionSizeList.add(0L);
+    }
+
+    actualKeyToSizeMap.forEach((k, v) -> {
+      final int partitionKey = Math.abs(k.hashCode() % hashRange);
+      partitionSizeList.set(partitionKey, partitionSizeList.get(partitionKey) + v);
+    });
+
+    LOG.info("Optimized Dist: ");
+    for (final KeyRange range : ranges) {
+      long size = 0;
+      for (int i = (int) range.rangeBeginInclusive(); i < (int) range.rangeEndExclusive(); i++) {
+        size += partitionSizeList.get(i);
+      }
+      LOG.info(String.valueOf(size));
+    }
   }
 
   /**
