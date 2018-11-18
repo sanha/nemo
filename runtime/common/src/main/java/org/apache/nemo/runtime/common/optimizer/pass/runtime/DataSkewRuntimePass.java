@@ -167,8 +167,8 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     try (PrintWriter out = new PrintWriter(
       new BufferedWriter(
         new FileWriter(FILE_BASE + targetEdgeId + "_unopt.txt", true)))) {
-      for (int i = 0; i < dstParallelism; i++) {
-        out.println(partitionSizeList.get(i).toString());
+      for (int i = dstParallelism - 1; i > 0; i--) {
+        out.println(String.valueOf(partitionSizeList.get(i)));
       }
     } catch (final IOException e) {
       throw new RuntimeException(e);
@@ -208,8 +208,8 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     try (PrintWriter out = new PrintWriter(
       new BufferedWriter(
         new FileWriter(FILE_BASE + targetEdgeId + "_opt.txt", true)))) {
-      for (final Long size : sortedSizeList) {
-        out.println(String.valueOf(size));
+      for (int i = sortedSizeList.size() - 1; i > 0; i--) {
+        out.println(String.valueOf(sortedSizeList.get(i)));
       }
     } catch (final IOException e) {
       throw new RuntimeException(e);
