@@ -204,7 +204,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
       final int partitionKey = Math.abs(k.hashCode() % hashRange);
       partitionSizeList.set(partitionKey, partitionSizeList.get(partitionKey) + v);
     });
-    System.out.println("Partitions size list: " + partitionSizeList);
+    LOG.info("Partitions size list: " + partitionSizeList);
 
     // Get the last index.
     final int lastKey = partitionSizeList.size() - 1;
@@ -215,8 +215,19 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     // Calculate the ideal size for each destination task.
     final Long totalSize = partitionSizeList.stream().mapToLong(n -> n).sum(); // get total size
     final Long idealSizePerTask = totalSize / dstParallelism; // and derive the ideal size per task
-
     final List<KeyRange> keyRanges = new ArrayList<>(dstParallelism);
+
+    if (totalSize == 0) {
+      LOG.warn("Zero total size!");
+      final int meanRange = hashRange / dstParallelism;
+      for (int i = 0; i < dstParallelism - 1; i++) {
+        keyRanges.add(i, HashRange.of(i * meanRange, (i + 1) * meanRange, false));
+      }
+      keyRanges.add(dstParallelism - 1, HashRange.of((dstParallelism - 1) * meanRange, hashRange, false));
+
+      return keyRanges;
+    }
+
     int startingKey = 0;
     int finishingKey = 1;
     Long currentAccumulatedSize = partitionSizeList.get(startingKey);
