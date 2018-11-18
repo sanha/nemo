@@ -356,6 +356,7 @@ public final class BlockManagerWorker {
     final DataStoreProperty.Value blockStore = convertBlockStore(descriptor.getBlockStore());
     final String blockId = descriptor.getBlockId();
     final KeyRange keyRange = SerializationUtils.deserialize(descriptor.getKeyRange().toByteArray());
+    LOG.info("Block read request for " + blockId + "-" + keyRange.toString());
 
     backgroundExecutorService.submit(new Runnable() {
       @Override
@@ -465,6 +466,7 @@ public final class BlockManagerWorker {
                                      final String blockId) {
     final AtomicInteger remainingExpectedRead = blockToRemainingRead.get(blockId);
     if (remainingExpectedRead != null) {
+      LOG.info("Remaining for " + blockId + ": " + remainingExpectedRead.get());
       if (remainingExpectedRead.decrementAndGet() == 0) {
         // This block should be discarded.
         remainingReadSizeLock.lock();
@@ -484,14 +486,6 @@ public final class BlockManagerWorker {
         } finally {
           remainingReadSizeLock.unlock();
         }
-
-        /*blockToRemainingRead.remove(blockId);
-        backgroundExecutorService.submit(new Runnable() {
-          @Override
-          public void run() {
-            removeBlock(blockId, blockStore);
-          }
-        });*/
       }
     } // If null, just keep the data in the store.
   }
