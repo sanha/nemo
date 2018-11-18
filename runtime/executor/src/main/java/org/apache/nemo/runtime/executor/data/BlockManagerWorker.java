@@ -466,7 +466,6 @@ public final class BlockManagerWorker {
                                      final String blockId) {
     final AtomicInteger remainingExpectedRead = blockToRemainingRead.get(blockId);
     if (remainingExpectedRead != null) {
-//      LOG.info("Remaining for " + blockId + ": " + remainingExpectedRead.get());
       if (remainingExpectedRead.decrementAndGet() == 0) {
         // This block should be discarded.
         remainingReadSizeLock.lock();
