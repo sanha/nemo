@@ -83,7 +83,7 @@ public final class SQLTpchITCase {
 
   @Test (timeout = TIMEOUT)
   public void testSS() throws Exception {
-    final int queryNum = 4;
+    final int queryNum = 12;
     JobLauncher.main(builder
       .addUserMain(Tpch.class.getCanonicalName())
       .addUserArgs("/Users/sanha/tpch_queries/tpc" + String.valueOf(queryNum) + ".sql",
