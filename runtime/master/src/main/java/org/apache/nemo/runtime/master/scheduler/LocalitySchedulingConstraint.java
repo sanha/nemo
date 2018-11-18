@@ -15,10 +15,12 @@
  */
 package org.apache.nemo.runtime.master.scheduler;
 
+import org.apache.nemo.common.coder.EncoderFactory;
 import org.apache.nemo.common.ir.Readable;
 import org.apache.nemo.common.ir.edge.executionproperty.CommunicationPatternProperty;
 import org.apache.nemo.common.ir.edge.executionproperty.DuplicateEdgeGroupProperty;
 import org.apache.nemo.common.ir.edge.executionproperty.DuplicateEdgeGroupPropertyValue;
+import org.apache.nemo.common.ir.edge.executionproperty.EncoderProperty;
 import org.apache.nemo.common.ir.executionproperty.AssociatedProperty;
 import org.apache.nemo.common.ir.vertex.executionproperty.ResourceLocalityProperty;
 import org.apache.nemo.runtime.common.RuntimeIdManager;
@@ -100,7 +102,11 @@ public final class LocalitySchedulingConstraint implements SchedulingConstraint 
 
   @Override
   public boolean testSchedulability(final ExecutorRepresenter executor, final Task task) {
-    if (task.getTaskIncomingEdges().isEmpty()) {
+    final List<StageEdge> incommingEdges = task.getTaskIncomingEdges();
+    if (incommingEdges.isEmpty() ||
+      (incommingEdges.size() == 1 &&
+        incommingEdges.get(0).getPropertyValue(EncoderProperty.class).get()
+          instanceof EncoderFactory.DummyEncoderFactory)) {
       // Source task
       final Set<String> sourceLocations;
       try {

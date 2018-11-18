@@ -43,7 +43,7 @@ import java.util.stream.Stream;
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(JobLauncher.class)
 public final class SQLTpchITCase {
-  private static final int TIMEOUT = 180000;
+  private static final int TIMEOUT = 600000;
   private static ArgBuilder builder;
   private static final String fileBasePath = System.getProperty("user.dir") + "/../resources/";
 
@@ -69,11 +69,11 @@ public final class SQLTpchITCase {
 
   @Test (timeout = TIMEOUT)
   public void testXX() throws Exception {
-    final int queryNum = 12;
+    final int queryNum = 4;
     JobLauncher.main(builder
       .addUserMain(Tpch.class.getCanonicalName())
-      .addUserArgs("/Users/sanha/tpch_queries/" + "tpc" + String.valueOf(queryNum) + ".sql",
-        "/Users/sanha/tpc_zipf_0.8_1gb/",
+      .addUserArgs("/Users/sanha/tpch_queries/tpc" + String.valueOf(queryNum) + ".sql",
+        "/Users/sanha/tpc_zipf_2.0_1gb/",
         outputFilePath)
       .addJobId(SQLTpchITCase.class.getSimpleName())
       .addOptimizationPolicy(DefaultPolicyParallelismFive.class.getCanonicalName())
@@ -82,11 +82,11 @@ public final class SQLTpchITCase {
 
   @Test (timeout = TIMEOUT)
   public void testSS() throws Exception {
-    final int queryNum = 12;
+    final int queryNum = 4;
     JobLauncher.main(builder
       .addUserMain(Tpch.class.getCanonicalName())
-      .addUserArgs(fileBasePath + "tpch_queries/" + "tpc" + String.valueOf(queryNum) + ".sql",
-        fileBasePath + "tpc_zipf_0.8_1gb/",
+      .addUserArgs("/Users/sanha/tpch_queries/tpc" + String.valueOf(queryNum) + ".sql",
+        "/Users/sanha/tpc_zipf_2.0_1gb/",
         outputFilePath)
       .addJobId(SQLTpchITCase.class.getSimpleName() + "_SS")
       .addOptimizationPolicy(SamplingLargeShuffleSkewPolicy.class.getCanonicalName())

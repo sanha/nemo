@@ -15,8 +15,6 @@
  */
 package org.apache.nemo.compiler.optimizer.pass.compiletime.reshaping;
 
-import org.apache.beam.sdk.coders.RowCoder;
-import org.apache.beam.sdk.values.Row;
 import org.apache.nemo.common.HashRange;
 import org.apache.nemo.common.KeyExtractor;
 import org.apache.nemo.common.KeyRange;
@@ -308,10 +306,12 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
             try (final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
               final EncoderFactory.Encoder encoder = encoderFactory.create(out);
               for (final Object element : ((List<Object>) entry.getValue())) {
+                //LOG.info("Element: " + element);
                 encoder.encode(element);
               }
               final Pair<Object, Long> pairData =
                 Pair.of(entry.getKey(), new Long(out.size())); // Calculate actual size.
+              //LOG.info("Size for key " + entry.getKey() + ": " + out.size());
               outputCollector.emit(abv.getId(), pairData);
             } catch (final IOException e) {
               throw new RuntimeException(e);
