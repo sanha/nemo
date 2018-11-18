@@ -176,6 +176,7 @@ public final class OutputWriter extends DataTransfer implements AutoCloseable {
             () -> new RuntimeException("No communication pattern on this edge.")))
         ? 1 : dstIrVertex.getPropertyValue(ParallelismProperty.class).orElseThrow(
             () -> new RuntimeException("No parallelism property on the destination vertex."));
+    LOG.info("@@@@@@@@ expected read for " + runtimeEdge.getId() + ": " + readForABlock * duplicatedDataMultiplier);
     return readForABlock * duplicatedDataMultiplier;
   }
 }
