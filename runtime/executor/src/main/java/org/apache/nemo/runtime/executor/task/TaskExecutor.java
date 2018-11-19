@@ -188,7 +188,7 @@ public final class TaskExecutor {
       // Source read
       if (irVertex instanceof SourceVertex) {
         // Source vertex read
-        nonBroadcastDataFetcherList.add(new SourceVertexDataFetcher(irVertex, sourceReader.get(), vertexHarness));
+        nonBroadcastDataFetcherList.add(new SourceVertexDataFetcher(sourceReader.get(), vertexHarness));
       }
       // Parent-task read (broadcasts)
       final List<StageEdge> inEdgesForThisVertex = task.getTaskIncomingEdges()
@@ -216,8 +216,11 @@ public final class TaskExecutor {
       nonBroadcastInEdges.removeAll(broadcastInEdges);
       final List<InputReader> nonBroadcastReaders =
         getParentTaskReaders(taskIndex, nonBroadcastInEdges, dataTransferFactory);
-      nonBroadcastReaders.forEach(parentTaskReader -> nonBroadcastDataFetcherList.add(
-        new ParentTaskDataFetcher(parentTaskReader.getSrcIrVertex(), parentTaskReader, vertexHarness)));
+      if (!nonBroadcastReaders.isEmpty()) {
+        nonBroadcastDataFetcherList.add(new MergedParentTaskDataFetcher(nonBroadcastReaders, vertexHarness));
+      }
+      /*nonBroadcastReaders.forEach(parentTaskReader -> nonBroadcastDataFetcherList.add(
+        new ParentTaskDataFetcher(parentTaskReader, vertexHarness)));*/
     });
 
     final List<VertexHarness> sortedHarnessList = irVertexDag.getTopologicalSort()
@@ -406,15 +409,11 @@ public final class TaskExecutor {
     while (!availableFetchers.isEmpty()) { // empty means we've consumed all task-external input data
       // For this looping of available fetchers.
       int finishedFetcherIndex = NONE_FINISHED;
-      boolean isStarted = false;
       for (int i = 0; i < availableFetchers.size(); i++) {
         final DataFetcher dataFetcher = availableFetchers.get(i);
-        Object element = null;
+        Object element;
         try {
-          if (dataFetcher.isStarted()) {
-            isStarted = true;
-            element = dataFetcher.fetchDataElement();
-          }
+          element = dataFetcher.fetchDataElement();
         } catch (NoSuchElementException e) {
           // We've consumed all the data from this data fetcher.
           if (dataFetcher instanceof SourceVertexDataFetcher) {
@@ -434,22 +433,12 @@ public final class TaskExecutor {
         }
 
         // Successfully fetched an element
-        if (element != null) {
-          processElementRecursively(dataFetcher.getChild(), element);
-        }
+        processElementRecursively(dataFetcher.getChild(), element);
       }
 
       // Remove the finished fetcher from the list
       if (finishedFetcherIndex != NONE_FINISHED) {
         availableFetchers.remove(finishedFetcherIndex);
-      }
-      if (!isStarted) {
-        try {
-          LOG.info("Sleep!");
-          Thread.sleep(50);
-        } catch (final InterruptedException e) {
-          throw new RuntimeException(e);
-        }
       }
     }
     return true;

@@ -30,7 +30,7 @@ import org.apache.reef.tang.Injector;
 public final class SamplingLargeShuffleSkewPolicy implements Policy {
   public static final PolicyBuilder BUILDER =
       new PolicyBuilder()
-          .registerCompileTimePass(new DefaultParallelismPass())
+          .registerCompileTimePass(new DefaultParallelismPass(5, 2))
           .registerCompileTimePass(new LargeShuffleCompositePass())
           .registerRuntimePass(new DataSkewRuntimePass(), new SamplingSkewCompositePass())
           .registerCompileTimePass(new LoopOptimizationCompositePass())

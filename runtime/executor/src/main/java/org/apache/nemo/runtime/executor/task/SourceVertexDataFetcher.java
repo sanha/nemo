@@ -16,7 +16,6 @@
 package org.apache.nemo.runtime.executor.task;
 
 import org.apache.nemo.common.ir.Readable;
-import org.apache.nemo.common.ir.vertex.IRVertex;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -32,10 +31,9 @@ class SourceVertexDataFetcher extends DataFetcher {
   private Iterator iterator;
   private long boundedSourceReadTime = 0;
 
-  SourceVertexDataFetcher(final IRVertex dataSource,
-                          final Readable readable,
+  SourceVertexDataFetcher(final Readable readable,
                           final VertexHarness child) {
-    super(dataSource, child);
+    super(child);
     this.readable = readable;
   }
 
@@ -50,10 +48,6 @@ class SourceVertexDataFetcher extends DataFetcher {
     } else {
       throw new NoSuchElementException();
     }
-  }
-
-  boolean isStarted() throws IOException {
-    return true;
   }
 
   private void fetchDataLazily() throws IOException {

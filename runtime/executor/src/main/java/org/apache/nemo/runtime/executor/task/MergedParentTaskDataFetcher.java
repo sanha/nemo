@@ -15,7 +15,6 @@
  */
 package org.apache.nemo.runtime.executor.task;
 
-import org.apache.nemo.common.ir.vertex.IRVertex;
 import org.apache.nemo.runtime.executor.data.DataUtil;
 import org.apache.nemo.runtime.executor.datatransfer.InputReader;
 import org.slf4j.Logger;
@@ -32,24 +31,24 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Fetches data from parent tasks.
  */
 @NotThreadSafe
-class ParentTaskDataFetcher extends DataFetcher {
-  private static final Logger LOG = LoggerFactory.getLogger(ParentTaskDataFetcher.class);
+class MergedParentTaskDataFetcher extends DataFetcher {
+  private static final Logger LOG = LoggerFactory.getLogger(MergedParentTaskDataFetcher.class);
 
-  private final InputReader readersForParentTask;
+  private final List<InputReader> readersForParentTask;
   private final LinkedBlockingQueue iteratorQueue;
 
   // Non-finals (lazy fetching)
   private boolean firstFetch;
-  private int expectedNumOfIterators;
+  private int expectedNumOfIterators = 0;
   private DataUtil.IteratorWithNumBytes currentIterator;
   private int currentIteratorIndex;
   private long serBytes = 0;
   private long encodedBytes = 0;
 
-  ParentTaskDataFetcher(final InputReader readerForParentTask,
-                        final VertexHarness child) {
+  MergedParentTaskDataFetcher(final List<InputReader> readersForParentTask,
+                              final VertexHarness child) {
     super(child);
-    this.readersForParentTask = readerForParentTask;
+    this.readersForParentTask = readersForParentTask;
     this.firstFetch = true;
     this.currentIteratorIndex = 0;
     this.iteratorQueue = new LinkedBlockingQueue<>();
@@ -115,21 +114,23 @@ class ParentTaskDataFetcher extends DataFetcher {
   }
 
   private void fetchDataLazily() throws IOException {
-    final List<CompletableFuture<DataUtil.IteratorWithNumBytes>> futures = readersForParentTask.read();
-    this.expectedNumOfIterators = futures.size();
+    for (final InputReader inputReader : readersForParentTask) {
+      final List<CompletableFuture<DataUtil.IteratorWithNumBytes>> futures = inputReader.read();
+      this.expectedNumOfIterators += futures.size();
 
-    futures.forEach(compFuture -> compFuture.whenComplete((iterator, exception) -> {
-      try {
-        if (exception != null) {
-          iteratorQueue.put(exception);
-        } else {
-          iteratorQueue.put(iterator);
+      futures.forEach(compFuture -> compFuture.whenComplete((iterator, exception) -> {
+        try {
+          if (exception != null) {
+            iteratorQueue.put(exception);
+          } else {
+            iteratorQueue.put(iterator);
+          }
+        } catch (final InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new RuntimeException(e); // this should not happen
         }
-      } catch (final InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new RuntimeException(e); // this should not happen
-      }
-    }));
+      }));
+    }
   }
 
   final long getSerializedBytes() {

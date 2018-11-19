@@ -51,8 +51,8 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
   // Skewed keys denote for top n keys in terms of partition size.
   public static final int DEFAULT_NUM_SKEWED_KEYS = 10;
   public static final int HASH_RANGE_MULTIPLIER = 5;
-  //private static final String FILE_BASE = "/Users/sanha/tmp/";
-  private static final String FILE_BASE = "/home/ubuntu/int_data_dist/";
+  private static final String FILE_BASE = "/Users/sanha/tmp/";
+  //private static final String FILE_BASE = "/home/ubuntu/int_data_dist/";
   private int numSkewedKeys;
 
   /**
