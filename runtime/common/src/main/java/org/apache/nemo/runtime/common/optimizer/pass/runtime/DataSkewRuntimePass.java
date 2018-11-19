@@ -94,10 +94,10 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     // Calculate keyRanges.
     final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), dstParallelism, hashRange);
 
-    printUnOpimizedDist(metricData.right(), dstParallelism, targetEdge.getId());
-    printOpimizedDist(metricData.right(), hashRange, keyRanges, targetEdge.getId());
+    //printUnOpimizedDist(metricData.right(), dstParallelism, targetEdge.getId());
+    //printOpimizedDist(metricData.right(), hashRange, keyRanges, targetEdge.getId());
 
-    LOG.info("Optimized key ranges: " + keyRanges);
+    //LOG.info("Optimized key ranges: " + keyRanges);
 
     final HashMap<Integer, KeyRange> taskIdxToKeyRange = new HashMap<>();
     for (int i = 0; i < dstParallelism; i++) {
@@ -240,7 +240,6 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
       final int partitionKey = Math.abs(k.hashCode() % hashRange);
       partitionSizeList.set(partitionKey, partitionSizeList.get(partitionKey) + v);
     });
-    LOG.info("Partitions size list: " + partitionSizeList);
 
     // Get the last index.
     final int lastKey = partitionSizeList.size() - 1;
