@@ -94,8 +94,8 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     // Calculate keyRanges.
     final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), dstParallelism, hashRange);
 
-    //printUnOpimizedDist(metricData.right(), dstParallelism, targetEdge.getId());
-    //printOpimizedDist(metricData.right(), hashRange, keyRanges, targetEdge.getId());
+    printUnOpimizedDist(metricData.right(), dstParallelism, targetEdge.getId());
+    printOpimizedDist(metricData.right(), hashRange, keyRanges, targetEdge.getId());
 
     //LOG.info("Optimized key ranges: " + keyRanges);
 
@@ -159,10 +159,10 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     });
     partitionSizeList.sort(Long::compareTo);
 
-    LOG.info("Un-optimized Dist: ");
+    /*LOG.info("Un-optimized Dist: ");
     for (int i = 0; i < dstParallelism; i++) {
       LOG.info(String.valueOf(partitionSizeList.get(i)));
-    }
+    }*/
 
     try (PrintWriter out = new PrintWriter(
       new BufferedWriter(
@@ -191,7 +191,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
 
     final List<Long> sortedSizeList = new ArrayList<>(ranges.size());
 
-    LOG.info("Optimized Dist: ");
+    //LOG.info("Optimized Dist: ");
     for (final KeyRange range : ranges) {
       long size = 0;
       for (int i = (int) range.rangeBeginInclusive(); i < (int) range.rangeEndExclusive(); i++) {
@@ -201,9 +201,10 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     }
 
     sortedSizeList.sort(Long::compareTo);
+    /*
     for (final Long size : sortedSizeList) {
       LOG.info(String.valueOf(size));
-    }
+    }*/
 
     try (PrintWriter out = new PrintWriter(
       new BufferedWriter(
