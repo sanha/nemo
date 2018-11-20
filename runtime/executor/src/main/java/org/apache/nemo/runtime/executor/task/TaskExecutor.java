@@ -438,7 +438,11 @@ public final class TaskExecutor {
 
       // Remove the finished fetcher from the list
       if (finishedFetcherIndex != NONE_FINISHED) {
-        availableFetchers.remove(finishedFetcherIndex);
+        final DataFetcher removed = availableFetchers.remove(finishedFetcherIndex);
+        if (removed instanceof MergedParentTaskDataFetcher) {
+          LOG.info("Finished fetcher bytes for vertex " + removed.getChild().getIRVertex().getId()
+            + ": " + ((MergedParentTaskDataFetcher) removed).getEncodedBytes());
+        }
       }
     }
     return true;

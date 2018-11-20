@@ -94,8 +94,8 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     // Calculate keyRanges.
     final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), dstParallelism, hashRange);
 
-    printUnOpimizedDist(metricData.right(), dstParallelism, targetEdge.getId());
-    printOpimizedDist(metricData.right(), hashRange, keyRanges, targetEdge.getId());
+    //printUnOpimizedDist(metricData.right(), dstParallelism, targetEdge.getId());
+    //printOpimizedDist(metricData.right(), hashRange, keyRanges, targetEdge.getId());
 
     //LOG.info("Optimized key ranges: " + keyRanges);
 
