@@ -77,6 +77,7 @@ class MergedParentTaskDataFetcher extends DataFetcher {
           continue;
         } else {
           // We've consumed all the iterators
+          countBytes(currentIterator);
           break;
         }
       }
