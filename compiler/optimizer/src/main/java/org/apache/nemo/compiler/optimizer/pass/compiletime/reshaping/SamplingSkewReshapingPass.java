@@ -15,7 +15,6 @@
  */
 package org.apache.nemo.compiler.optimizer.pass.compiletime.reshaping;
 
-import org.apache.beam.sdk.values.Row;
 import org.apache.nemo.common.HashRange;
 import org.apache.nemo.common.KeyExtractor;
 import org.apache.nemo.common.KeyRange;
@@ -60,7 +59,7 @@ import java.util.stream.IntStream;
 @Requires(CommunicationPatternProperty.class)
 public final class SamplingSkewReshapingPass extends ReshapingPass {
   private static final Logger LOG = LoggerFactory.getLogger(SamplingSkewReshapingPass.class.getName());
-  private static final int sampleRate = 100; // 1%
+  private static final float sampleRate = 0.03f; // 10%
 
   /**
    * Default constructor.
@@ -90,7 +89,7 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
             final IRVertex vtxToSample = edge.getSrc();
             final int originalParallelism = vtxToSample.getPropertyValue(ParallelismProperty.class)
                 .orElseThrow(() -> new RuntimeException("No parallelism!"));
-            final int sampledParallelism = originalParallelism > sampleRate ? originalParallelism / sampleRate : 1;
+            final int sampledParallelism = Math.max(Math.round(originalParallelism * sampleRate), 1);
 
             final List<Integer> randomIndices =
                 IntStream.range(0, originalParallelism).boxed().collect(Collectors.toList());
