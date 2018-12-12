@@ -79,8 +79,8 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
   }
 
   @Override
-  public PhysicalPlan apply(final PhysicalPlan originalPlan,
-                            final Pair<StageEdge, Map<Object, Long>> metricData) {
+  public synchronized PhysicalPlan apply(final PhysicalPlan originalPlan,
+                                         final Pair<StageEdge, Map<Object, Long>> metricData) {
     final StageEdge targetEdge = metricData.left();
     // Get number of evaluators of the next stage (number of blocks).
     final Integer dstParallelism = targetEdge.getDst().getPropertyValue(ParallelismProperty.class).
@@ -155,7 +155,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     for (int i = 0; i < dstParallelism; i++) {
       partitionSizeList.add(0L);
     }
-    LOG.info("@@@@ {}", actualKeyToSizeMap);
+    //LOG.info("@@@@ {}", actualKeyToSizeMap);
     actualKeyToSizeMap.forEach((k, v) -> {
       final int intKey = Integer.valueOf((String) k);
       //final int partitionKey = Math.abs(k.hashCode() % dstParallelism);
