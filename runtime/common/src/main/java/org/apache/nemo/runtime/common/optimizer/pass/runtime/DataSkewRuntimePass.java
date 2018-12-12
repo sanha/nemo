@@ -92,13 +92,14 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     //LOG.info("Collected metrics:: " + metricData.right());
 
     // Calculate keyRanges.
-    final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), dstParallelism, hashRange);
+    // TODO #?: Enable for dynamic reshaping
+    //final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), dstParallelism, hashRange);
 
     printUnOpimizedDist(metricData.right(), dstParallelism, targetEdge.getId());
     //printOpimizedDist(metricData.right(), hashRange, keyRanges, targetEdge.getId());
 
     //LOG.info("Optimized key ranges: " + keyRanges);
-
+/*
     final HashMap<Integer, KeyRange> taskIdxToKeyRange = new HashMap<>();
     for (int i = 0; i < dstParallelism; i++) {
       taskIdxToKeyRange.put(i, keyRanges.get(i));
@@ -116,7 +117,8 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
       }
     }
 
-    return new PhysicalPlan(originalPlan.getPlanId(), stageDAG);
+    return new PhysicalPlan(originalPlan.getPlanId(), stageDAG);*/
+    return originalPlan;
   }
 
   private List<Long> identifySkewedKeys(final List<Long> partitionSizeList) {
@@ -154,8 +156,8 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
       partitionSizeList.add(0L);
     }
     actualKeyToSizeMap.forEach((k, v) -> {
-      final int partitionKey = Math.abs(k.hashCode() % dstParallelism);
-      partitionSizeList.set(partitionKey, partitionSizeList.get(partitionKey) + v);
+      //final int partitionKey = Math.abs(k.hashCode() % dstParallelism);
+      partitionSizeList.set((Integer) k, partitionSizeList.get((Integer) k) + v);
     });
     partitionSizeList.sort(Long::compareTo);
 
@@ -237,10 +239,11 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
       partitionSizeList.add(0L);
     }
 
-    actualKeyToSizeMap.forEach((k, v) -> {
+    /*actualKeyToSizeMap.forEach((k, v) -> {
       final int partitionKey = Math.abs(k.hashCode() % hashRange);
       partitionSizeList.set(partitionKey, partitionSizeList.get(partitionKey) + v);
-    });
+    });*/
+    actualKeyToSizeMap.forEach((k,v ) -> partitionSizeList.set((Integer) k, v));
 
     // Get the last index.
     final int lastKey = partitionSizeList.size() - 1;

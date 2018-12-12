@@ -101,7 +101,7 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
             final IRVertex startVtxToSample = lastSampledVtxStartVtxToSamplePair.right();
 
             final OperatorVertex abv = generateMetricAggregationVertex();
-            final OperatorVertex mcv = generateMetricCollectVertex(edge, abv);
+            final OperatorVertex mcv = generateMetricCollectVertex(edge, abv, originalParallelism);
             abv.setPropertyPermanently(ParallelismProperty.of(1)); // Fixed parallelism.
             mcv.setPropertyPermanently(ParallelismProperty.of(sampledParallelism));
             builder.addVertex(v);
@@ -257,62 +257,65 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
   private OperatorVertex generateMetricAggregationVertex() {
     // Define a custom data aggregator for skew handling.
     // Here, the aggregator gathers key frequency data used in shuffle data repartitioning.
-    final BiFunction<Object, Map<Object, Long>, Map<Object, Long>> dynOptDataAggregator =
-      (BiFunction<Object, Map<Object, Long>, Map<Object, Long>> & Serializable)
+    final BiFunction<Object, Map<Integer, Long>, Map<Integer, Long>> dynOptDataAggregator =
+      (BiFunction<Object, Map<Integer, Long>, Map<Integer, Long>> & Serializable)
         (element, aggregatedDynOptData) -> {
-          final Object key = ((Pair<Object, Long>) element).left();
-          final Long count = ((Pair<Object, Long>) element).right();
+          final int key = ((Pair<Integer, Long>) element).left();
+          final long count = ((Pair<Integer, Long>) element).right();
 
-          final Map<Object, Long> aggregatedDynOptDataMap = (Map<Object, Long>) aggregatedDynOptData;
-          if (aggregatedDynOptDataMap.containsKey(key)) {
-            aggregatedDynOptDataMap.compute(key, (existingKey, accumulatedCount) -> accumulatedCount + count);
+          if (aggregatedDynOptData.containsKey(key)) {
+            aggregatedDynOptData.compute(key, (existingKey, accumulatedCount) -> accumulatedCount + count);
           } else {
-            aggregatedDynOptDataMap.put(key, count);
+            aggregatedDynOptData.put(key, count);
           }
           return aggregatedDynOptData;
         };
     final AggregateMetricTransform abt =
-      new AggregateMetricTransform<Pair<Object, Long>, Map<Object, Long>>(new HashMap<>(), dynOptDataAggregator);
+      new AggregateMetricTransform<Pair<Integer, Long>, Map<Integer, Long>>(new HashMap<>(), dynOptDataAggregator);
     return new OperatorVertex(abt);
   }
 
-  private OperatorVertex generateMetricCollectVertex(final IREdge edge, final OperatorVertex abv) {
+  private OperatorVertex generateMetricCollectVertex(final IREdge edge,
+                                                     final OperatorVertex abv,
+                                                     final int dstParallelism) {
     final KeyExtractor keyExtractor = edge.getPropertyValue(KeyExtractorProperty.class).get();
     final EncoderFactory encoderFactory = edge.getPropertyValue(EncoderProperty.class).get();
     edge.setPropertyPermanently(EncoderProperty.of(encoderFactory)); // Finalize
 
     // Define a custom data collector for skew handling.
     // Here, the collector gathers key frequency data used in shuffle data repartitioning.
-    final BiFunction<Object, Map<Object, Object>, Map<Object, Object>> dynOptDataCollector =
-      (BiFunction<Object, Map<Object, Object>, Map<Object, Object>> & Serializable)
+    final BiFunction<Object, Map<Integer, List<Object>>, Map<Integer, List<Object>>> dynOptDataCollector =
+      (BiFunction<Object, Map<Integer, List<Object>>, Map<Integer, List<Object>>> & Serializable)
         (element, dynOptData) -> {
           Object key = keyExtractor.extractKey(element);
           /*if (key instanceof Row) {
             key = ((Row) key).getValue(0);
           }*/
-          if (dynOptData.containsKey(key)) {
-            ((List<Object>) dynOptData.get(key)).add(element);
+          final int partitionKey = Math.abs(key.hashCode() % dstParallelism); // TODO #XX: Not proper for runtime opt
+
+          if (dynOptData.containsKey(partitionKey)) {
+            dynOptData.get(partitionKey).add(element);
           } else {
             final List<Object> elementsPerKey = new ArrayList<>();
             elementsPerKey.add(element);
-            dynOptData.put(key, elementsPerKey);
+            dynOptData.put(partitionKey, elementsPerKey);
           }
           return dynOptData;
         };
 
     // Define a custom transform closer for skew handling.
     // Here, we emit key to frequency data map type data when closing transform.
-    final BiFunction<Map<Object, Object>, OutputCollector, Map<Object, Object>> closer =
-      (BiFunction<Map<Object, Object>, OutputCollector, Map<Object, Object>> & Serializable)
+    final BiFunction<Map<Integer, List<Object>>, OutputCollector, Map<Integer, List<Object>>> closer =
+      (BiFunction<Map<Integer, List<Object>>, OutputCollector, Map<Integer, List<Object>>> & Serializable)
         (dynOptData, outputCollector)-> {
-          for (final Map.Entry<Object, Object> entry : dynOptData.entrySet()) {
+          for (final Map.Entry<Integer, List<Object>> entry : dynOptData.entrySet()) {
             try (final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
               final EncoderFactory.Encoder encoder = encoderFactory.create(out);
               for (final Object element : ((List<Object>) entry.getValue())) {
                 //LOG.info("Element: " + element);
                 encoder.encode(element);
               }
-              final Pair<Object, Long> pairData =
+              final Pair<Integer, Long> pairData =
                 Pair.of(entry.getKey(), new Long(out.size())); // Calculate actual size.
               /*if (System.currentTimeMillis() % 10 == 0) {
                 for (final Object element : ((List<Object>) entry.getValue())) {
