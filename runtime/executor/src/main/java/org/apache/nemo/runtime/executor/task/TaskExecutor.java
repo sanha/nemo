@@ -327,7 +327,7 @@ public final class TaskExecutor {
     dynOptData.forEach((key, size) ->
       partitionSizeEntries.add(
         ControlMessage.PartitionSizeEntry.newBuilder()
-          .setKey(key == null ? NULL_KEY : String.valueOf(key))
+          .setKey(key == null ? NULL_KEY : String.valueOf(key)) // TODO #?: Why String??
           .setSize(size)
           .build())
     );

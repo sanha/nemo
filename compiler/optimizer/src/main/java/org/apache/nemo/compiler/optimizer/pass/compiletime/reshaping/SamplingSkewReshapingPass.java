@@ -89,6 +89,8 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
             final IRVertex vtxToSample = edge.getSrc();
             final int originalParallelism = vtxToSample.getPropertyValue(ParallelismProperty.class)
                 .orElseThrow(() -> new RuntimeException("No parallelism!"));
+            final int dstParallelism = edge.getDst().getPropertyValue(ParallelismProperty.class)
+              .orElseThrow(() -> new RuntimeException("No parallelism!"));
             final int sampledParallelism = Math.max(Math.round(originalParallelism * sampleRate), 1);
 
             final List<Integer> randomIndices =
@@ -101,7 +103,7 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
             final IRVertex startVtxToSample = lastSampledVtxStartVtxToSamplePair.right();
 
             final OperatorVertex abv = generateMetricAggregationVertex();
-            final OperatorVertex mcv = generateMetricCollectVertex(edge, abv, originalParallelism);
+            final OperatorVertex mcv = generateMetricCollectVertex(edge, abv, dstParallelism);
             abv.setPropertyPermanently(ParallelismProperty.of(1)); // Fixed parallelism.
             mcv.setPropertyPermanently(ParallelismProperty.of(sampledParallelism));
             builder.addVertex(v);
@@ -288,9 +290,6 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
       (BiFunction<Object, Map<Integer, List<Object>>, Map<Integer, List<Object>>> & Serializable)
         (element, dynOptData) -> {
           Object key = keyExtractor.extractKey(element);
-          /*if (key instanceof Row) {
-            key = ((Row) key).getValue(0);
-          }*/
           final int partitionKey = Math.abs(key.hashCode() % dstParallelism); // TODO #XX: Not proper for runtime opt
 
           if (dynOptData.containsKey(partitionKey)) {
@@ -372,13 +371,17 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
         //newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(keyEncoderFactory, LongEncoderFactory.of())));
         //newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(keyDecoderFactory, LongDecoderFactory.of())));
       } else {
-        newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(keyEncoderFactory, LongEncoderFactory.of())));
-        newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(keyDecoderFactory, LongDecoderFactory.of())));
+        newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(IntEncoderFactory.of(), LongEncoderFactory.of())));
+        newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(IntDecoderFactory.of(), LongDecoderFactory.of())));
+        //newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(keyEncoderFactory, LongEncoderFactory.of())));
+        //newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(keyDecoderFactory, LongDecoderFactory.of())));
       }
     } else {
       // If not specified, follow encoder/decoder of the given shuffle edge.
-      newEdge.setProperty(EncoderProperty.of(edge.getPropertyValue(EncoderProperty.class).get()));
-      newEdge.setProperty(DecoderProperty.of(edge.getPropertyValue(DecoderProperty.class).get()));
+      newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(IntEncoderFactory.of(), LongEncoderFactory.of())));
+      newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(IntDecoderFactory.of(), LongDecoderFactory.of())));
+      //newEdge.setProperty(EncoderProperty.of(edge.getPropertyValue(EncoderProperty.class).get()));
+      //newEdge.setProperty(DecoderProperty.of(edge.getPropertyValue(DecoderProperty.class).get()));
     }
 
     return newEdge;

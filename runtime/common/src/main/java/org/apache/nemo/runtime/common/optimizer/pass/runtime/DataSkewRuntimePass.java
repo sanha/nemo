@@ -155,9 +155,11 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     for (int i = 0; i < dstParallelism; i++) {
       partitionSizeList.add(0L);
     }
+    LOG.info("@@@@ {}", actualKeyToSizeMap);
     actualKeyToSizeMap.forEach((k, v) -> {
+      final int intKey = Integer.valueOf((String) k);
       //final int partitionKey = Math.abs(k.hashCode() % dstParallelism);
-      partitionSizeList.set((Integer) k, partitionSizeList.get((Integer) k) + v);
+      partitionSizeList.set(intKey, partitionSizeList.get(intKey) + v);
     });
     partitionSizeList.sort(Long::compareTo);
 
