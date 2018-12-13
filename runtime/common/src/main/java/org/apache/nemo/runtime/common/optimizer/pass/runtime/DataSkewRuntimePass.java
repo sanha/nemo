@@ -115,10 +115,34 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
               .put(ShuffleDistributionProperty.of(Pair.of(hashRange, taskIdxToKeyRange)), true);
         }
       }
+    }*/
+
+    // TODO #: None-optimized execution
+    final int meanRange = hashRange / dstParallelism;
+    final List<KeyRange> keyRanges = new ArrayList<>(dstParallelism);
+    for (int i = 0; i < dstParallelism - 1; i++) {
+      keyRanges.add(i, HashRange.of(i * meanRange, (i + 1) * meanRange, false));
+    }
+    keyRanges.add(dstParallelism - 1, HashRange.of((dstParallelism - 1) * meanRange, hashRange, false));
+
+    final HashMap<Integer, KeyRange> taskIdxToKeyRange = new HashMap<>();
+    for (int i = 0; i < dstParallelism; i++) {
+      taskIdxToKeyRange.put(i, keyRanges.get(i));
     }
 
-    return new PhysicalPlan(originalPlan.getPlanId(), stageDAG);*/
-    return originalPlan;
+    // Overwrite the previously assigned key range in the physical DAG with the new range.
+    final DAG<Stage, StageEdge> stageDAG = originalPlan.getStageDAG();
+    for (Stage stage : stageDAG.getVertices()) {
+      final List<StageEdge> stageEdges = stageDAG.getOutgoingEdgesOf(stage);
+      for (StageEdge edge : stageEdges) {
+        if (edge.equals(targetEdge)) {
+          edge.getExecutionProperties()
+              .put(ShuffleDistributionProperty.of(Pair.of(hashRange, taskIdxToKeyRange)), true);
+        }
+      }
+    }
+
+    return new PhysicalPlan(originalPlan.getPlanId(), stageDAG);
   }
 
   private List<Long> identifySkewedKeys(final List<Long> partitionSizeList) {
