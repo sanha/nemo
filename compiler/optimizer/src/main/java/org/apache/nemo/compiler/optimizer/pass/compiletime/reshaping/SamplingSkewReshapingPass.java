@@ -30,6 +30,7 @@ import org.apache.nemo.common.ir.vertex.IRVertex;
 import org.apache.nemo.common.ir.vertex.OperatorVertex;
 import org.apache.nemo.common.ir.vertex.SourceVertex;
 import org.apache.nemo.common.ir.vertex.executionproperty.ParallelismProperty;
+import org.apache.nemo.common.ir.vertex.executionproperty.ResourceSlotProperty;
 import org.apache.nemo.common.ir.vertex.transform.AggregateMetricTransform;
 import org.apache.nemo.common.ir.vertex.transform.MetricCollectTransform;
 import org.apache.nemo.common.test.EmptyComponents;
@@ -129,6 +130,9 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
             dummyVtx.setPropertyPermanently(ParallelismProperty.of(1));
             abv.copyExecutionPropertiesTo(dummyVtx);
             builder.addVertex(dummyVtx);
+
+            abv.setPropertyPermanently(ResourceSlotProperty.of(false));
+            dummyVtx.setPropertyPermanently(ResourceSlotProperty.of(false));
 
             final IREdge edgeToDummy = new IREdge(CommunicationPatternProperty.Value.OneToOne, abv, dummyVtx);
             builder.connectVertices(edgeToDummy);
