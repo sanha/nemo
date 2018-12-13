@@ -25,7 +25,7 @@ import java.util.Map;
  * Handler for aggregating data used in data skew dynamic optimization.
  */
 public class DataSkewDynOptDataHandler implements DynOptDataHandler {
-  private final Map<Object, Long> aggregatedDynOptData;
+  private Map<Object, Long> aggregatedDynOptData;
 
   public DataSkewDynOptDataHandler() {
     this.aggregatedDynOptData = new HashMap<>();
@@ -57,5 +57,10 @@ public class DataSkewDynOptDataHandler implements DynOptDataHandler {
   @Override
   public final Object getDynOptData() {
     return aggregatedDynOptData;
+  }
+
+  @Override
+  public final void clear() {
+    this.aggregatedDynOptData = new HashMap<>();
   }
 }

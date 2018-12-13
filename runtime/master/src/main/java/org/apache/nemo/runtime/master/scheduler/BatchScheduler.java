@@ -501,6 +501,7 @@ public final class BatchScheduler implements Scheduler {
       pubSubEventHandlerWrapper.getPubSubEventHandler()
         .onNext(new DynamicOptimizationEvent(planStateManager.getPhysicalPlan(), dynOptDataHandler.getDynOptData(),
           taskId, executorId, targetEdge));
+      dynOptDataHandler.clear();
     }
   }
 

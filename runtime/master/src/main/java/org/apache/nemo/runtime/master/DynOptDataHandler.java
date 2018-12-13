@@ -30,4 +30,6 @@ public interface DynOptDataHandler {
    * @return aggregated data used for dynamic optimization.
    */
   Object getDynOptData();
+
+  void clear();
 }
