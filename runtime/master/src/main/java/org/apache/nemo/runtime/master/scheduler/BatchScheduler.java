@@ -427,9 +427,9 @@ public final class BatchScheduler implements Scheduler {
    * for setting the target edge of dynamic optimization.
    *
    * @param taskId the task ID that sent stage-level aggregated metric for dynamic optimization.
-   * @return the edge to optimize.
+   * @return the edges to optimize.
    */
-  private StageEdge getEdgeToOptimize(final String taskId) {
+  private Set<StageEdge> getEdgeToOptimize(final String taskId) {
     final DAG<Stage, StageEdge> stageDag = planStateManager.getPhysicalPlan().getStageDAG();
 
     // Get a stage including the given task
@@ -440,35 +440,29 @@ public final class BatchScheduler implements Scheduler {
 
     // Stage put on hold, i.e. stage with vertex containing AggregateMetricTransform
     // should have a parent stage whose outgoing edges contain the target edge of dynamic optimization.
-    final List<Stage> parentStages = stageDag.getParents(stagePutOnHold.getId());
-
-    if (parentStages.size() > 1) {
-      throw new RuntimeException("Error in setting target edge of dynamic optimization!");
+    final List<StageEdge> edgesToStagePutOnHold = stageDag.getIncomingEdgesOf(stagePutOnHold);
+    if (edgesToStagePutOnHold.isEmpty()) {
+      throw new RuntimeException("No edges toward specified put on hold stage");
     }
+    final int mcId = edgesToStagePutOnHold.get(0).getPropertyValue(MetricCollectionProperty.class)
+      .orElseThrow(() -> new RuntimeException("No metric collection property value for this put on hold stage"));
 
+    final Set<StageEdge> targetEdges = new HashSet<>();
     // Get outgoing edges of that stage with MetricCollectionProperty
-    List<StageEdge> stageEdges = stageDag.getOutgoingEdgesOf(parentStages.get(0));
-    for (StageEdge edge : stageEdges) {
-      final Optional<Integer> optionalMCId = edge.getPropertyValue(MetricCollectionProperty.class);
-      if (optionalMCId.isPresent()) {
-        for (final Stage stage : stageDag.getVertices()) {
-          final Optional<StageEdge> targetEdge = stageDag.getOutgoingEdgesOf(stage).stream()
-              .filter(candidateEdge -> {
-                final Optional<Integer> candidateMCId =
-                  candidateEdge.getPropertyValue(MetricCollectionProperty.class);
-                return candidateMCId.isPresent() && candidateMCId.get().equals(optionalMCId.get())
-                    && candidateEdge != edge;
-              })
-              .findFirst();
-          if (targetEdge.isPresent()) {
-            LOG.warn("Target edge: " + targetEdge.get());
-            return targetEdge.get();
-          }
-        }
-      }
+    for (final Stage stage : stageDag.getVertices()) {
+      final Set<StageEdge> targetEdgesFound = stageDag.getOutgoingEdgesOf(stage).stream()
+        .filter(candidateEdge -> {
+          final Optional<Integer> candidateMCId =
+            candidateEdge.getPropertyValue(MetricCollectionProperty.class);
+          return candidateMCId.isPresent() && candidateMCId.get().equals(mcId)
+            && !edgesToStagePutOnHold.contains(candidateEdge);
+          })
+        .collect(Collectors.toSet());
+      targetEdges.addAll(targetEdgesFound);
     }
 
-    return null;
+    LOG.warn("Target edges: {}", targetEdges);
+    return targetEdges;
   }
 
   /**
@@ -489,8 +483,8 @@ public final class BatchScheduler implements Scheduler {
     final boolean stageComplete =
       planStateManager.getStageState(stageIdForTaskUponCompletion).equals(StageState.State.COMPLETE);
 
-    final StageEdge targetEdge = getEdgeToOptimize(taskId);
-    if (targetEdge == null) {
+    final Set<StageEdge> targetEdges = getEdgeToOptimize(taskId);
+    if (targetEdges.isEmpty()) {
       throw new RuntimeException("No edges specified for data skew optimization");
     }
 
@@ -500,7 +494,7 @@ public final class BatchScheduler implements Scheduler {
         .findFirst().orElseThrow(() -> new RuntimeException("DataSkewDynOptDataHandler is not registered!"));
       pubSubEventHandlerWrapper.getPubSubEventHandler()
         .onNext(new DynamicOptimizationEvent(planStateManager.getPhysicalPlan(), dynOptDataHandler.getDynOptData(),
-          taskId, executorId, targetEdge));
+          taskId, executorId, targetEdges));
       dynOptDataHandler.clear();
     }
   }

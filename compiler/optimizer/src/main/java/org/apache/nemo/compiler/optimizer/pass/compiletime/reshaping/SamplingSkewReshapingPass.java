@@ -72,8 +72,9 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
   @Override
   public DAG<IRVertex, IREdge> apply(final DAG<IRVertex, IREdge> dag) {
     final DAGBuilder<IRVertex, IREdge> builder = new DAGBuilder<>();
-    final AtomicInteger metricCollectionId = new AtomicInteger(0);
+    final AtomicInteger mcCount = new AtomicInteger(0);
     final AtomicInteger duplicateId = new AtomicInteger(0);
+    final Map<String, Pair<OperatorVertex, Integer>> dstVtxIdToABV = new HashMap<>(); // ABV, metirc collection id pair
 
     dag.topologicalDo(v -> {
       // We care about OperatorVertices that have shuffle incoming edges with main output.
@@ -103,45 +104,56 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
             final IRVertex lastSampledVtx = lastSampledVtxStartVtxToSamplePair.left();
             final IRVertex startVtxToSample = lastSampledVtxStartVtxToSamplePair.right();
 
-            final OperatorVertex abv = generateMetricAggregationVertex();
+            // We then insert the vertex with MetricCollectTransform and vertex with AggregateMetricTransform
+            // between the vertex and incoming vertices.
+            final OperatorVertex abv;
+            final String dstId = edge.getDst().getId();
+            final int metricCollectionId;
+            if (!dstVtxIdToABV.containsKey(dstId)) {
+              abv = generateMetricAggregationVertex();
+              abv.setPropertyPermanently(ParallelismProperty.of(1)); // Fixed parallelism.
+              builder.addVertex(abv);
+
+              metricCollectionId = mcCount.incrementAndGet();
+              dstVtxIdToABV.put(dstId, Pair.of(abv, metricCollectionId));
+
+              final OperatorVertex dummyVtx = new OperatorVertex(EmptyComponents.EMPTY_TRANSFORM);
+              dummyVtx.setPropertyPermanently(ParallelismProperty.of(1));
+              abv.copyExecutionPropertiesTo(dummyVtx);
+              builder.addVertex(dummyVtx);
+
+              abv.setPropertyPermanently(ResourceSlotProperty.of(false));
+              dummyVtx.setPropertyPermanently(ResourceSlotProperty.of(false));
+
+              final IREdge edgeToDummy = new IREdge(CommunicationPatternProperty.Value.OneToOne, abv, dummyVtx);
+              builder.connectVertices(edgeToDummy);
+
+              final IREdge emptyEdge =
+                new IREdge(CommunicationPatternProperty.Value.BroadCast, dummyVtx, startVtxToSample); // no output
+              builder.connectVertices(emptyEdge);
+            } else {
+              final Pair<OperatorVertex, Integer> abvIdxPair = dstVtxIdToABV.get(dstId);
+              abv = abvIdxPair.left();
+              metricCollectionId = abvIdxPair.right();
+            }
+
             final OperatorVertex mcv = generateMetricCollectVertex(edge, abv, dstParallelism);
-            abv.setPropertyPermanently(ParallelismProperty.of(1)); // Fixed parallelism.
             mcv.setPropertyPermanently(ParallelismProperty.of(sampledParallelism));
             builder.addVertex(v);
             builder.addVertex(mcv);
-            builder.addVertex(abv);
 
-            // We then insert the vertex with MetricCollectTransform and vertex with AggregateMetricTransform
-            // between the vertex and incoming vertices.
             final IREdge edgeToMCV = generateEdgeToMCV(edge, lastSampledVtx, mcv);
             final IREdge edgeToABV = generateEdgeToABV(edge, mcv, abv);
-            edgeToABV.setPropertyPermanently(MetricCollectionProperty.of(metricCollectionId.intValue()));
+            edgeToABV.setPropertyPermanently(MetricCollectionProperty.of(metricCollectionId));
 
             final IREdge edgeToOriginalDstV =
                 new IREdge(edge.getPropertyValue(CommunicationPatternProperty.class).get(), edge.getSrc(), v);
             edge.copyExecutionPropertiesTo(edgeToOriginalDstV);
-            edgeToOriginalDstV.setPropertyPermanently(MetricCollectionProperty.of(metricCollectionId.intValue()));
+            edgeToOriginalDstV.setPropertyPermanently(MetricCollectionProperty.of(metricCollectionId));
 
             builder.connectVertices(edgeToMCV);
             builder.connectVertices(edgeToABV);
             builder.connectVertices(edgeToOriginalDstV);
-
-            final OperatorVertex dummyVtx = new OperatorVertex(EmptyComponents.EMPTY_TRANSFORM);
-            dummyVtx.setPropertyPermanently(ParallelismProperty.of(1));
-            abv.copyExecutionPropertiesTo(dummyVtx);
-            builder.addVertex(dummyVtx);
-
-            abv.setPropertyPermanently(ResourceSlotProperty.of(false));
-            dummyVtx.setPropertyPermanently(ResourceSlotProperty.of(false));
-
-            final IREdge edgeToDummy = new IREdge(CommunicationPatternProperty.Value.OneToOne, abv, dummyVtx);
-            builder.connectVertices(edgeToDummy);
-
-            final IREdge emptyEdge =
-                new IREdge(CommunicationPatternProperty.Value.BroadCast, dummyVtx, startVtxToSample); // no output
-            builder.connectVertices(emptyEdge);
-
-            metricCollectionId.incrementAndGet();
           } else {
             builder.connectVertices(edge);
           }

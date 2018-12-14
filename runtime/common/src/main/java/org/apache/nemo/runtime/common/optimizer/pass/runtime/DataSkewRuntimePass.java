@@ -21,6 +21,7 @@ import org.apache.nemo.common.dag.DAG;
 import org.apache.nemo.common.eventhandler.RuntimeEventHandler;
 
 import org.apache.nemo.common.ir.edge.executionproperty.ShuffleDistributionProperty;
+import org.apache.nemo.common.ir.vertex.IRVertex;
 import org.apache.nemo.common.ir.vertex.executionproperty.ParallelismProperty;
 import org.apache.nemo.common.KeyRange;
 import org.apache.nemo.common.HashRange;
@@ -45,7 +46,7 @@ import java.util.stream.Collectors;
  * this RuntimePass identifies a number of keys with big partition sizes(skewed key)
  * and evenly redistributes data via overwriting incoming edges of destination tasks.
  */
-public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<Object, Long>>> {
+public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, Map<Object, Long>>> {
   private static final Logger LOG = LoggerFactory.getLogger(DataSkewRuntimePass.class.getName());
   private final Set<Class<? extends RuntimeEventHandler>> eventHandlers;
   // Skewed keys denote for top n keys in terms of partition size.
@@ -80,10 +81,15 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
 
   @Override
   public synchronized PhysicalPlan apply(final PhysicalPlan originalPlan,
-                                         final Pair<StageEdge, Map<Object, Long>> metricData) {
-    final StageEdge targetEdge = metricData.left();
+                                         final Pair<Set<StageEdge>, Map<Object, Long>> metricData) {
+    final Set<StageEdge> targetEdges = metricData.left();
     // Get number of evaluators of the next stage (number of blocks).
-    final Integer dstParallelism = targetEdge.getDst().getPropertyValue(ParallelismProperty.class).
+    if (targetEdges.isEmpty()) {
+      throw new RuntimeException("No target edge.");
+    }
+
+    final IRVertex dstVtx = targetEdges.iterator().next().getDstIRVertex();
+    final Integer dstParallelism = dstVtx.getPropertyValue(ParallelismProperty.class).
         orElseThrow(() -> new RuntimeException("No parallelism on a vertex"));
 
     final BigInteger hashRangeBase = new BigInteger(String.valueOf(dstParallelism * HASH_RANGE_MULTIPLIER));
@@ -95,18 +101,23 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     // TODO #?: Enable for dynamic reshaping
     //final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), dstParallelism, hashRange);
 
-    printUnOpimizedDist(metricData.right(), dstParallelism, targetEdge.getId());
-    //printOpimizedDist(metricData.right(), hashRange, keyRanges, targetEdge.getId());
+    printUnOpimizedDist(metricData.right(), dstParallelism, dstVtx.getId());
+    //printOpimizedDist(metricData.right(), hashRange, keyRanges, dstVtx.getId());
 
     //LOG.info("Optimized key ranges: " + keyRanges);
-/*
+
+    /*
     final HashMap<Integer, KeyRange> taskIdxToKeyRange = new HashMap<>();
     for (int i = 0; i < dstParallelism; i++) {
       taskIdxToKeyRange.put(i, keyRanges.get(i));
     }
 
     // Overwrite the previously assigned key range in the physical DAG with the new range.
-    final DAG<Stage, StageEdge> stageDAG = originalPlan.getStageDAG();
+    targetEdges.forEach(targetEdge -> targetEdge.getExecutionProperties()
+      .put(ShuffleDistributionProperty.of(Pair.of(hashRange, taskIdxToKeyRange)), true));
+    */
+
+    /*final DAG<Stage, StageEdge> stageDAG = originalPlan.getStageDAG();
     for (Stage stage : stageDAG.getVertices()) {
       final List<StageEdge> stageEdges = stageDAG.getOutgoingEdgesOf(stage);
       for (StageEdge edge : stageEdges) {
@@ -131,18 +142,10 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
     }
 
     // Overwrite the previously assigned key range in the physical DAG with the new range.
-    final DAG<Stage, StageEdge> stageDAG = originalPlan.getStageDAG();
-    for (Stage stage : stageDAG.getVertices()) {
-      final List<StageEdge> stageEdges = stageDAG.getOutgoingEdgesOf(stage);
-      for (StageEdge edge : stageEdges) {
-        if (edge.equals(targetEdge)) {
-          edge.getExecutionProperties()
-              .put(ShuffleDistributionProperty.of(Pair.of(hashRange, taskIdxToKeyRange)), true);
-        }
-      }
-    }
+    targetEdges.forEach(targetEdge -> targetEdge.getExecutionProperties()
+        .put(ShuffleDistributionProperty.of(Pair.of(hashRange, taskIdxToKeyRange)), true));
 
-    return new PhysicalPlan(originalPlan.getPlanId(), stageDAG);
+    return new PhysicalPlan(originalPlan.getPlanId(), originalPlan.getStageDAG());
   }
 
   private List<Long> identifySkewedKeys(final List<Long> partitionSizeList) {
@@ -174,7 +177,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
 
   public void printUnOpimizedDist(final Map<Object, Long> actualKeyToSizeMap,
                                   final int dstParallelism,
-                                  final String targetEdgeId) {
+                                  final String targetVtxId) {
     final List<Long> partitionSizeList = new ArrayList<>(dstParallelism);
     for (int i = 0; i < dstParallelism; i++) {
       partitionSizeList.add(0L);
@@ -194,7 +197,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
 
     try (PrintWriter out = new PrintWriter(
       new BufferedWriter(
-        new FileWriter(FILE_BASE + targetEdgeId + "_unopt.txt", true)))) {
+        new FileWriter(FILE_BASE + targetVtxId + "_unopt.txt", true)))) {
       for (int i = dstParallelism - 1; i > 0; i--) {
         out.println(String.valueOf(partitionSizeList.get(i)));
       }
@@ -206,7 +209,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
   public void printOpimizedDist(final Map<Object, Long> actualKeyToSizeMap,
                                 final int hashRange,
                                 final List<KeyRange> ranges,
-                                final String targetEdgeId) {
+                                final String targetVtxId) {
     final List<Long> partitionSizeList = new ArrayList<>(hashRange);
     for (int i = 0; i < hashRange; i++) {
       partitionSizeList.add(0L);
@@ -236,7 +239,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
 
     try (PrintWriter out = new PrintWriter(
       new BufferedWriter(
-        new FileWriter(FILE_BASE + targetEdgeId + "_opt.txt", true)))) {
+        new FileWriter(FILE_BASE + targetVtxId + "_opt.txt", true)))) {
       for (int i = sortedSizeList.size() - 1; i > 0; i--) {
         out.println(String.valueOf(sortedSizeList.get(i)));
       }

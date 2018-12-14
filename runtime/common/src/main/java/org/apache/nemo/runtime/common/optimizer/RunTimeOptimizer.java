@@ -41,12 +41,12 @@ public final class RunTimeOptimizer {
   public static synchronized PhysicalPlan dynamicOptimization(
           final PhysicalPlan originalPlan,
           final Object dynOptData,
-          final StageEdge targetEdge) {
+          final Set<StageEdge> targetEdges) {
     // Data for dynamic optimization used in DataSkewRuntimePass
     // is a map of <hash value, partition size>.
     final PhysicalPlan physicalPlan =
       new DataSkewRuntimePass()
-        .apply(originalPlan, Pair.of(targetEdge, (Map<Object, Long>) dynOptData));
+        .apply(originalPlan, Pair.of(targetEdges, (Map<Object, Long>) dynOptData));
     return physicalPlan;
   }
 }
