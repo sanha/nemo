@@ -28,15 +28,6 @@ import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 /**
  * Test TPC-H program with JobLauncher.
  */
@@ -77,7 +68,7 @@ public final class SQLTpchITCase {
         //"/Users/sanha/tpc_1gb/",
         outputFilePath)
       .addJobId(SQLTpchITCase.class.getSimpleName())
-      .addOptimizationPolicy(DefaultPolicyParallelismFive.class.getCanonicalName())
+      .addOptimizationPolicy(SamplingLargeShuffleSkewPolicy.class.getCanonicalName())
       .build());
   }
 
@@ -87,7 +78,8 @@ public final class SQLTpchITCase {
     JobLauncher.main(builder
       .addUserMain(Tpch.class.getCanonicalName())
       .addUserArgs("/Users/sanha/tpch_queries/tpc" + String.valueOf(queryNum) + ".sql",
-        "/Users/sanha/tpc_zipf_10.0_1gb/",
+        //"/Users/sanha/tpc_zipf_10.0_1gb/",
+        "/Users/sanha/tpc_skew_1gb/",
         //"/Users/sanha/tpc_1gb/",
         outputFilePath)
       .addJobId(SQLTpchITCase.class.getSimpleName() + "_SS")

@@ -117,7 +117,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<StageEdge, Map<O
       }
     }*/
 
-    // TODO #: None-optimized execution
+    // TODO #: None-optimized
     final int meanRange = hashRange / dstParallelism;
     final List<KeyRange> keyRanges = new ArrayList<>(dstParallelism);
     for (int i = 0; i < dstParallelism - 1; i++) {

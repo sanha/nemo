@@ -326,6 +326,7 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
                 }
                 LOG.info("Size for key " + entry.getKey() + ": " + out.size());
               }*/
+
               outputCollector.emit(abv.getId(), pairData);
             } catch (final IOException e) {
               throw new RuntimeException(e);
@@ -370,13 +371,15 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
         System.out.println("KeyEncoder with RowCoder: " + keyEncoderFactory.toString());
         newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(IntEncoderFactory.of(), LongEncoderFactory.of())));
         newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(IntDecoderFactory.of(), LongDecoderFactory.of())));
-        //newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(LongEncoderFactory.of(), LongEncoderFactory.of())));
-        //newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(LongDecoderFactory.of(), LongDecoderFactory.of())));
+        //newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(StringEncoderFactory.of(), LongEncoderFactory.of())));
+        //newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(StringDecoderFactory.of(), LongDecoderFactory.of())));
         //newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(keyEncoderFactory, LongEncoderFactory.of())));
         //newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(keyDecoderFactory, LongDecoderFactory.of())));
       } else {
         newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(IntEncoderFactory.of(), LongEncoderFactory.of())));
         newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(IntDecoderFactory.of(), LongDecoderFactory.of())));
+        //newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(StringEncoderFactory.of(), LongEncoderFactory.of())));
+        //newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(StringDecoderFactory.of(), LongDecoderFactory.of())));
         //newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(keyEncoderFactory, LongEncoderFactory.of())));
         //newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(keyDecoderFactory, LongDecoderFactory.of())));
       }
@@ -384,6 +387,8 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
       // If not specified, follow encoder/decoder of the given shuffle edge.
       newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(IntEncoderFactory.of(), LongEncoderFactory.of())));
       newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(IntDecoderFactory.of(), LongDecoderFactory.of())));
+      //newEdge.setProperty(EncoderProperty.of(PairEncoderFactory.of(StringEncoderFactory.of(), LongEncoderFactory.of())));
+      //newEdge.setProperty(DecoderProperty.of(PairDecoderFactory.of(StringDecoderFactory.of(), LongDecoderFactory.of())));
       //newEdge.setProperty(EncoderProperty.of(edge.getPropertyValue(EncoderProperty.class).get()));
       //newEdge.setProperty(DecoderProperty.of(edge.getPropertyValue(DecoderProperty.class).get()));
     }
