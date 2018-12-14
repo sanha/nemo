@@ -461,7 +461,7 @@ public final class BatchScheduler implements Scheduler {
       targetEdges.addAll(targetEdgesFound);
     }
 
-    LOG.warn("Target edges: {}", targetEdges);
+    LOG.warn("Target edges: {}", targetEdges.stream().map(edge -> edge.getId()).collect(Collectors.toSet()));
     return targetEdges;
   }
 

@@ -129,7 +129,9 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
     }*/
 
     // TODO #: None-optimized
+    //final Set<String> targetEdgeIds = targetEdges.stream().map(edge -> edge.getId()).collect(Collectors.toSet());
     final int meanRange = hashRange / dstParallelism;
+    LOG.info("MeanRange: {}", meanRange);
     final List<KeyRange> keyRanges = new ArrayList<>(dstParallelism);
     for (int i = 0; i < dstParallelism - 1; i++) {
       keyRanges.add(i, HashRange.of(i * meanRange, (i + 1) * meanRange, false));

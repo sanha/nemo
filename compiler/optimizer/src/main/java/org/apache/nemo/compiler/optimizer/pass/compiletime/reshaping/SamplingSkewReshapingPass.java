@@ -74,7 +74,7 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
     final DAGBuilder<IRVertex, IREdge> builder = new DAGBuilder<>();
     final AtomicInteger mcCount = new AtomicInteger(0);
     final AtomicInteger duplicateId = new AtomicInteger(0);
-    final Map<String, Pair<OperatorVertex, Integer>> dstVtxIdToABV = new HashMap<>(); // ABV, metirc collection id pair
+    final Map<String, AggregationInfo> dstVtxIdToABV = new HashMap<>(); // ABV, metirc collection id pair
 
     dag.topologicalDo(v -> {
       // We care about OperatorVertices that have shuffle incoming edges with main output.
@@ -107,6 +107,7 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
             // We then insert the vertex with MetricCollectTransform and vertex with AggregateMetricTransform
             // between the vertex and incoming vertices.
             final OperatorVertex abv;
+            final OperatorVertex dummyVtx;
             final String dstId = edge.getDst().getId();
             final int metricCollectionId;
             if (!dstVtxIdToABV.containsKey(dstId)) {
@@ -115,9 +116,8 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
               builder.addVertex(abv);
 
               metricCollectionId = mcCount.incrementAndGet();
-              dstVtxIdToABV.put(dstId, Pair.of(abv, metricCollectionId));
 
-              final OperatorVertex dummyVtx = new OperatorVertex(EmptyComponents.EMPTY_TRANSFORM);
+              dummyVtx = new OperatorVertex(EmptyComponents.EMPTY_TRANSFORM);
               dummyVtx.setPropertyPermanently(ParallelismProperty.of(1));
               abv.copyExecutionPropertiesTo(dummyVtx);
               builder.addVertex(dummyVtx);
@@ -128,14 +128,17 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
               final IREdge edgeToDummy = new IREdge(CommunicationPatternProperty.Value.OneToOne, abv, dummyVtx);
               builder.connectVertices(edgeToDummy);
 
-              final IREdge emptyEdge =
-                new IREdge(CommunicationPatternProperty.Value.BroadCast, dummyVtx, startVtxToSample); // no output
-              builder.connectVertices(emptyEdge);
+              dstVtxIdToABV.put(dstId, new AggregationInfo(abv, dummyVtx, metricCollectionId));
             } else {
-              final Pair<OperatorVertex, Integer> abvIdxPair = dstVtxIdToABV.get(dstId);
-              abv = abvIdxPair.left();
-              metricCollectionId = abvIdxPair.right();
+              final AggregationInfo aggrInfo = dstVtxIdToABV.get(dstId);
+              abv = aggrInfo.getAbv();
+              dummyVtx = aggrInfo.getDummyVtx();
+              metricCollectionId = aggrInfo.getMcId();
             }
+
+            final IREdge emptyEdge =
+              new IREdge(CommunicationPatternProperty.Value.BroadCast, dummyVtx, startVtxToSample); // no output
+            builder.connectVertices(emptyEdge);
 
             final OperatorVertex mcv = generateMetricCollectVertex(edge, abv, dstParallelism);
             mcv.setPropertyPermanently(ParallelismProperty.of(sampledParallelism));
@@ -406,5 +409,31 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
     }
 
     return newEdge;
+  }
+
+  private final class AggregationInfo {
+    private final OperatorVertex abv;
+    private final OperatorVertex dummyVtx;
+    private final int mcId;
+
+    public AggregationInfo(final OperatorVertex abv,
+                           final OperatorVertex dummyVtx,
+                           final int mcId) {
+      this.abv = abv;
+      this.dummyVtx = dummyVtx;
+      this.mcId = mcId;
+    }
+
+    public OperatorVertex getAbv() {
+      return abv;
+    }
+
+    public OperatorVertex getDummyVtx() {
+      return dummyVtx;
+    }
+
+    public int getMcId() {
+      return mcId;
+    }
   }
 }
