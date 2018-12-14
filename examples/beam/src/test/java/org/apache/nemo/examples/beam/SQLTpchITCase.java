@@ -34,7 +34,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(JobLauncher.class)
 public final class SQLTpchITCase {
-  private static final int TIMEOUT = 600000;
+  private static final int TIMEOUT = 240000;
   private static ArgBuilder builder;
   private static final String fileBasePath = System.getProperty("user.dir") + "/../resources/";
 
@@ -60,7 +60,7 @@ public final class SQLTpchITCase {
 
   @Test (timeout = TIMEOUT)
   public void testXX() throws Exception {
-    final int queryNum = 12;
+    final int queryNum = 3;
     JobLauncher.main(builder
       .addUserMain(Tpch.class.getCanonicalName())
       .addUserArgs("/Users/sanha/tpch_queries/tpc" + String.valueOf(queryNum) + ".sql",
