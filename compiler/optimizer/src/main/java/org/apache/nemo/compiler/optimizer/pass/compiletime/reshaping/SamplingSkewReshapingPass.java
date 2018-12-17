@@ -60,7 +60,7 @@ import java.util.stream.IntStream;
 @Requires(CommunicationPatternProperty.class)
 public final class SamplingSkewReshapingPass extends ReshapingPass {
   private static final Logger LOG = LoggerFactory.getLogger(SamplingSkewReshapingPass.class.getName());
-  private static final float sampleRate = 1.0f; // 10%
+  private static final float sampleRate = 0.01f; // 10%
 
   /**
    * Default constructor.
