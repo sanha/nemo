@@ -31,8 +31,8 @@ public final class SamplingSkewCompositePass extends CompositePass {
   public SamplingSkewCompositePass() {
     super(Arrays.asList(
       new SamplingSkewReshapingPass(),
-      new SkewResourceSkewedDataPass()
-      //new SkewPartitionerPass()
+      new SkewResourceSkewedDataPass(),
+      new SkewPartitionerPass()
     ));
   }
 }

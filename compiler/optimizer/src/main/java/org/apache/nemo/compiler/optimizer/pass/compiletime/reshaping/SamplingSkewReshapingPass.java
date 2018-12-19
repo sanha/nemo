@@ -42,11 +42,14 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static org.apache.nemo.runtime.common.optimizer.pass.runtime.DataSkewRuntimePass.HASH_RANGE_MULTIPLIER;
 
 /**
  * Pass to reshape the IR DAG for skew handling.
@@ -60,7 +63,7 @@ import java.util.stream.IntStream;
 @Requires(CommunicationPatternProperty.class)
 public final class SamplingSkewReshapingPass extends ReshapingPass {
   private static final Logger LOG = LoggerFactory.getLogger(SamplingSkewReshapingPass.class.getName());
-  private static final float sampleRate = 0.01f; // 10%
+  private static final float sampleRate = 0.05f; // 10%
 
   /**
    * Default constructor.
@@ -309,7 +312,11 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
       (BiFunction<Object, Map<Integer, List<Object>>, Map<Integer, List<Object>>> & Serializable)
         (element, dynOptData) -> {
           Object key = keyExtractor.extractKey(element);
-          final int partitionKey = Math.abs(key.hashCode() % dstParallelism); // TODO #XX: Not proper for runtime opt
+          final BigInteger hashRangeBase = new BigInteger(String.valueOf(dstParallelism * HASH_RANGE_MULTIPLIER));
+          final int hashRange = hashRangeBase.nextProbablePrime().intValue();
+
+          //final int partitionKey = Math.abs(key.hashCode() % dstParallelism); // TODO #XX: Not proper for runtime opt
+          final int partitionKey = Math.abs(key.hashCode() % hashRange);
 
           if (dynOptData.containsKey(partitionKey)) {
             dynOptData.get(partitionKey).add(element);

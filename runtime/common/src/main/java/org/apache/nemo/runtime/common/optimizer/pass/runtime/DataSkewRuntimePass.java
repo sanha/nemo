@@ -99,14 +99,13 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
 
     // Calculate keyRanges.
     // TODO #?: Enable for dynamic reshaping
-    //final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), dstParallelism, hashRange);
+    final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), dstParallelism, hashRange);
 
-    printUnOpimizedDist(metricData.right(), dstParallelism, dstVtx.getId());
-    //printOpimizedDist(metricData.right(), hashRange, keyRanges, dstVtx.getId());
+    printUnOpimizedDist(metricData.right(), dstParallelism, dstVtx.getId(), hashRange);
+    printOpimizedDist(metricData.right(), hashRange, keyRanges, dstVtx.getId());
 
     //LOG.info("Optimized key ranges: " + keyRanges);
 
-    /*
     final HashMap<Integer, KeyRange> taskIdxToKeyRange = new HashMap<>();
     for (int i = 0; i < dstParallelism; i++) {
       taskIdxToKeyRange.put(i, keyRanges.get(i));
@@ -115,18 +114,6 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
     // Overwrite the previously assigned key range in the physical DAG with the new range.
     targetEdges.forEach(targetEdge -> targetEdge.getExecutionProperties()
       .put(ShuffleDistributionProperty.of(Pair.of(hashRange, taskIdxToKeyRange)), true));
-    */
-
-    /*final DAG<Stage, StageEdge> stageDAG = originalPlan.getStageDAG();
-    for (Stage stage : stageDAG.getVertices()) {
-      final List<StageEdge> stageEdges = stageDAG.getOutgoingEdgesOf(stage);
-      for (StageEdge edge : stageEdges) {
-        if (edge.equals(targetEdge)) {
-          edge.getExecutionProperties()
-              .put(ShuffleDistributionProperty.of(Pair.of(hashRange, taskIdxToKeyRange)), true);
-        }
-      }
-    }*/
 
     // TODO #: None-optimized
     //final Set<String> targetEdgeIds = targetEdges.stream().map(edge -> edge.getId()).collect(Collectors.toSet());
@@ -179,12 +166,14 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
 
   public void printUnOpimizedDist(final Map<Object, Long> actualKeyToSizeMap,
                                   final int dstParallelism,
-                                  final String targetVtxId) {
-    final List<Long> partitionSizeList = new ArrayList<>(dstParallelism);
-    for (int i = 0; i < dstParallelism; i++) {
+                                  final String targetVtxId,
+                                  final int hashRange) {
+    //final List<Long> partitionSizeList = new ArrayList<>(dstParallelism); // TODO #?: Enable this for default.
+    final List<Long> partitionSizeList = new ArrayList<>(hashRange);
+    for (int i = 0; i < hashRange; i++) { // TODO #?: Change hashRange to dstParallelism for default.
       partitionSizeList.add(0L);
     }
-    //LOG.info("@@@@ {}", actualKeyToSizeMap);
+
     actualKeyToSizeMap.forEach((k, v) -> {
       final int intKey = Integer.valueOf((String) k);
       //final int partitionKey = Math.abs(k.hashCode() % dstParallelism);
@@ -200,9 +189,14 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
     try (PrintWriter out = new PrintWriter(
       new BufferedWriter(
         new FileWriter(FILE_BASE + targetVtxId + "_unopt.txt", true)))) {
-      for (int i = dstParallelism - 1; i > 0; i--) {
-        out.println(String.valueOf(partitionSizeList.get(i)));
+      long totalBytes = 0;
+      //for (int i = dstParallelism - 1; i >= 0; i--) { // TODO #?: Enable this for default.
+      for (int i = hashRange - 1; i >= 0; i--) {
+        final long currentHashBytes = partitionSizeList.get(i);
+        totalBytes += currentHashBytes;
+        out.println(String.valueOf(currentHashBytes));
       }
+      out.println("Total bytes: " + totalBytes);
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
@@ -218,7 +212,8 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
     }
 
     actualKeyToSizeMap.forEach((k, v) -> {
-      final int partitionKey = Math.abs(k.hashCode() % hashRange);
+      final int partitionKey = Integer.valueOf((String) k);
+      //final int partitionKey = Math.abs(k.hashCode() % hashRange);
       partitionSizeList.set(partitionKey, partitionSizeList.get(partitionKey) + v);
     });
 
@@ -242,9 +237,13 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
     try (PrintWriter out = new PrintWriter(
       new BufferedWriter(
         new FileWriter(FILE_BASE + targetVtxId + "_opt.txt", true)))) {
-      for (int i = sortedSizeList.size() - 1; i > 0; i--) {
-        out.println(String.valueOf(sortedSizeList.get(i)));
+      long totalBytes = 0;
+      for (int i = sortedSizeList.size() - 1; i >= 0; i--) {
+        final long currentHashBytes = sortedSizeList.get(i);
+        totalBytes += currentHashBytes;
+        out.println(String.valueOf(currentHashBytes));
       }
+      out.println("Total bytes: " + totalBytes);
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
@@ -274,7 +273,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
       final int partitionKey = Math.abs(k.hashCode() % hashRange);
       partitionSizeList.set(partitionKey, partitionSizeList.get(partitionKey) + v);
     });*/
-    actualKeyToSizeMap.forEach((k,v ) -> partitionSizeList.set((Integer) k, v));
+    actualKeyToSizeMap.forEach((k, v) -> partitionSizeList.set(Integer.valueOf((String) k), v));
 
     // Get the last index.
     final int lastKey = partitionSizeList.size() - 1;
