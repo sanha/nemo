@@ -101,6 +101,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
 
     // Calculate keyRanges.
     // TODO #?: Enable for dynamic reshaping
+    /*
     final List<KeyRange> keyRanges = calculateKeyRanges(metricData.right(), dstParallelism, hashRange);
 
     printUnOpimizedDist(metricData.right(), dstParallelism, dstVtx.getId(), hashRange);
@@ -116,10 +117,9 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
     // Overwrite the previously assigned key range in the physical DAG with the new range.
     targetEdges.forEach(targetEdge -> targetEdge.getExecutionProperties()
       .put(ShuffleDistributionProperty.of(Pair.of(hashRange, taskIdxToKeyRange)), true)); // TODO #: Enable
-
+    */
 
     // TODO #: None-optimized
-    /*
     final int meanRange = hashRange / dstParallelism;
     LOG.info("MeanRange: {}", meanRange);
     final List<KeyRange> keyRanges = new ArrayList<>(dstParallelism);
@@ -138,7 +138,6 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
     // Overwrite the previously assigned key range in the physical DAG with the new range.
     targetEdges.forEach(targetEdge -> targetEdge.getExecutionProperties()
         .put(ShuffleDistributionProperty.of(Pair.of(hashRange, taskIdxToKeyRange)), true));
-        */
 
     return new PhysicalPlan(originalPlan.getPlanId(), originalPlan.getStageDAG());
   }

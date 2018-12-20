@@ -63,7 +63,7 @@ import static org.apache.nemo.runtime.common.optimizer.pass.runtime.DataSkewRunt
 @Requires(CommunicationPatternProperty.class)
 public final class SamplingSkewReshapingPass extends ReshapingPass {
   private static final Logger LOG = LoggerFactory.getLogger(SamplingSkewReshapingPass.class.getName());
-  private static final float sampleRate = 0.05f; // 10%
+  private static final float sampleRate = 0.01f; // 10%
 
   /**
    * Default constructor.
