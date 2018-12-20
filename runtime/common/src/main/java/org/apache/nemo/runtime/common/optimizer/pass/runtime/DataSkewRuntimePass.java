@@ -53,6 +53,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
   public static final int DEFAULT_NUM_SKEWED_KEYS = 5;
   public static final int HASH_RANGE_MULTIPLIER = 5;
   private static final float SKEW_RATIO_THRESHOLD = 0.03f; // 3%
+  public static final float SAMPLE_RATE = 0.01f; // 10%
   //private static final String FILE_BASE = "/Users/sanha/tmp/";
   private static final String FILE_BASE = "/home/ubuntu/int_data_dist/";
   private int numSkewedKeys;
@@ -202,7 +203,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
       long totalBytes = 0;
       for (int i = dstParallelism - 1; i >= 0; i--) { // TODO #?: Enable this for default.
       //for (int i = hashRange - 1; i >= 0; i--) {
-        final long currentHashBytes = partitionSizeList.get(i);
+        final long currentHashBytes = partitionSizeList.get(i) * Math.round(1 / SAMPLE_RATE);
         totalBytes += currentHashBytes;
         out.println(String.valueOf(currentHashBytes));
       }
@@ -249,7 +250,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
         new FileWriter(FILE_BASE + targetVtxId + "_opt.txt", true)))) {
       long totalBytes = 0;
       for (int i = sortedSizeList.size() - 1; i >= 0; i--) {
-        final long currentHashBytes = sortedSizeList.get(i);
+        final long currentHashBytes = sortedSizeList.get(i) * Math.round(1 / SAMPLE_RATE);
         totalBytes += currentHashBytes;
         out.println(String.valueOf(currentHashBytes));
       }

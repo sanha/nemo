@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
-import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -50,6 +49,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.apache.nemo.runtime.common.optimizer.pass.runtime.DataSkewRuntimePass.HASH_RANGE_MULTIPLIER;
+import static org.apache.nemo.runtime.common.optimizer.pass.runtime.DataSkewRuntimePass.SAMPLE_RATE;
 
 /**
  * Pass to reshape the IR DAG for skew handling.
@@ -63,7 +63,6 @@ import static org.apache.nemo.runtime.common.optimizer.pass.runtime.DataSkewRunt
 @Requires(CommunicationPatternProperty.class)
 public final class SamplingSkewReshapingPass extends ReshapingPass {
   private static final Logger LOG = LoggerFactory.getLogger(SamplingSkewReshapingPass.class.getName());
-  private static final float sampleRate = 0.01f; // 10%
 
   /**
    * Default constructor.
@@ -96,7 +95,7 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
                 .orElseThrow(() -> new RuntimeException("No parallelism!"));
             final int dstParallelism = edge.getDst().getPropertyValue(ParallelismProperty.class)
               .orElseThrow(() -> new RuntimeException("No parallelism!"));
-            final int sampledParallelism = Math.max(Math.round(originalParallelism * sampleRate), 1);
+            final int sampledParallelism = Math.max(Math.round(originalParallelism * SAMPLE_RATE), 1);
 
             final List<Integer> randomIndices =
                 IntStream.range(0, originalParallelism).boxed().collect(Collectors.toList());
