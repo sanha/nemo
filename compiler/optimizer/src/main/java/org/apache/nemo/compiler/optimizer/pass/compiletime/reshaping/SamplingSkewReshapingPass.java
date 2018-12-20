@@ -63,7 +63,7 @@ import static org.apache.nemo.runtime.common.optimizer.pass.runtime.DataSkewRunt
 @Requires(CommunicationPatternProperty.class)
 public final class SamplingSkewReshapingPass extends ReshapingPass {
   private static final Logger LOG = LoggerFactory.getLogger(SamplingSkewReshapingPass.class.getName());
-  private static final float sampleRate = 0.05f; // 10%
+  private static final float sampleRate = 1.0f; // 10%
 
   /**
    * Default constructor.
@@ -312,8 +312,9 @@ public final class SamplingSkewReshapingPass extends ReshapingPass {
       (BiFunction<Object, Map<Integer, List<Object>>, Map<Integer, List<Object>>> & Serializable)
         (element, dynOptData) -> {
           Object key = keyExtractor.extractKey(element);
-          final BigInteger hashRangeBase = new BigInteger(String.valueOf(dstParallelism * HASH_RANGE_MULTIPLIER));
-          final int hashRange = hashRangeBase.nextProbablePrime().intValue();
+          //final BigInteger hashRangeBase = new BigInteger(String.valueOf(dstParallelism * HASH_RANGE_MULTIPLIER));
+          //final int hashRange = hashRangeBase.nextProbablePrime().intValue();
+          final int hashRange = dstParallelism * HASH_RANGE_MULTIPLIER;
 
           //final int partitionKey = Math.abs(key.hashCode() % dstParallelism); // TODO #XX: Not proper for runtime opt
           final int partitionKey = Math.abs(key.hashCode() % hashRange);

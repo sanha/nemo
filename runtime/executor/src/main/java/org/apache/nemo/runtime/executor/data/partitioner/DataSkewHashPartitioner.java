@@ -50,7 +50,8 @@ public final class DataSkewHashPartitioner implements Partitioner<Integer> {
     // For this hash range, please check the description of HashRangeMultiplier in JobConf.
     // For actual hash range to use, we calculate a prime number right next to the desired hash range.
     this.hashRangeBase = new BigInteger(String.valueOf(dstParallelism * hashRangeMultiplier));
-    this.hashRange = hashRangeBase.nextProbablePrime().intValue();
+    //this.hashRange = hashRangeBase.nextProbablePrime().intValue();
+    this.hashRange = dstParallelism * hashRangeMultiplier;
     LOG.info("hashRangeBase {} resulting hashRange {}", hashRangeBase, hashRange);
   }
 
