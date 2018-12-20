@@ -63,11 +63,16 @@ public final class SkewnessAwareSchedulingConstraint implements SchedulingConstr
   @Override
   public boolean testSchedulability(final ExecutorRepresenter executor, final Task task) {
     // Check if this executor had already received heavy tasks
-    for (Task runningTask : executor.getRunningTasks()) {
-      if (hasSkewedData(runningTask) && hasSkewedData(task)) {
-        return false;
+    final boolean targetTaskIsSkewed = hasSkewedData(task);
+    if (targetTaskIsSkewed) {
+      for (Task runningTask : executor.getRunningTasks()) {
+        if (hasSkewedData(runningTask)) {
+          return false;
+        }
       }
+      return true;
+    } else {
+      return true;
     }
-    return true;
   }
 }
