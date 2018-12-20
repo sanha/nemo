@@ -148,10 +148,10 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
     final List<Long> skewedSizes = new ArrayList<>();
     for (int i = 0; i < maxKeysToIdentify; i++) {
       final long currentSize = sortedMetricData.get(i);
-      //if (currentSize >= skewedSizeThreshold) {
+      if (currentSize >= skewedSizeThreshold) {
         skewedSizes.add(currentSize);
         LOG.info("Skewed size: {}", sortedMetricData.get(i));
-      //}
+      }
     }
 
     return skewedSizes;
@@ -290,7 +290,6 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
         identifySkewedKeys(partitionSizeList, maxKeysToIdentify, Math.round(totalSize * SKEW_RATIO_THRESHOLD));
 
     // Calculate the ideal size for each destination task.
-    long idealSizePerTask = totalSize / dstParallelism; // and derive the ideal size per task
     final List<KeyRange> keyRanges = new ArrayList<>(dstParallelism);
 
     if (totalSize == 0 || skewedSizes.isEmpty()) {
@@ -304,42 +303,61 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
       return keyRanges;
     }
 
+    long leastSkewedSize = skewedSizes.get(skewedSizes.size() - 1);
+    long remainSkewedSizes = skewedSizes.stream().mapToLong(n -> n).sum();
+    int skewedKeysCount = skewedSizes.size();
+
     int startingKey = 0;
     int finishingKey = 1;
     long currentAccumulatedSize = partitionSizeList.get(startingKey);
     long prevAccumulatedSize = 0L;
-    long idealAccumulatedSize = idealSizePerTask;
+    long idealAccumulatedSize = dstParallelism > skewedKeysCount ?
+        (totalSize - remainSkewedSizes) / (dstParallelism - skewedKeysCount) : totalSize / dstParallelism;
     for (int i = 1; i <= dstParallelism; i++) {
       if (i != dstParallelism) {
-        // Ideal accumulated partition size for this task.
-        // By adding partition sizes, find the accumulated size nearest to the given ideal size.
-        while (currentAccumulatedSize < idealAccumulatedSize && (lastKey - finishingKey) >= dstParallelism - i) {
-          currentAccumulatedSize += partitionSizeList.get(finishingKey);
-          finishingKey++;
-        }
+        final long currentSize = partitionSizeList.get(startingKey);
+        if (currentSize < leastSkewedSize) {
+          // Ideal accumulated partition size for this task.
+          // By adding partition sizes, find the accumulated size nearest to the given ideal size.
+          long nextSize = partitionSizeList.get(finishingKey);
+          while (currentAccumulatedSize < idealAccumulatedSize && (lastKey - finishingKey) >= dstParallelism - i
+              && nextSize < leastSkewedSize) {
+            currentAccumulatedSize += nextSize;
+            finishingKey++;
+            nextSize = partitionSizeList.get(finishingKey);
+          }
 
-        final Long oneStepBack =
+          final Long oneStepBack =
             currentAccumulatedSize - partitionSizeList.get(finishingKey - 1);
-        final Long diffFromIdeal = currentAccumulatedSize - idealAccumulatedSize;
-        final Long diffFromIdealOneStepBack = idealAccumulatedSize - oneStepBack;
-        // Go one step back if we came too far.
-        if (diffFromIdeal > diffFromIdealOneStepBack) {
-          finishingKey--;
-          currentAccumulatedSize -= partitionSizeList.get(finishingKey);
+          final Long diffFromIdeal = currentAccumulatedSize - idealAccumulatedSize;
+          final Long diffFromIdealOneStepBack = idealAccumulatedSize - oneStepBack;
+          // Go one step back if we came too far.
+          if (diffFromIdeal > diffFromIdealOneStepBack && nextSize < leastSkewedSize) {
+            finishingKey--;
+            currentAccumulatedSize -= partitionSizeList.get(finishingKey);
+          }
+
+          keyRanges.add(i - 1, HashRange.of(startingKey, finishingKey, false));
+        } else {
+          // Skewed
+          keyRanges.add(i - 1, HashRange.of(startingKey, finishingKey, true));
+
+          remainSkewedSizes -= currentSize;
+          skewedKeysCount--;
         }
 
-        boolean isSkewedKey = containsSkewedSize(partitionSizeList, skewedSizes, startingKey, finishingKey);
-        keyRanges.add(i - 1, HashRange.of(startingKey, finishingKey, isSkewedKey));
         LOG.debug("KeyRange {}~{}, Size {}", startingKey, finishingKey - 1,
-            currentAccumulatedSize - prevAccumulatedSize);
+          currentAccumulatedSize - prevAccumulatedSize);
+
+        final long idealNextSize = (dstParallelism - i) > skewedKeysCount ?
+          (totalSize - currentAccumulatedSize - remainSkewedSizes) / (dstParallelism - i - skewedKeysCount)
+          : (totalSize - currentAccumulatedSize) / (dstParallelism - i);
+        idealAccumulatedSize = currentAccumulatedSize + idealNextSize;
 
         prevAccumulatedSize = currentAccumulatedSize;
         currentAccumulatedSize += partitionSizeList.get(finishingKey);
         startingKey = finishingKey;
         finishingKey++;
-
-        //idealAccumulatedSize += (totalSize - currentAccumulatedSize) / (dstParallelism - i);
-        idealAccumulatedSize = currentAccumulatedSize + (totalSize - currentAccumulatedSize) / (dstParallelism - i);
       } else { // last one: we put the range of the rest.
         boolean isSkewedKey = containsSkewedSize(partitionSizeList, skewedSizes, startingKey, lastKey + 1);
         keyRanges.add(i - 1,
