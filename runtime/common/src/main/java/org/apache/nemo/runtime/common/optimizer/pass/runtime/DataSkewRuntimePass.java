@@ -170,14 +170,15 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
                                   final int dstParallelism,
                                   final String targetVtxId,
                                   final int hashRange) {
-    //final List<Long> partitionSizeList = new ArrayList<>(dstParallelism); // TODO #?: Enable this for default.
-    final List<Long> partitionSizeList = new ArrayList<>(hashRange);
-    for (int i = 0; i < hashRange; i++) { // TODO #?: Change hashRange to dstParallelism for default.
+    final List<Long> partitionSizeList = new ArrayList<>(dstParallelism); // TODO #?: Enable this for default.
+    //final List<Long> partitionSizeList = new ArrayList<>(hashRange);
+    //for (int i = 0; i < hashRange; i++) {
+    for (int i = 0; i < dstParallelism; i++) { // TODO #?: Enable this for default.
       partitionSizeList.add(0L);
     }
 
     actualKeyToSizeMap.forEach((k, v) -> {
-      final int intKey = Integer.valueOf((String) k);
+      final int intKey = Integer.valueOf((String) k) % dstParallelism;
       //final int partitionKey = Math.abs(k.hashCode() % dstParallelism);
       partitionSizeList.set(intKey, partitionSizeList.get(intKey) + v);
     });
@@ -192,8 +193,8 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
       new BufferedWriter(
         new FileWriter(FILE_BASE + targetVtxId + "_unopt.txt", true)))) {
       long totalBytes = 0;
-      //for (int i = dstParallelism - 1; i >= 0; i--) { // TODO #?: Enable this for default.
-      for (int i = hashRange - 1; i >= 0; i--) {
+      for (int i = dstParallelism - 1; i >= 0; i--) { // TODO #?: Enable this for default.
+      //for (int i = hashRange - 1; i >= 0; i--) {
         final long currentHashBytes = partitionSizeList.get(i);
         totalBytes += currentHashBytes;
         out.println(String.valueOf(currentHashBytes));
