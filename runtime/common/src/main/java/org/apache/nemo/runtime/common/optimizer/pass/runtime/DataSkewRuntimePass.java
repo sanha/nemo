@@ -52,7 +52,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
   // Skewed keys denote for top n keys in terms of partition size.
   public static final int DEFAULT_NUM_SKEWED_KEYS = 5;
   public static final int HASH_RANGE_MULTIPLIER = 5;
-  //private static final String FILE_BASE = "/Users/sanha/tmp/";
+  //qprivate static final String FILE_BASE = "/Users/sanha/tmp/";
   private static final String FILE_BASE = "/home/ubuntu/int_data_dist/";
   private int numSkewedKeys;
 
@@ -114,11 +114,12 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
 
     // Overwrite the previously assigned key range in the physical DAG with the new range.
     targetEdges.forEach(targetEdge -> targetEdge.getExecutionProperties()
-      .put(ShuffleDistributionProperty.of(Pair.of(hashRange, taskIdxToKeyRange)), true));
+      .put(ShuffleDistributionProperty.of(Pair.of(hashRange, taskIdxToKeyRange)), true)); // TODO #: Enable
+
 
     // TODO #: None-optimized
-    //final Set<String> targetEdgeIds = targetEdges.stream().map(edge -> edge.getId()).collect(Collectors.toSet());
-    /*final int meanRange = hashRange / dstParallelism;
+    /*
+    final int meanRange = hashRange / dstParallelism;
     LOG.info("MeanRange: {}", meanRange);
     final List<KeyRange> keyRanges = new ArrayList<>(dstParallelism);
     for (int i = 0; i < dstParallelism - 1; i++) {
@@ -131,9 +132,12 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
       taskIdxToKeyRange.put(i, keyRanges.get(i));
     }
 
+    printUnOpimizedDist(metricData.right(), dstParallelism, dstVtx.getId(), hashRange);
+
     // Overwrite the previously assigned key range in the physical DAG with the new range.
     targetEdges.forEach(targetEdge -> targetEdge.getExecutionProperties()
-        .put(ShuffleDistributionProperty.of(Pair.of(hashRange, taskIdxToKeyRange)), true));*/
+        .put(ShuffleDistributionProperty.of(Pair.of(hashRange, taskIdxToKeyRange)), true));
+        */
 
     return new PhysicalPlan(originalPlan.getPlanId(), originalPlan.getStageDAG());
   }
