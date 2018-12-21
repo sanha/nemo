@@ -200,6 +200,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
     try (final PrintWriter out = new PrintWriter(
       new BufferedWriter(
         new FileWriter(FILE_BASE + targetVtxId + "_unopt.txt", true)))) {
+      out.println("Sorted intermediate bytes");
       long totalBytes = 0;
       for (int i = dstParallelism - 1; i >= 0; i--) { // TODO #?: Enable this for default.
       //for (int i = hashRange - 1; i >= 0; i--) {
@@ -207,7 +208,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
         totalBytes += currentHashBytes;
         out.println(String.valueOf(currentHashBytes));
       }
-      out.println("Total bytes: " + totalBytes);
+      //out.println("Total bytes: " + totalBytes);
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
@@ -249,12 +250,13 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
       new BufferedWriter(
         new FileWriter(FILE_BASE + targetVtxId + "_opt.txt", true)))) {
       long totalBytes = 0;
+      out.println("Sorted intermediate bytes");
       for (int i = sortedSizeList.size() - 1; i >= 0; i--) {
         final long currentHashBytes = sortedSizeList.get(i);
         totalBytes += currentHashBytes;
         out.println(String.valueOf(currentHashBytes));
       }
-      out.println("Total bytes: " + totalBytes);
+      //out.println("Total bytes: " + totalBytes);
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
