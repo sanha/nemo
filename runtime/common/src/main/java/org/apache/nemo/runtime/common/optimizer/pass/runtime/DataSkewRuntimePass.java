@@ -53,6 +53,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
   public static final int DEFAULT_NUM_SKEWED_KEYS = 5;
   public static final int HASH_RANGE_MULTIPLIER = 5;
   private static final float SKEW_RATIO_THRESHOLD = 0.03f; // 3%
+  private static final boolean PRINT_PORTION = true;
   public static final float SAMPLE_RATE = 0.1f; // 10%
   //private static final String FILE_BASE = "/Users/sanha/tmp/";
   private static final String FILE_BASE = "/home/ubuntu/int_data_dist/";
@@ -197,16 +198,20 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
       LOG.info(String.valueOf(partitionSizeList.get(i)));
     }*/
 
+    final long totalBytes = partitionSizeList.stream().mapToLong(n -> n).sum();
+
     try (final PrintWriter out = new PrintWriter(
       new BufferedWriter(
         new FileWriter(FILE_BASE + targetVtxId + "_unopt.txt", true)))) {
       out.println("Sorted intermediate bytes");
-      long totalBytes = 0;
       for (int i = dstParallelism - 1; i >= 0; i--) { // TODO #?: Enable this for default.
       //for (int i = hashRange - 1; i >= 0; i--) {
         final long currentHashBytes = partitionSizeList.get(i);
-        totalBytes += currentHashBytes;
-        out.println(String.valueOf(currentHashBytes));
+        if (PRINT_PORTION) {
+          out.println(String.valueOf(currentHashBytes/ totalBytes));
+        } else {
+          out.println(String.valueOf(currentHashBytes));
+        }
       }
       //out.println("Total bytes: " + totalBytes);
     } catch (final IOException e) {
@@ -246,15 +251,19 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
       LOG.info(String.valueOf(size));
     }*/
 
+    final long totalBytes = sortedSizeList.stream().mapToLong(n -> n).sum();
+
     try (final PrintWriter out = new PrintWriter(
       new BufferedWriter(
         new FileWriter(FILE_BASE + targetVtxId + "_opt.txt", true)))) {
-      long totalBytes = 0;
       out.println("Sorted intermediate bytes");
       for (int i = sortedSizeList.size() - 1; i >= 0; i--) {
         final long currentHashBytes = sortedSizeList.get(i);
-        totalBytes += currentHashBytes;
-        out.println(String.valueOf(currentHashBytes));
+        if (PRINT_PORTION) {
+          out.println(String.valueOf(currentHashBytes/ totalBytes));
+        } else {
+          out.println(String.valueOf(currentHashBytes));
+        }
       }
       //out.println("Total bytes: " + totalBytes);
     } catch (final IOException e) {
