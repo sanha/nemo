@@ -53,7 +53,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
   public static final int DEFAULT_NUM_SKEWED_KEYS = 5;
   public static final int HASH_RANGE_MULTIPLIER = 5;
   private static final float SKEW_RATIO_THRESHOLD = 0.03f; // 3%
-  public static final float SAMPLE_RATE = 0.05f; // 10%
+  public static final float SAMPLE_RATE = 0.1f; // 10%
   //private static final String FILE_BASE = "/Users/sanha/tmp/";
   private static final String FILE_BASE = "/home/ubuntu/int_data_dist/";
   private int numSkewedKeys;
