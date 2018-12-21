@@ -27,6 +27,8 @@ import org.apache.nemo.runtime.common.plan.StageEdge;
 import org.apache.nemo.runtime.common.plan.Task;
 import org.apache.nemo.runtime.master.resource.ExecutorRepresenter;
 import org.apache.reef.annotations.audience.DriverSide;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
@@ -39,6 +41,8 @@ import java.util.Map;
 @DriverSide
 @AssociatedProperty(ResourceSkewedDataProperty.class)
 public final class SkewnessAwareSchedulingConstraint implements SchedulingConstraint {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SkewnessAwareSchedulingConstraint.class.getName());
   @VisibleForTesting
   @Inject
   public SkewnessAwareSchedulingConstraint() {
@@ -67,6 +71,7 @@ public final class SkewnessAwareSchedulingConstraint implements SchedulingConstr
     if (targetTaskIsSkewed) {
       for (Task runningTask : executor.getRunningTasks()) {
         if (hasSkewedData(runningTask)) {
+          LOG.info("@@@@ skew constraint false!");
           return false;
         }
       }
