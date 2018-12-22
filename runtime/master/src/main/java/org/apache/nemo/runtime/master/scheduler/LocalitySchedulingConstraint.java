@@ -60,7 +60,11 @@ public final class LocalitySchedulingConstraint implements SchedulingConstraint 
    * @return the intermediate data locations, empty if none exists.
    */
   private List<String> getIntermediateDataLocations(final Task task) {
-    if (task.getTaskIncomingEdges().size() == 1) {
+    if (task.getTaskIncomingEdges().stream()
+      .filter(edge -> CommunicationPatternProperty.Value.OneToOne
+        .equals(edge.getPropertyValue(CommunicationPatternProperty.class)
+          .orElseThrow(() -> new RuntimeException("No comm pattern!"))))
+      .count() == 1) {
       final StageEdge physicalStageEdge = task.getTaskIncomingEdges().get(0);
       if (CommunicationPatternProperty.Value.OneToOne.equals(
         physicalStageEdge.getPropertyValue(CommunicationPatternProperty.class)
