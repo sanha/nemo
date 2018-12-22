@@ -203,7 +203,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
     try (final PrintWriter out = new PrintWriter(
       new BufferedWriter(
         new FileWriter(FILE_BASE + targetVtxId + "_unopt.txt", true)))) {
-      out.println("Sorted intermediate bytes");
+      out.println("Bytes");
       for (int i = dstParallelism - 1; i >= 0; i--) { // TODO #?: Enable this for default.
       //for (int i = hashRange - 1; i >= 0; i--) {
         final long currentHashBytes = partitionSizeList.get(i);
@@ -256,7 +256,7 @@ public final class DataSkewRuntimePass extends RuntimePass<Pair<Set<StageEdge>, 
     try (final PrintWriter out = new PrintWriter(
       new BufferedWriter(
         new FileWriter(FILE_BASE + targetVtxId + "_opt.txt", true)))) {
-      out.println("Sorted intermediate bytes");
+      out.println("Bytes");
       for (int i = sortedSizeList.size() - 1; i >= 0; i--) {
         final long currentHashBytes = sortedSizeList.get(i);
         if (PRINT_PORTION) {
