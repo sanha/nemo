@@ -43,7 +43,7 @@ import java.util.Map;
 public final class SkewnessAwareSchedulingConstraint implements SchedulingConstraint {
 
   private static final Logger LOG = LoggerFactory.getLogger(SkewnessAwareSchedulingConstraint.class.getName());
-  private static final int maxSkewedTask = 1;
+  private static final int maxSkewedTask = 2;
 
   @VisibleForTesting
   @Inject
