@@ -43,6 +43,8 @@ import java.util.Map;
 public final class SkewnessAwareSchedulingConstraint implements SchedulingConstraint {
 
   private static final Logger LOG = LoggerFactory.getLogger(SkewnessAwareSchedulingConstraint.class.getName());
+  private static final int maxSkewedTask = 1;
+
   @VisibleForTesting
   @Inject
   public SkewnessAwareSchedulingConstraint() {
@@ -68,11 +70,15 @@ public final class SkewnessAwareSchedulingConstraint implements SchedulingConstr
   public boolean testSchedulability(final ExecutorRepresenter executor, final Task task) {
     // Check if this executor had already received heavy tasks
     final boolean targetTaskIsSkewed = hasSkewedData(task);
+    int skewCount = 0;
     if (targetTaskIsSkewed) {
       for (Task runningTask : executor.getRunningTasks()) {
         if (hasSkewedData(runningTask)) {
-          LOG.info("@@@@ skew constraint false!");
-          return false;
+          skewCount++;
+          if (skewCount >= maxSkewedTask) {
+            LOG.info("@@@@ skew constraint false!");
+            return false;
+          }
         }
       }
       return true;

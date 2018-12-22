@@ -75,11 +75,11 @@ public final class SQLTpchITCase {
 
   @Test (timeout = TIMEOUT)
   public void testSS() throws Exception {
-    final int queryNum = 10;
+    final int queryNum = 4;
     JobLauncher.main(builder
       .addUserMain(Tpch.class.getCanonicalName())
-      .addUserArgs("/Users/sanha/tpch_queries/tpc" + String.valueOf(queryNum) + "_skew.sql",
-      //.addUserArgs("/Users/sanha/tpch_queries/tpc" + String.valueOf(queryNum) + ".sql",
+      //.addUserArgs("/Users/sanha/tpch_queries/tpc" + String.valueOf(queryNum) + "_skew.sql",
+      .addUserArgs("/Users/sanha/tpch_queries/tpc" + String.valueOf(queryNum) + ".sql",
         //"/Users/sanha/tpc_zipf_2.0_1gb/",
         "/Users/sanha/tpc_skew_1gb/",
         //"/Users/sanha/tpc_1gb/",
